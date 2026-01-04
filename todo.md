@@ -117,3 +117,11 @@
 - [x] Teste de validação de unidades inválidas
 - [x] Teste de geração de mapa de produção
 - [x] Teste de atualização de quantidades no grid
+
+
+## Correção: Remover Validações de Segunda-feira
+- [x] Remover validação de segunda-feira do backend (server/routers.ts)
+- [x] Remover validação de segunda-feira do frontend (client/src/pages/ImportacaoVendas.tsx)
+- [x] Remover textos de ajuda sobre segunda-feira da interface
+- [x] Atualizar testes unitários para não validar segunda-feira
+- [x] Executar testes para garantir funcionamento

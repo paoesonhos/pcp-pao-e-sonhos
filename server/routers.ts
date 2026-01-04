@@ -82,19 +82,6 @@ export const importacoesRouter = router({
       const dataHistorico = new Date(dataReferenciaHistorico);
       const dataPlanejamento = new Date(dataReferenciaPlanejamento);
 
-      if (dataHistorico.getDay() !== 1) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Data de referência do histórico deve ser uma segunda-feira",
-        });
-      }
-
-      if (dataPlanejamento.getDay() !== 1) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Data de referência do planejamento deve ser uma segunda-feira",
-        });
-      }
 
       const importacaoId = await dbImportacoes.createImportacao({
         dataReferenciaHistorico: dataHistorico,

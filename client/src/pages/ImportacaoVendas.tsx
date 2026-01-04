@@ -46,11 +46,6 @@ export default function ImportacaoVendas() {
     }
   };
 
-  const validarData = (data: string): boolean => {
-    if (!data) return false;
-    const d = new Date(data);
-    return d.getDay() === 1; // Segunda-feira
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,15 +62,6 @@ export default function ImportacaoVendas() {
       return;
     }
 
-    if (!validarData(dataHistorico)) {
-      toast.error("Data de referência do histórico deve ser uma segunda-feira");
-      return;
-    }
-
-    if (!validarData(dataPlanejamento)) {
-      toast.error("Data de referência do planejamento deve ser uma segunda-feira");
-      return;
-    }
 
     // Ler arquivos
     try {
@@ -183,13 +169,10 @@ export default function ImportacaoVendas() {
                   {dataHistorico && (
                     <p className="text-xs text-muted-foreground">
                       {getDiaSemana(dataHistorico)}
-                      {getDiaSemana(dataHistorico) !== "Segunda-feira" && (
-                        <span className="text-destructive ml-2">⚠ Deve ser uma segunda-feira</span>
-                      )}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Segunda-feira da semana à qual os dados históricos se referem
+                    Data da semana à qual os dados históricos se referem
                   </p>
                 </div>
 
@@ -209,13 +192,10 @@ export default function ImportacaoVendas() {
                   {dataPlanejamento && (
                     <p className="text-xs text-muted-foreground">
                       {getDiaSemana(dataPlanejamento)}
-                      {getDiaSemana(dataPlanejamento) !== "Segunda-feira" && (
-                        <span className="text-destructive ml-2">⚠ Deve ser uma segunda-feira</span>
-                      )}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Segunda-feira da semana que será planejada/produzida
+                    Data da semana que será planejada/produzida
                   </p>
                 </div>
               </div>
