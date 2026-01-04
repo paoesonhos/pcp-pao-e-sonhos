@@ -15,6 +15,13 @@
       "when": 1767564375639,
       "tag": "0001_brown_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1767568293065,
+      "tag": "0002_lazy_namora",
+      "breakpoints": true
     }
   ]
 }

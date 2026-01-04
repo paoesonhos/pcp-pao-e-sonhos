@@ -9,6 +9,8 @@ import Categorias from "./pages/Categorias";
 import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
+import ImportacaoVendas from "./pages/ImportacaoVendas";
+import MapaProducao from "./pages/MapaProducao";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +21,8 @@ function Router() {
       <Route path={"/insumos"} component={Insumos} />
       <Route path={"/produtos"} component={Produtos} />
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
+      <Route path={"/importacao-vendas"} component={ImportacaoVendas} />
+      <Route path={"/mapa-producao/:id"} component={MapaProducao} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tags, FileText, ShoppingCart } from "lucide-react";
+import { Package, Tags, FileText, ShoppingCart, Upload } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 
@@ -67,6 +67,13 @@ export default function Home() {
       icon: FileText,
       href: "/fichas-tecnicas",
       color: "text-orange-700",
+    },
+    {
+      title: "Importação de Vendas",
+      description: "Upload de CSV e mapa de produção",
+      icon: Upload,
+      href: "/importacao-vendas",
+      color: "text-amber-800",
     },
   ];
 

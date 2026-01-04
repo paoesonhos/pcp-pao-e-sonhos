@@ -69,3 +69,51 @@
 ### Documentação
 - [ ] Documentar regras de negócio implementadas
 - [ ] Documentar estrutura de dados e relacionamentos
+
+
+## Módulo 1.2: Importação de Vendas e Mapa de Produção
+
+### Backend - Schema e Banco de Dados
+- [x] Criar tabela de importacoes_vendas (id, data_referencia_historico, data_referencia_planejamento, usuario_id, created_at)
+- [x] Criar tabela de vendas_historico (id, importacao_id, produto_id, data_venda, quantidade, unidade)
+- [x] Criar tabela de mapa_producao (id, importacao_id, produto_id, dia_semana, quantidade_planejada, unidade)
+- [x] Executar migrations no banco de dados
+
+### Backend - APIs de Importação
+- [x] Implementar parser de CSV para arquivo Seg-Qua (id, Produto, unidade de medida, segunda-feira, terça-feira, quarta-feira)
+- [x] Implementar parser de CSV para arquivo Qui-Sab (id, Produto, unidade de medida, quinta-feira, sexta-feira, sábado)
+- [x] Validar existência de produtos pelo codigo_produto (coluna id do CSV)
+- [x] Validar formato de unidade de medida (kg/un)
+- [x] Validar valores numéricos das quantidades)
+- [x] Criar API de importação bipartida (recebe 2 arquivos + 2 datas de referência)
+- [x] Salvar dados históricos na tabela vendas_historico
+- [x] Gerar mapa de produção inicial baseado nos dados importados)
+
+### Backend - APIs de Consulta
+- [x] API para listar importações realizadas
+- [x] API para obter mapa de produção por importacao_id
+- [x] API para atualizar quantidades no mapa de produção (grid editável)
+
+### Frontend - Interface de Importação
+- [x] Página de importação com upload de 2 arquivos CSV
+- [x] Seletor de Data de Referência do Histórico (segunda-feira)
+- [x] Seletor de Data de Referência do Mapa de Produção (segunda-feira)
+- [x] Validação de arquivos antes do upload
+- [x] Feedback de progresso durante importação
+- [x] Exibição de erros de validação (produtos não encontrados, formatos inválidos)
+
+### Frontend - Grid de Planejamento
+- [x] Grid interativo Produto vs. Dia da Semana (7 colunas: Seg, Ter, Qua, Qui, Sex, Sab, Dom)
+- [x] Exibição de produtos no formato "codigo_produto – nome_produto"
+- [x] Células editáveis para ajuste de quantidades planejadas
+- [x] Indicador visual de unidade (kg/un) por produto
+- [x] Salvamento automático ou manual de alterações
+- [ ] Filtros por categoria de produto
+- [ ] Busca por código/nome de produto
+
+### Validações e Testes
+- [x] Teste de parsing de CSV com dados válidos
+- [x] Teste de validação de produtos inexistentes
+- [x] Teste de validação de unidades inválidas
+- [x] Teste de geração de mapa de produção
+- [x] Teste de atualização de quantidades no grid
