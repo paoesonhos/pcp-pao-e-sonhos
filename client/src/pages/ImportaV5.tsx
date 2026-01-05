@@ -1,11 +1,33 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 
+interface DadoVenda {
+  codigo_produto: string;
+  nome_produto: string;
+  unidade_medida: string;
+  dia2: number;
+  dia3: number;
+  dia4: number;
+  dia5: number;
+  dia6: number;
+  dia7: number;
+}
+
+interface Resultado {
+  success: boolean;
+  importacaoId?: number;
+  dataReferencia?: string;
+  totalProdutos?: number;
+  dados?: DadoVenda[];
+  erro?: string;
+}
+
 export default function ImportaV5() {
   const [data, setData] = useState("");
-  const [resultado, setResultado] = useState<any>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mostrarJson, setMostrarJson] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const mutation = trpc.importaV5.importar.useMutation();
@@ -32,15 +54,33 @@ export default function ImportaV5() {
         dataReferencia: data,
         csvContent: texto,
       });
-      setResultado(res);
+      setResultado(res as Resultado);
     } catch (e: any) {
       setErro(e.message || "Erro ao importar");
     }
     setLoading(false);
   }
 
+  // Calcular totais por dia
+  const calcularTotais = () => {
+    if (!resultado?.dados) return { dia2: 0, dia3: 0, dia4: 0, dia5: 0, dia6: 0, dia7: 0 };
+    return resultado.dados.reduce(
+      (acc, item) => ({
+        dia2: acc.dia2 + item.dia2,
+        dia3: acc.dia3 + item.dia3,
+        dia4: acc.dia4 + item.dia4,
+        dia5: acc.dia5 + item.dia5,
+        dia6: acc.dia6 + item.dia6,
+        dia7: acc.dia7 + item.dia7,
+      }),
+      { dia2: 0, dia3: 0, dia4: 0, dia5: 0, dia6: 0, dia7: 0 }
+    );
+  };
+
+  const totais = calcularTotais();
+
   return (
-    <div style={{ padding: 20, maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ marginBottom: 20 }}>Importação V5</h1>
 
       <div style={{ marginBottom: 15 }}>
@@ -86,21 +126,91 @@ export default function ImportaV5() {
         </div>
       )}
 
-      {resultado && (
+      {resultado && resultado.success && resultado.dados && (
         <div style={{ marginTop: 20 }}>
-          <h2>Resultado ({resultado.totalProdutos} produtos)</h2>
-          <pre
-            style={{
-              background: "#f5f5f5",
-              padding: 15,
-              overflow: "auto",
-              maxHeight: 500,
-              fontSize: 12,
-              border: "1px solid #ddd",
-            }}
-          >
-            {JSON.stringify(resultado, null, 2)}
-          </pre>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h2>
+              Resultado: {resultado.totalProdutos} produtos 
+              {resultado.importacaoId && <span style={{ fontSize: 14, color: "#666" }}> (ID: {resultado.importacaoId})</span>}
+            </h2>
+            <button
+              onClick={() => setMostrarJson(!mostrarJson)}
+              style={{
+                padding: "5px 15px",
+                fontSize: 12,
+                cursor: "pointer",
+                backgroundColor: "#f0f0f0",
+                border: "1px solid #ccc",
+                borderRadius: 4,
+              }}
+            >
+              {mostrarJson ? "Ocultar JSON" : "Ver JSON"}
+            </button>
+          </div>
+
+          {/* Grid de Visualização */}
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ backgroundColor: "#c4a35a", color: "#fff" }}>
+                  <th style={{ padding: 10, textAlign: "left", border: "1px solid #b89548" }}>Código</th>
+                  <th style={{ padding: 10, textAlign: "left", border: "1px solid #b89548" }}>Produto</th>
+                  <th style={{ padding: 10, textAlign: "center", border: "1px solid #b89548" }}>Unid.</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 2</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 3</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 4</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 5</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 6</th>
+                  <th style={{ padding: 10, textAlign: "right", border: "1px solid #b89548" }}>Dia 7</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultado.dados.map((item, idx) => (
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? "#fff" : "#f9f9f9" }}>
+                    <td style={{ padding: 8, border: "1px solid #ddd" }}>{item.codigo_produto}</td>
+                    <td style={{ padding: 8, border: "1px solid #ddd" }}>{item.nome_produto}</td>
+                    <td style={{ padding: 8, textAlign: "center", border: "1px solid #ddd" }}>{item.unidade_medida}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia2.toFixed(2)}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia3.toFixed(2)}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia4.toFixed(2)}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia5.toFixed(2)}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia6.toFixed(2)}</td>
+                    <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{item.dia7.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ backgroundColor: "#e8e0d0", fontWeight: "bold" }}>
+                  <td style={{ padding: 8, border: "1px solid #ddd" }} colSpan={3}>TOTAIS</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia2.toFixed(2)}</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia3.toFixed(2)}</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia4.toFixed(2)}</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia5.toFixed(2)}</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia6.toFixed(2)}</td>
+                  <td style={{ padding: 8, textAlign: "right", border: "1px solid #ddd" }}>{totais.dia7.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* JSON (oculto por padrão) */}
+          {mostrarJson && (
+            <div style={{ marginTop: 20 }}>
+              <h3>JSON</h3>
+              <pre
+                style={{
+                  background: "#f5f5f5",
+                  padding: 15,
+                  overflow: "auto",
+                  maxHeight: 400,
+                  fontSize: 12,
+                  border: "1px solid #ddd",
+                }}
+              >
+                {JSON.stringify(resultado, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </div>

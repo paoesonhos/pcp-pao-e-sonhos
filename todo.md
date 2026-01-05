@@ -213,3 +213,12 @@
 - [x] Criar endpoint getMapa para obter dados de uma importação
 - [x] Testar persistência com arquivo modelo
 - [x] Validar consulta de importações
+
+
+## Módulo 1.8: Grid de Visualização ImportaV5
+
+- [x] Adicionar tabela interativa após importação
+- [x] Colunas: Código, Produto, Unidade, Dia 2, Dia 3, Dia 4, Dia 5, Dia 6, Dia 7
+- [x] Totais por coluna
+- [x] Manter JSON como opção secundária
+- [x] Testar visualização
