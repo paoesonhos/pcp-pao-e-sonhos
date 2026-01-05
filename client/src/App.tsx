@@ -10,6 +10,7 @@ import ImportaV5 from "./pages/ImportaV5";
 import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
+import MapaProducao from "./pages/MapaProducao";
 
 
 
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/produtos"} component={Produtos} />
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
       <Route path={"/importa-v5"} component={ImportaV5} />
+      <Route path={"/mapa-producao"} component={MapaProducao} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

@@ -556,6 +556,82 @@ export const appRouter = router({
       }),
   }),
 
+  // ==================== MAPA DE PRODUÇÃO ====================
+  mapaProducao: router({
+    // Buscar última importação e gerar mapa de produção
+    gerarMapa: protectedProcedure.query(async () => {
+      const database = await db.getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const { importacoesV5, vendasV5 } = await import("../drizzle/schema");
+      const { desc, eq } = await import("drizzle-orm");
+
+      // Buscar última importação
+      const [ultimaImportacao] = await database
+        .select()
+        .from(importacoesV5)
+        .orderBy(desc(importacoesV5.createdAt))
+        .limit(1);
+
+      if (!ultimaImportacao) {
+        return { success: false, erro: "Nenhuma importação encontrada", mapa: [], importacao: null };
+      }
+
+      // Buscar vendas da última importação
+      const vendas = await database
+        .select()
+        .from(vendasV5)
+        .where(eq(vendasV5.importacaoId, ultimaImportacao.id));
+
+      // Gerar mapa de produção expandido (uma linha por produto por dia)
+      const mapa: Array<{
+        id: number;
+        codigo: string;
+        nome: string;
+        unidade: string;
+        qtdImportada: number;
+        percentualAjuste: number;
+        qtdPlanejada: number;
+        equipe: string;
+        diaProduzir: number;
+      }> = [];
+
+      let idCounter = 1;
+      for (const venda of vendas) {
+        // Para cada dia (2-7), criar uma linha se houver quantidade
+        const dias = [
+          { dia: 2, qtd: parseFloat(venda.dia2 || "0") },
+          { dia: 3, qtd: parseFloat(venda.dia3 || "0") },
+          { dia: 4, qtd: parseFloat(venda.dia4 || "0") },
+          { dia: 5, qtd: parseFloat(venda.dia5 || "0") },
+          { dia: 6, qtd: parseFloat(venda.dia6 || "0") },
+          { dia: 7, qtd: parseFloat(venda.dia7 || "0") },
+        ];
+
+        for (const d of dias) {
+          if (d.qtd > 0) {
+            mapa.push({
+              id: idCounter++,
+              codigo: venda.codigoProduto,
+              nome: venda.nomeProduto,
+              unidade: venda.unidadeMedida,
+              qtdImportada: d.qtd,
+              percentualAjuste: 0,
+              qtdPlanejada: d.qtd,
+              equipe: "Equipe 1",
+              diaProduzir: d.dia,
+            });
+          }
+        }
+      }
+
+      return {
+        success: true,
+        importacao: ultimaImportacao,
+        mapa,
+      };
+    }),
+  }),
+
 });
 
 export type AppRouter = typeof appRouter;

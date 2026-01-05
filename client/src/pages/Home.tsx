@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tags, FileText, ShoppingCart, Upload } from "lucide-react";
+import { Package, Tags, FileText, ShoppingCart, Upload, Calendar } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 
@@ -75,7 +75,13 @@ export default function Home() {
       href: "/importa-v5",
       color: "text-amber-800",
     },
-
+    {
+      title: "Mapa de Produção",
+      description: "Planejamento semanal",
+      icon: Calendar,
+      href: "/mapa-producao",
+      color: "text-green-700",
+    },
   ];
 
   return (

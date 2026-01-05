@@ -222,3 +222,15 @@
 - [x] Totais por coluna
 - [x] Manter JSON como opção secundária
 - [x] Testar visualização
+
+
+## Módulo 2.0: Mapa de Produção
+
+- [x] Criar endpoint para buscar última importação
+- [x] Criar endpoint para gerar mapa de produção
+- [x] Criar página MapaProducao.tsx
+- [x] Grid com colunas: Código, Nome, Unidade, Qtd_Importada, Percentual_Ajuste, Qtd_Planejada, Equipe, Dia_Produzir
+- [x] Percentual_Ajuste editável com recálculo automático
+- [x] Dia_Produzir editável (dropdown)
+- [x] Gestão de feriados (checkbox por dia, zera Qtd_Planejada)
+- [x] Testar funcionalidades
