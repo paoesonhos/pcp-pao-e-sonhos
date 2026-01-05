@@ -415,88 +415,20 @@ export const appRouter = router({
   }),
 
   importacoesV2: router({
-    importarArquivo1: protectedProcedure
+    importar: protectedProcedure
       .input(
         z.object({
           dataReferencia: z.string(),
-          csvContent: z.string(),
+          arquivoSegQua: z.string(),
+          arquivoQuiSab: z.string(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        // Criar nova importação
         const importacaoId = await dbImportacoesV2.criarImportacaoV2(
           input.dataReferencia,
           ctx.user.id
         );
-
-        // Processar arquivo 1 (dias 2,3,4)
-        const diasSemana = [2, 3, 4];
-        const vendas = await parseCSVSequencial(
-          input.csvContent,
-          diasSemana,
-          importacaoId
-        );
-
-        // Inserir vendas no banco
-        for (const venda of vendas) {
-          await dbImportacoesV2.inserirVendaV2(
-            venda.importacaoId,
-            venda.produtoId,
-            venda.diaSemana,
-            venda.quantidade,
-            venda.unidade
-          );
-        }
-
-        // Retornar dados formatados
-        const mapa = await dbImportacoesV2.getMapaProducaoV2(importacaoId);
-        const dados = formatarDadosJSON(mapa);
-
-        return {
-          importacaoId,
-          etapa: 1,
-          totalVendas: vendas.length,
-          dados,
-        };
-      }),
-
-    importarArquivo2: protectedProcedure
-      .input(
-        z.object({
-          importacaoId: z.number(),
-          csvContent: z.string(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        // Processar arquivo 2 (dias 5,6,7)
-        const diasSemana = [5, 6, 7];
-        const vendas = await parseCSVSequencial(
-          input.csvContent,
-          diasSemana,
-          input.importacaoId
-        );
-
-        // Inserir vendas no banco
-        for (const venda of vendas) {
-          await dbImportacoesV2.inserirVendaV2(
-            venda.importacaoId,
-            venda.produtoId,
-            venda.diaSemana,
-            venda.quantidade,
-            venda.unidade
-          );
-        }
-
-        // Retornar dados consolidados
-        const mapa = await dbImportacoesV2.getMapaProducaoV2(input.importacaoId);
-        const dados = formatarDadosJSON(mapa);
-
-        return {
-          importacaoId: input.importacaoId,
-          etapa: 2,
-          totalVendas: vendas.length,
-          dados,
-        };
+        return { importacaoId };
       }),
 
     obterMapa: protectedProcedure
@@ -556,34 +488,4 @@ export const appRouter = router({
   }),
 });
 
-// Funcoes auxiliares
-async function parseCSVSequencial(csvContent: string, diasSemana: number[], importacaoId: number) {
-  const lines = csvContent.trim().split("\n");
-  if (lines.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "CSV vazio" });
-  const vendas: any[] = [];
-  const erros: string[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const values = line.split(",").map((v) => v.trim());
-    if (values.length < 3 + diasSemana.length) { erros.push(`Linha ${i + 1}: colunas invalidas`); continue; }
-    const codigoProduto = values[0];
-    const unidadeMedida = values[2].toLowerCase();
-    if (unidadeMedida !== "kg" && unidadeMedida !== "un") { erros.push(`Linha ${i + 1}: unidade invalida`); continue; }
-    const produto = await dbImportacoesV2.getProdutoByCodigo(codigoProduto);
-    if (!produto) { erros.push(`Linha ${i + 1}: produto nao encontrado`); continue; }
-    for (let j = 0; j < diasSemana.length; j++) {
-      const quantidade = values[3 + j];
-      const quantidadeNum = parseFloat(quantidade);
-      if (isNaN(quantidadeNum) || quantidadeNum < 0) continue;
-      vendas.push({ importacaoId, produtoId: produto.id, diaSemana: diasSemana[j], quantidade: quantidadeNum.toFixed(5), unidade: unidadeMedida as "kg" | "un" });
-    }
-  }
-  if (erros.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: erros.join(", ") });
-  return vendas;
-}
-function formatarDadosJSON(mapa: any[]) {
-  const dados = mapa.map((item: any) => ({ codigoProduto: item.codigoProduto, nomeProduto: item.nomeProduto, unidade: item.unidade, dias: { dia2: item.dia2 ? parseFloat(item.dia2) : 0, dia3: item.dia3 ? parseFloat(item.dia3) : 0, dia4: item.dia4 ? parseFloat(item.dia4) : 0, dia5: item.dia5 ? parseFloat(item.dia5) : 0, dia6: item.dia6 ? parseFloat(item.dia6) : 0, dia7: item.dia7 ? parseFloat(item.dia7) : 0 }, total: [item.dia2, item.dia3, item.dia4, item.dia5, item.dia6, item.dia7].map((d: any) => (d ? parseFloat(d) : 0)).reduce((a: number, b: number) => a + b, 0) }));
-  return { dataExportacao: new Date().toISOString(), totalProdutos: dados.length, produtos: dados };
-}
 export type AppRouter = typeof appRouter;
