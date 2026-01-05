@@ -1,0 +1,9 @@
+{
+  "query": "SELECT p.codigoProduto, p.nome as nomeProduto, p.unidade, MAX(CASE WHEN v.diaSemana = 2 THEN v.quantidade END) as dia2, MAX(CASE WHEN v.diaSemana = 3 THEN v.quantidade END) as dia3, MAX(CASE WHEN v.diaSemana = 4 THEN v.quantidade END) as dia4, MAX(CASE WHEN v.diaSemana = 5 THEN v.quantidade END) as dia5, MAX(CASE WHEN v.diaSemana = 6 THEN v.quantidade END) as dia6, MAX(CASE WHEN v.diaSemana = 7 THEN v.quantidade END) as dia7 FROM vendas_v2 v JOIN produtos p ON v.produtoId = p.id WHERE v.importacaoId = 30003 GROUP BY p.id, p.codigoProduto, p.nome, p.unidade ORDER BY p.codigoProduto",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT p.codigoProduto, p.nome as nomeProduto, p.unidade, MAX(CASE WHEN v.diaSemana = 2 THEN v.quantidade END) as dia2, MAX(CASE WHEN v.diaSemana = 3 THEN v.quantidade END) as dia3, MAX(CASE WHEN v.diaSemana = 4 THEN v.quantidade END) as dia4, MAX(CASE WHEN v.diaSemana = 5 THEN v.quantidade END) as dia5, MAX(CASE WHEN v.diaSemana = 6 THEN v.quantidade END) as dia6, MAX(CASE WHEN v.diaSemana = 7 THEN v.quantidade END) as dia7 FROM vendas_v2 v JOIN produtos p ON v.produtoId = p.id WHERE v.importacaoId = 30003 GROUP BY p.id, p.codigoProduto, p.nome, p.unidade ORDER BY p.codigoProduto",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 62
+}
