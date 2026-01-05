@@ -283,3 +283,10 @@
 
 ### Observação
 - Para testar completamente, é necessário cadastrar Fichas Técnicas para os produtos
+
+
+## Correção: Erro 404 em Fichas Técnicas
+
+- [x] Criar página de listagem FichasTecnicas.tsx
+- [x] Adicionar rota /fichas-tecnicas no App.tsx
+- [x] Testar navegação para ficha técnica individual
