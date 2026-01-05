@@ -8,7 +8,7 @@ export default function ImportaV5() {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const mutation = trpc.importaV5.parsear.useMutation();
+  const mutation = trpc.importaV5.importar.useMutation();
 
   async function importar() {
     setErro("");

@@ -416,16 +416,16 @@ export const appRouter = router({
       }),
   }),
 
-  // ImportaV5 - Ultra simples, apenas parse CSV e retorna JSON
+  // ImportaV5 - Com persistência no banco de dados
   importaV5: router({
-    parsear: protectedProcedure
+    importar: protectedProcedure
       .input(
         z.object({
           dataReferencia: z.string(),
           csvContent: z.string(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         // Parser CSV ultra-simples
         const linhas = input.csvContent
           .replace(/\r\n/g, "\n")
@@ -434,7 +434,7 @@ export const appRouter = router({
           .filter((l) => l.trim());
 
         if (linhas.length < 2) {
-          return { success: false, erro: "Arquivo vazio ou sem dados", dados: [] };
+          return { success: false, erro: "Arquivo vazio ou sem dados", dados: [], importacaoId: null };
         }
 
         // Detectar separador (ponto-e-vírgula ou vírgula)
@@ -470,11 +470,88 @@ export const appRouter = router({
           });
         }
 
+        if (dados.length === 0) {
+          return { success: false, erro: "Nenhum produto válido encontrado", dados: [], importacaoId: null };
+        }
+
+        // Salvar no banco de dados
+        const database = await db.getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { importacoesV5, vendasV5 } = await import("../drizzle/schema");
+
+        // Criar importação
+        const [importacao] = await database.insert(importacoesV5).values({
+          dataReferencia: input.dataReferencia,
+          usuarioId: ctx.user.id,
+        });
+
+        const importacaoId = importacao.insertId;
+
+        // Inserir vendas
+        for (const item of dados) {
+          await database.insert(vendasV5).values({
+            importacaoId,
+            codigoProduto: item.codigo_produto,
+            nomeProduto: item.nome_produto,
+            unidadeMedida: item.unidade_medida,
+            dia2: String(item.dia2),
+            dia3: String(item.dia3),
+            dia4: String(item.dia4),
+            dia5: String(item.dia5),
+            dia6: String(item.dia6),
+            dia7: String(item.dia7),
+          });
+        }
+
         return {
           success: true,
+          importacaoId,
           dataReferencia: input.dataReferencia,
           totalProdutos: dados.length,
           dados,
+        };
+      }),
+
+    listar: protectedProcedure.query(async () => {
+      const database = await db.getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const { importacoesV5 } = await import("../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      
+      const lista = await database
+        .select()
+        .from(importacoesV5)
+        .orderBy(desc(importacoesV5.createdAt))
+        .limit(20);
+      
+      return lista;
+    }),
+
+    getMapa: protectedProcedure
+      .input(z.number().int())
+      .query(async ({ input: importacaoId }) => {
+        const database = await db.getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { importacoesV5, vendasV5 } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        const [importacao] = await database
+          .select()
+          .from(importacoesV5)
+          .where(eq(importacoesV5.id, importacaoId));
+
+        if (!importacao) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Importação não encontrada" });
+        }
+
+        const vendas = await database
+          .select()
+          .from(vendasV5)
+          .where(eq(vendasV5.importacaoId, importacaoId));
+
+        return {
+          importacao,
+          vendas,
         };
       }),
   }),

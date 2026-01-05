@@ -8,6 +8,13 @@
       "when": 1767580391097,
       "tag": "0000_orange_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1767582828953,
+      "tag": "0001_futuristic_patriot",
+      "breakpoints": true
     }
   ]
 }

@@ -201,3 +201,15 @@
 - [x] Adicionar link no Home.tsx
 - [x] Testar importação com arquivo modelo - SUCESSO!
 - [x] Validar 7 produtos importados corretamente
+
+
+## Módulo 1.7: Persistência de Dados ImportaV5
+
+- [x] Criar tabela importacoes_v5 no schema (id, data_referencia, usuario_id, created_at)
+- [x] Criar tabela vendas_v5 no schema (id, importacao_id, codigo_produto, nome_produto, unidade_medida, dia2-dia7)
+- [x] Executar migração no banco de dados
+- [x] Atualizar endpoint parsear para salvar dados no banco
+- [x] Criar endpoint listar para consultar importações anteriores
+- [x] Criar endpoint getMapa para obter dados de uma importação
+- [x] Testar persistência com arquivo modelo
+- [x] Validar consulta de importações

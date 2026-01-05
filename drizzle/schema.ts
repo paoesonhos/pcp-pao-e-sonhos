@@ -209,3 +209,59 @@ export const vendasV4Relations = relations(vendasV4, ({ one }) => ({
     references: [importacoesV4.id],
   }),
 }));
+
+
+/**
+ * Importação V5: Dados de vendas simples (versão funcional)
+ */
+export const importacoesV5 = mysqlTable("importacoes_v5", {
+  id: int("id").autoincrement().primaryKey(),
+  dataReferencia: varchar("dataReferencia", { length: 50 }).notNull(),
+  usuarioId: int("usuarioId").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ImportacaoV5 = typeof importacoesV5.$inferSelect;
+export type InsertImportacaoV5 = typeof importacoesV5.$inferInsert;
+
+/**
+ * Vendas V5: Dados de vendas com todos os dias em colunas
+ */
+export const vendasV5 = mysqlTable("vendas_v5", {
+  id: int("id").autoincrement().primaryKey(),
+  importacaoId: int("importacaoId").notNull().references(() => importacoesV5.id, { onDelete: "cascade" }),
+  codigoProduto: varchar("codigoProduto", { length: 50 }).notNull(),
+  nomeProduto: varchar("nomeProduto", { length: 200 }).notNull(),
+  unidadeMedida: varchar("unidadeMedida", { length: 20 }).notNull(),
+  dia2: decimal("dia2", { precision: 10, scale: 2 }).default("0"),
+  dia3: decimal("dia3", { precision: 10, scale: 2 }).default("0"),
+  dia4: decimal("dia4", { precision: 10, scale: 2 }).default("0"),
+  dia5: decimal("dia5", { precision: 10, scale: 2 }).default("0"),
+  dia6: decimal("dia6", { precision: 10, scale: 2 }).default("0"),
+  dia7: decimal("dia7", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  importacaoIdx: index("venda_v5_importacao_idx").on(table.importacaoId),
+  codigoIdx: index("venda_v5_codigo_idx").on(table.codigoProduto),
+}));
+
+export type VendaV5 = typeof vendasV5.$inferSelect;
+export type InsertVendaV5 = typeof vendasV5.$inferInsert;
+
+/**
+ * Relations para importacoes V5
+ */
+export const importacoesV5Relations = relations(importacoesV5, ({ one, many }) => ({
+  usuario: one(users, {
+    fields: [importacoesV5.usuarioId],
+    references: [users.id],
+  }),
+  vendas: many(vendasV5),
+}));
+
+export const vendasV5Relations = relations(vendasV5, ({ one }) => ({
+  importacao: one(importacoesV5, {
+    fields: [vendasV5.importacaoId],
+    references: [importacoesV5.id],
+  }),
+}));
