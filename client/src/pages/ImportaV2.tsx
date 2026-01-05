@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Upload, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertCircle, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ImportaV2() {
@@ -16,6 +16,10 @@ export default function ImportaV2() {
   const [importacaoId, setImportacaoId] = useState<number | null>(null);
 
   const importarMutation = trpc.importacoesV2.importar.useMutation();
+  const { data: dadosJSON, isLoading: loadingJSON } = trpc.importacoesV2.exportarJSON.useQuery(
+    { importacaoId: importacaoId! },
+    { enabled: !!importacaoId }
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, tipo: "segQua" | "quiSab") => {
     const file = e.target.files?.[0];
@@ -214,6 +218,66 @@ export default function ImportaV2() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Visualização JSON */}
+        {importacaoId && (
+          <Card className="mt-8 border-amber-200">
+            <CardHeader className="bg-gradient-to-r from-amber-100 to-orange-100 border-b border-amber-200">
+              <CardTitle className="text-amber-900">Dados Importados (JSON)</CardTitle>
+              <CardDescription className="text-amber-700">
+                Visualize os dados importados em formato JSON
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {loadingJSON ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+                  <span className="ml-2 text-amber-700">Carregando dados...</span>
+                </div>
+              ) : dadosJSON ? (
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(dadosJSON, null, 2));
+                        toast.success("JSON copiado para a área de transferência!");
+                      }}
+                      className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar JSON
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([JSON.stringify(dadosJSON, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `importacao-${importacaoId}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success("JSON baixado com sucesso!");
+                      }}
+                      className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Baixar JSON
+                    </Button>
+                  </div>
+                  <pre className="bg-amber-50 p-4 rounded-lg text-xs overflow-x-auto border border-amber-200 max-h-96 overflow-y-auto">
+                    {JSON.stringify(dadosJSON, null, 2)}
+                  </pre>
+                </div>
+              ) : (
+                <p className="text-amber-600">Nenhum dado disponível</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

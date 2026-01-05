@@ -145,3 +145,10 @@
 - [x] Criar grid de planejamento com colunas: Dia 2, Dia 3, Dia 4, Dia 5, Dia 6, Dia 7
 - [x] Testar importação com dados reais
 - [x] Criar testes unitários para ImportaV2 (6 testes passando)
+
+
+## Visualização JSON na Importação
+- [x] Adicionar seção de visualização JSON no final da página ImportaV2.tsx
+- [x] Exibir dados formatados após importação bem-sucedida
+- [x] Adicionar botão para copiar JSON
+- [x] Adicionar botão para baixar JSON como arquivo

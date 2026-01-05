@@ -1,0 +1,19 @@
+{
+  "query": "SELECT iv.id, iv.dataReferencia, v.id as vendaId, v.produtoId, v.diaSemana, v.quantidade, v.unidade FROM importacoes_v2 iv LEFT JOIN vendas_v2 v ON iv.id = v.importacaoId WHERE iv.id = 30001 ORDER BY v.diaSemana, v.produtoId",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT iv.id, iv.dataReferencia, v.id as vendaId, v.produtoId, v.diaSemana, v.quantidade, v.unidade FROM importacoes_v2 iv LEFT JOIN vendas_v2 v ON iv.id = v.importacaoId WHERE iv.id = 30001 ORDER BY v.diaSemana, v.produtoId",
+  "rows": [
+    {
+      "id": "30001",
+      "dataReferencia": "10/12/2026",
+      "vendaId": "NULL",
+      "produtoId": "NULL",
+      "diaSemana": "NULL",
+      "quantidade": "NULL",
+      "unidade": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tdataReferencia\tvendaId\tprodutoId\tdiaSemana\tquantidade\tunidade\n30001\t10/12/2026\tNULL\tNULL\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

@@ -455,6 +455,36 @@ export const appRouter = router({
         );
         return { success: true };
       }),
+
+    exportarJSON: protectedProcedure
+      .input(z.object({ importacaoId: z.number() }))
+      .query(async ({ input }) => {
+        const mapa = await dbImportacoesV2.getMapaProducaoV2(input.importacaoId);
+        
+        const dados = mapa.map((item: any) => ({
+          codigoProduto: item.codigoProduto,
+          nomeProduto: item.nomeProduto,
+          unidade: item.unidade,
+          dias: {
+            dia2: item.dia2 ? parseFloat(item.dia2) : 0,
+            dia3: item.dia3 ? parseFloat(item.dia3) : 0,
+            dia4: item.dia4 ? parseFloat(item.dia4) : 0,
+            dia5: item.dia5 ? parseFloat(item.dia5) : 0,
+            dia6: item.dia6 ? parseFloat(item.dia6) : 0,
+            dia7: item.dia7 ? parseFloat(item.dia7) : 0,
+          },
+          total: [item.dia2, item.dia3, item.dia4, item.dia5, item.dia6, item.dia7]
+            .map(d => d ? parseFloat(d) : 0)
+            .reduce((a: number, b: number) => a + b, 0),
+        }));
+
+        return {
+          importacaoId: input.importacaoId,
+          dataExportacao: new Date().toISOString(),
+          totalProdutos: dados.length,
+          produtos: dados,
+        };
+      }),
   }),
 });
 
