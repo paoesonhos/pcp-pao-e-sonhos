@@ -168,3 +168,19 @@
 - [ ] Testar importação com arquivo modelo
 - [ ] Validar grid de visualização
 - [ ] Validar exibição JSON
+
+
+## Módulo 1.5: ImportaV4 - Upload Único Robusto
+- [x] Remover completamente módulo ImportaV3 (arquivos, routers, tabelas)
+- [x] Criar tabelas V4: importacoes_v4 e vendas_v4 com estrutura simples
+- [x] Implementar helper db-importacoes-v4.ts com parser CSV robusto
+- [x] Parser trata: vírgulas como separador decimal, aspas, valores vazios
+- [x] Implementar endpoint tRPC: importacoesV4.importar (upload único)
+- [x] Implementar endpoint tRPC: importacoesV4.getMapa (visualização grid)
+- [x] Criar página ImportaV4.tsx com interface minimalista
+- [x] Adicionar rota /importa-v4 no App.tsx
+- [x] Adicionar link no Home.tsx
+- [x] Criar tabelas V4 manualmente no banco de dados
+- [ ] Testar importação com arquivo modelo
+- [ ] Validar grid de visualização
+- [ ] Validar exibição JSON

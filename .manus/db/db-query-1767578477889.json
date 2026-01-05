@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `vendas_v3` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `importacaoId` int NOT NULL,\n  `codigoProduto` varchar(50) NOT NULL,\n  `nomeProduto` varchar(200) NOT NULL,\n  `unidade` enum('kg','un') NOT NULL,\n  `dia2` decimal(10,5) DEFAULT '0',\n  `dia3` decimal(10,5) DEFAULT '0',\n  `dia4` decimal(10,5) DEFAULT '0',\n  `dia5` decimal(10,5) DEFAULT '0',\n  `dia6` decimal(10,5) DEFAULT '0',\n  `dia7` decimal(10,5) DEFAULT '0',\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `vendas_v3_id` PRIMARY KEY(`id`),\n  CONSTRAINT `vendas_v3_importacaoId_importacoes_v3_id_fk` FOREIGN KEY (`importacaoId`) REFERENCES `importacoes_v3`(`id`) ON DELETE cascade ON UPDATE no action,\n  INDEX `venda_v3_importacao_idx` (`importacaoId`),\n  INDEX `venda_v3_codigo_idx` (`codigoProduto`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute CREATE TABLE IF NOT EXISTS `vendas_v3` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `importacaoId` int NOT NULL,\n  `codigoProduto` varchar(50) NOT NULL,\n  `nomeProduto` varchar(200) NOT NULL,\n  `unidade` enum('kg','un') NOT NULL,\n  `dia2` decimal(10,5) DEFAULT '0',\n  `dia3` decimal(10,5) DEFAULT '0',\n  `dia4` decimal(10,5) DEFAULT '0',\n  `dia5` decimal(10,5) DEFAULT '0',\n  `dia6` decimal(10,5) DEFAULT '0',\n  `dia7` decimal(10,5) DEFAULT '0',\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `vendas_v3_id` PRIMARY KEY(`id`),\n  CONSTRAINT `vendas_v3_importacaoId_importacoes_v3_id_fk` FOREIGN KEY (`importacaoId`) REFERENCES `importacoes_v3`(`id`) ON DELETE cascade ON UPDATE no action,\n  INDEX `venda_v3_importacao_idx` (`importacaoId`),\n  INDEX `venda_v3_codigo_idx` (`codigoProduto`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 262
+}

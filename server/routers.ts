@@ -5,7 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import * as dbImportacoesV3 from "./db-importacoes-v3";
+import * as dbImportacoesV4 from "./db-importacoes-v4";
+
 
 
 // ==================== SCHEMAS DE VALIDAÇÃO ====================
@@ -415,7 +416,7 @@ export const appRouter = router({
       }),
   }),
 
-  importacoesV3: router({
+  importacoesV4: router({
     importar: protectedProcedure
       .input(
         z.object({
@@ -425,14 +426,12 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         try {
-          // Criar importação
-          const importacaoId = await dbImportacoesV3.criarImportacaoV3(
+          const importacaoId = await dbImportacoesV4.criarImportacaoV4(
             input.dataReferencia,
             ctx.user.id
           );
 
-          // Parse CSV
-          const { vendas, erros } = dbImportacoesV3.parseCSVV3(input.csvContent);
+          const { vendas, erros } = dbImportacoesV4.parseCSVV4(input.csvContent);
 
           if (vendas.length === 0) {
             throw new TRPCError({
@@ -441,14 +440,12 @@ export const appRouter = router({
             });
           }
 
-          // Inserir vendas
-          const totalInserido = await dbImportacoesV3.inserirVendasV3(
+          const totalInserido = await dbImportacoesV4.inserirVendasV4(
             importacaoId,
             vendas
           );
 
-          // Obter mapa
-          const mapa = await dbImportacoesV3.getMapaProducaoV3(importacaoId);
+          const mapa = await dbImportacoesV4.getMapaProducaoV4(importacaoId);
 
           return {
             success: true,
@@ -469,7 +466,7 @@ export const appRouter = router({
     getMapa: protectedProcedure
       .input(z.number().int())
       .query(async ({ input }) => {
-        return await dbImportacoesV3.getMapaProducaoV3(input);
+        return await dbImportacoesV4.getMapaProducaoV4(input);
       }),
   }),
 

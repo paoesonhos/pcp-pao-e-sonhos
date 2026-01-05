@@ -1,0 +1,16 @@
+{
+  "query": "SHOW TABLES LIKE 'importacoes%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SHOW TABLES LIKE 'importacoes%';",
+  "rows": [
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn (importacoes%)": "importacoes_v2"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn (importacoes%)": "importacoes_vendas"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn (importacoes%)\nimportacoes_v2\nimportacoes_vendas\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

@@ -1,33 +1,12 @@
 {
-  "version": "7",
+  "version": "6",
   "dialect": "mysql",
   "entries": [
     {
       "idx": 0,
       "version": "5",
-      "when": 1767564210326,
-      "tag": "0000_minor_malice",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1767564375639,
-      "tag": "0001_brown_monster_badoon",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1767568293065,
-      "tag": "0002_lazy_namora",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1767571684384,
-      "tag": "0003_fresh_mandarin",
+      "when": 1767580391097,
+      "tag": "0000_orange_scarecrow",
       "breakpoints": true
     }
   ]

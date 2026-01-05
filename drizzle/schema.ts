@@ -155,29 +155,28 @@ export const blocosRelations = relations(blocos, ({ one }) => ({
   }),
 }));
 
-
 /**
- * Importacoes V3: Versao simplificada com upload unico
+ * Importação V4: Dados de vendas simples
  */
-export const importacoesV3 = mysqlTable("importacoes_v3", {
+export const importacoesV4 = mysqlTable("importacoes_v4", {
   id: int("id").autoincrement().primaryKey(),
   dataReferencia: varchar("dataReferencia", { length: 50 }).notNull(),
   usuarioId: int("usuarioId").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type ImportacaoV3 = typeof importacoesV3.$inferSelect;
-export type InsertImportacaoV3 = typeof importacoesV3.$inferInsert;
+export type ImportacaoV4 = typeof importacoesV4.$inferSelect;
+export type InsertImportacaoV4 = typeof importacoesV4.$inferInsert;
 
 /**
- * Vendas V3: Dados de vendas simples com todos os dias em colunas
+ * Vendas V4: Dados de vendas com todos os dias em colunas
  */
-export const vendasV3 = mysqlTable("vendas_v3", {
+export const vendasV4 = mysqlTable("vendas_v4", {
   id: int("id").autoincrement().primaryKey(),
-  importacaoId: int("importacaoId").notNull().references(() => importacoesV3.id, { onDelete: "cascade" }),
+  importacaoId: int("importacaoId").notNull().references(() => importacoesV4.id, { onDelete: "cascade" }),
   codigoProduto: varchar("codigoProduto", { length: 50 }).notNull(),
   nomeProduto: varchar("nomeProduto", { length: 200 }).notNull(),
-  unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
+  unidadeMedida: mysqlEnum("unidadeMedida", ["kg", "un"]).notNull(),
   dia2: decimal("dia2", { precision: 10, scale: 5 }).default("0"),
   dia3: decimal("dia3", { precision: 10, scale: 5 }).default("0"),
   dia4: decimal("dia4", { precision: 10, scale: 5 }).default("0"),
@@ -186,27 +185,27 @@ export const vendasV3 = mysqlTable("vendas_v3", {
   dia7: decimal("dia7", { precision: 10, scale: 5 }).default("0"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
-  importacaoIdx: index("venda_v3_importacao_idx").on(table.importacaoId),
-  codigoIdx: index("venda_v3_codigo_idx").on(table.codigoProduto),
+  importacaoIdx: index("venda_v4_importacao_idx").on(table.importacaoId),
+  codigoIdx: index("venda_v4_codigo_idx").on(table.codigoProduto),
 }));
 
-export type VendaV3 = typeof vendasV3.$inferSelect;
-export type InsertVendaV3 = typeof vendasV3.$inferInsert;
+export type VendaV4 = typeof vendasV4.$inferSelect;
+export type InsertVendaV4 = typeof vendasV4.$inferInsert;
 
 /**
- * Relations para importacoes V3
+ * Relations para importacoes V4
  */
-export const importacoesV3Relations = relations(importacoesV3, ({ one, many }) => ({
+export const importacoesV4Relations = relations(importacoesV4, ({ one, many }) => ({
   usuario: one(users, {
-    fields: [importacoesV3.usuarioId],
+    fields: [importacoesV4.usuarioId],
     references: [users.id],
   }),
-  vendas: many(vendasV3),
+  vendas: many(vendasV4),
 }));
 
-export const vendasV3Relations = relations(vendasV3, ({ one }) => ({
-  importacao: one(importacoesV3, {
-    fields: [vendasV3.importacaoId],
-    references: [importacoesV3.id],
+export const vendasV4Relations = relations(vendasV4, ({ one }) => ({
+  importacao: one(importacoesV4, {
+    fields: [vendasV4.importacaoId],
+    references: [importacoesV4.id],
   }),
 }));

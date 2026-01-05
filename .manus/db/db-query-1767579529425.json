@@ -1,0 +1,52 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "blocos"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "categorias"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "ficha_tecnica"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "importacoes_v2"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "importacoes_v3"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "importacoes_vendas"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "insumos"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "mapa_producao"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "produtos"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "users"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "vendas_historico"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "vendas_v2"
+    },
+    {
+      "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn": "vendas_v3"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_jnrPNLAHwjYsP9Vc7Kxuqn\n__drizzle_migrations\nblocos\ncategorias\nficha_tecnica\nimportacoes_v2\nimportacoes_v3\nimportacoes_vendas\ninsumos\nmapa_producao\nprodutos\nusers\nvendas_historico\nvendas_v2\nvendas_v3\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

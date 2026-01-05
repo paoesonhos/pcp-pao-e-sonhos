@@ -69,12 +69,13 @@ export default function Home() {
       color: "text-orange-700",
     },
     {
-      title: "Importação V3",
+      title: "Importação V4",
       description: "Upload de CSV com dias numéricos",
       icon: Upload,
-      href: "/importa-v3",
+      href: "/importa-v4",
       color: "text-amber-800",
     },
+
   ];
 
   return (
