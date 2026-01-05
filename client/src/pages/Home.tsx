@@ -69,10 +69,10 @@ export default function Home() {
       color: "text-orange-700",
     },
     {
-      title: "Importação de Vendas",
-      description: "Upload de CSV e mapa de produção",
+      title: "Importação V2",
+      description: "Upload de CSV com dias numéricos",
       icon: Upload,
-      href: "/importacao-vendas",
+      href: "/importa-v2",
       color: "text-amber-800",
     },
   ];

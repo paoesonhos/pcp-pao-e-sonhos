@@ -1,0 +1,122 @@
+{
+  "query": "SELECT id, codigoProduto, nome, unidade, pesoUnitario, ativo FROM produtos ORDER BY codigoProduto",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, codigoProduto, nome, unidade, pesoUnitario, ativo FROM produtos ORDER BY codigoProduto",
+  "rows": [
+    {
+      "id": "30001",
+      "codigoProduto": "301",
+      "nome": "PÃO DOCE",
+      "unidade": "un",
+      "pesoUnitario": "0.05000",
+      "ativo": "1"
+    },
+    {
+      "id": "3",
+      "codigoProduto": "302",
+      "nome": "FATIA HUNGARA",
+      "unidade": "un",
+      "pesoUnitario": "0.12500",
+      "ativo": "1"
+    },
+    {
+      "id": "4",
+      "codigoProduto": "303",
+      "nome": "P. HAMBURGUER",
+      "unidade": "kg",
+      "pesoUnitario": "0.07300",
+      "ativo": "1"
+    },
+    {
+      "id": "5",
+      "codigoProduto": "304",
+      "nome": "P. HAMBURGUER",
+      "unidade": "kg",
+      "pesoUnitario": "0.07300",
+      "ativo": "0"
+    },
+    {
+      "id": "6",
+      "codigoProduto": "305",
+      "nome": "P. CACHORRO",
+      "unidade": "kg",
+      "pesoUnitario": "0.08000",
+      "ativo": "1"
+    },
+    {
+      "id": "7",
+      "codigoProduto": "306",
+      "nome": "P. MINI CACHORRO",
+      "unidade": "kg",
+      "pesoUnitario": "0.03000",
+      "ativo": "1"
+    },
+    {
+      "id": "8",
+      "codigoProduto": "307",
+      "nome": "MARGARIDA",
+      "unidade": "un",
+      "pesoUnitario": "0.04000",
+      "ativo": "1"
+    },
+    {
+      "id": "9",
+      "codigoProduto": "308",
+      "nome": "P. SANDUICHE",
+      "unidade": "kg",
+      "pesoUnitario": "0.65000",
+      "ativo": "1"
+    },
+    {
+      "id": "10",
+      "codigoProduto": "309",
+      "nome": "P. S T LEITE",
+      "unidade": "kg",
+      "pesoUnitario": "0.55000",
+      "ativo": "1"
+    },
+    {
+      "id": "11",
+      "codigoProduto": "310",
+      "nome": "HAMB BRIOCHE",
+      "unidade": "kg",
+      "pesoUnitario": "0.70000",
+      "ativo": "1"
+    },
+    {
+      "id": "12",
+      "codigoProduto": "311",
+      "nome": "MINUTO",
+      "unidade": "kg",
+      "pesoUnitario": "0.03000",
+      "ativo": "1"
+    },
+    {
+      "id": "13",
+      "codigoProduto": "312",
+      "nome": "MINUTINHO",
+      "unidade": "kg",
+      "pesoUnitario": "0.02000",
+      "ativo": "1"
+    },
+    {
+      "id": "1",
+      "codigoProduto": "TEST001",
+      "nome": "Produto Teste",
+      "unidade": "un",
+      "pesoUnitario": "0.05000",
+      "ativo": "0"
+    },
+    {
+      "id": "2",
+      "codigoProduto": "TEST004",
+      "nome": "PAO DOCE",
+      "unidade": "kg",
+      "pesoUnitario": "0.00000",
+      "ativo": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoProduto\tnome\tunidade\tpesoUnitario\tativo\n30001\t301\tPÃO DOCE\tun\t0.05000\t1\n3\t302\tFATIA HUNGARA\tun\t0.12500\t1\n4\t303\tP. HAMBURGUER\tkg\t0.07300\t1\n5\t304\tP. HAMBURGUER\tkg\t0.07300\t0\n6\t305\tP. CACHORRO\tkg\t0.08000\t1\n7\t306\tP. MINI CACHORRO\tkg\t0.03000\t1\n8\t307\tMARGARIDA\tun\t0.04000\t1\n9\t308\tP. SANDUICHE\tkg\t0.65000\t1\n10\t309\tP. S T LEITE\tkg\t0.55000\t1\n11\t310\tHAMB BRIOCHE\tkg\t0.70000\t1\n12\t311\tMINUTO\tkg\t0.03000\t1\n13\t312\tMINUTINHO\tkg\t0.02000\t1\n1\tTEST001\tProduto Teste\tun\t0.05000\t0\n2\tTEST004\tPAO DOCE\tkg\t0.00000\t1\n",
+  "stderr": "",
+  "execution_time_ms": 69
+}

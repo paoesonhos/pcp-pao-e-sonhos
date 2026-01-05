@@ -166,100 +166,61 @@ export const blocosRelations = relations(blocos, ({ one }) => ({
   }),
 }));
 
+
 /**
- * Importações de vendas históricas
- * Armazena metadados da importação bipartida (2 arquivos CSV)
+ * Importações V2: Vendas históricas com dias numéricos
+ * Dias da semana representados por números: 2,3,4,5,6,7
  */
-export const importacoesVendas = mysqlTable("importacoes_vendas", {
+export const importacoesV2 = mysqlTable("importacoes_v2", {
   id: int("id").autoincrement().primaryKey(),
-  dataReferenciaHistorico: timestamp("dataReferenciaHistorico").notNull(), // Segunda-feira da semana histórica
-  dataReferenciaPlanejamento: timestamp("dataReferenciaPlanejamento").notNull(), // Segunda-feira da semana planejada
+  dataReferencia: varchar("dataReferencia", { length: 50 }).notNull(), // Texto livre, sem validação
   usuarioId: int("usuarioId").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => ({
-  historicoIdx: index("historico_idx").on(table.dataReferenciaHistorico),
-  planejamentoIdx: index("planejamento_idx").on(table.dataReferenciaPlanejamento),
-}));
+});
 
-export type ImportacaoVendas = typeof importacoesVendas.$inferSelect;
-export type InsertImportacaoVendas = typeof importacoesVendas.$inferInsert;
+export type ImportacaoV2 = typeof importacoesV2.$inferSelect;
+export type InsertImportacaoV2 = typeof importacoesV2.$inferInsert;
 
 /**
- * Vendas históricas importadas dos arquivos CSV
- * Chave única: codigo_produto + data_venda
+ * Vendas V2: Dados de vendas por produto e dia numérico
+ * Dias: 2,3,4,5,6,7 (sem validação de data real)
  */
-export const vendasHistorico = mysqlTable("vendas_historico", {
+export const vendasV2 = mysqlTable("vendas_v2", {
   id: int("id").autoincrement().primaryKey(),
-  importacaoId: int("importacaoId").notNull().references(() => importacoesVendas.id, { onDelete: "cascade" }),
+  importacaoId: int("importacaoId").notNull().references(() => importacoesV2.id, { onDelete: "cascade" }),
   produtoId: int("produtoId").notNull().references(() => produtos.id),
-  dataVenda: timestamp("dataVenda").notNull(), // Data específica da venda (seg, ter, qua, qui, sex, sab)
+  diaSemana: int("diaSemana").notNull(), // 2,3,4,5,6,7
   quantidade: decimal("quantidade", { precision: 10, scale: 5 }).notNull(),
   unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
-  importacaoIdx: index("venda_importacao_idx").on(table.importacaoId),
-  produtoIdx: index("venda_produto_idx").on(table.produtoId),
-  dataIdx: index("venda_data_idx").on(table.dataVenda),
-  uniqueVenda: unique("unique_produto_data").on(table.produtoId, table.dataVenda),
+  importacaoIdx: index("venda_v2_importacao_idx").on(table.importacaoId),
+  produtoIdx: index("venda_v2_produto_idx").on(table.produtoId),
+  diaIdx: index("venda_v2_dia_idx").on(table.diaSemana),
+  uniqueVenda: unique("unique_v2_produto_dia").on(table.importacaoId, table.produtoId, table.diaSemana),
 }));
 
-export type VendaHistorico = typeof vendasHistorico.$inferSelect;
-export type InsertVendaHistorico = typeof vendasHistorico.$inferInsert;
+export type VendaV2 = typeof vendasV2.$inferSelect;
+export type InsertVendaV2 = typeof vendasV2.$inferInsert;
 
 /**
- * Mapa de produção planejado
- * Gerado a partir das vendas históricas, editável pelo usuário
+ * Relations para importações V2
  */
-export const mapaProducao = mysqlTable("mapa_producao", {
-  id: int("id").autoincrement().primaryKey(),
-  importacaoId: int("importacaoId").notNull().references(() => importacoesVendas.id, { onDelete: "cascade" }),
-  produtoId: int("produtoId").notNull().references(() => produtos.id),
-  diaSemana: int("diaSemana").notNull(), // 0=Domingo, 1=Segunda, 2=Terça, ..., 6=Sábado
-  dataPlanejada: timestamp("dataPlanejada").notNull(), // Data específica do dia planejado
-  quantidadePlanejada: decimal("quantidadePlanejada", { precision: 10, scale: 5 }).notNull(),
-  unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  importacaoIdx: index("mapa_importacao_idx").on(table.importacaoId),
-  produtoIdx: index("mapa_produto_idx").on(table.produtoId),
-  diaIdx: index("mapa_dia_idx").on(table.diaSemana),
-  uniqueMapa: unique("unique_mapa_produto_dia").on(table.importacaoId, table.produtoId, table.diaSemana),
-}));
-
-export type MapaProducao = typeof mapaProducao.$inferSelect;
-export type InsertMapaProducao = typeof mapaProducao.$inferInsert;
-
-/**
- * Relations para importações
- */
-export const importacoesVendasRelations = relations(importacoesVendas, ({ one, many }) => ({
+export const importacoesV2Relations = relations(importacoesV2, ({ one, many }) => ({
   usuario: one(users, {
-    fields: [importacoesVendas.usuarioId],
+    fields: [importacoesV2.usuarioId],
     references: [users.id],
   }),
-  vendas: many(vendasHistorico),
-  mapa: many(mapaProducao),
+  vendas: many(vendasV2),
 }));
 
-export const vendasHistoricoRelations = relations(vendasHistorico, ({ one }) => ({
-  importacao: one(importacoesVendas, {
-    fields: [vendasHistorico.importacaoId],
-    references: [importacoesVendas.id],
+export const vendasV2Relations = relations(vendasV2, ({ one }) => ({
+  importacao: one(importacoesV2, {
+    fields: [vendasV2.importacaoId],
+    references: [importacoesV2.id],
   }),
   produto: one(produtos, {
-    fields: [vendasHistorico.produtoId],
-    references: [produtos.id],
-  }),
-}));
-
-export const mapaProducaoRelations = relations(mapaProducao, ({ one }) => ({
-  importacao: one(importacoesVendas, {
-    fields: [mapaProducao.importacaoId],
-    references: [importacoesVendas.id],
-  }),
-  produto: one(produtos, {
-    fields: [mapaProducao.produtoId],
+    fields: [vendasV2.produtoId],
     references: [produtos.id],
   }),
 }));

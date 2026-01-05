@@ -125,3 +125,23 @@
 - [x] Remover textos de ajuda sobre segunda-feira da interface
 - [x] Atualizar testes unitários para não validar segunda-feira
 - [x] Executar testes para garantir funcionamento
+
+
+## Investigação: Erro de Importação - Produtos Não Encontrados
+- [x] Consultar produtos cadastrados no banco de dados
+- [x] Comparar códigos do CSV com códigos cadastrados
+- [ ] Identificar causa do erro na função parseCSV
+- [ ] Corrigir lógica de busca/validação de produtos no backend
+
+
+## Módulo ImportaV2: Nova Especificação
+- [x] Remover arquivos do módulo V1 (ImportacaoVendas.tsx, MapaProducao.tsx, db-importacoes.ts, routers de importação)
+- [x] Remover tabelas V1 do schema (importacoesVendas, vendasHistorico, mapaProducao)
+- [x] Criar nova tabela importacoes_v2 (id, data_referencia, usuario_id, created_at)
+- [x] Criar nova tabela vendas_v2 (id, importacao_id, produto_id, dia_semana, quantidade, unidade)
+- [x] Implementar backend: parseCSV com dias numéricos (2,3,4,5,6,7)
+- [x] Implementar backend: sem validação de datas
+- [x] Criar interface ImportaV2.tsx com upload bipartido
+- [x] Criar grid de planejamento com colunas: Dia 2, Dia 3, Dia 4, Dia 5, Dia 6, Dia 7
+- [x] Testar importação com dados reais
+- [x] Criar testes unitários para ImportaV2 (6 testes passando)

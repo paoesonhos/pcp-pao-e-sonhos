@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import * as dbImportacoesV2 from "./db-importacoes-v2";
 
 // ==================== SCHEMAS DE VALIDAÇÃO ====================
 
@@ -62,215 +63,6 @@ const blocoSchema = z.object({
   }, "Peso do bloco deve ser um número positivo"),
   ativo: z.boolean().default(true),
 });
-// ==================== IMPORTAÇÕES E MAPA DE PRODUÇÃO ====================
-
-import * as dbImportacoes from "./db-importacoes";
-
-const importacaoVendasSchema= z.object({
-  dataReferenciaHistorico: z.string(),
-  dataReferenciaPlanejamento: z.string(),
-  arquivoSegQua: z.string(),
-  arquivoQuiSab: z.string(),
-});
-
-export const importacoesRouter = router({
-  importar: protectedProcedure
-    .input(importacaoVendasSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { dataReferenciaHistorico, dataReferenciaPlanejamento, arquivoSegQua, arquivoQuiSab } = input;
-
-      const dataHistorico = new Date(dataReferenciaHistorico);
-      const dataPlanejamento = new Date(dataReferenciaPlanejamento);
-
-
-      const importacaoId = await dbImportacoes.createImportacao({
-        dataReferenciaHistorico: dataHistorico,
-        dataReferenciaPlanejamento: dataPlanejamento,
-        usuarioId: ctx.user.id,
-      });
-
-      const vendasSegQua = await parseCSV(arquivoSegQua, dataHistorico, [1, 2, 3], importacaoId);
-      const vendasQuiSab = await parseCSV(arquivoQuiSab, dataHistorico, [4, 5, 6], importacaoId);
-
-      const todasVendas = [...vendasSegQua, ...vendasQuiSab];
-      if (todasVendas.length > 0) {
-        await dbImportacoes.insertVendasHistorico(todasVendas);
-      }
-
-      const mapaProducao = gerarMapaProducao(todasVendas, dataPlanejamento, importacaoId);
-      if (mapaProducao.length > 0) {
-        await dbImportacoes.insertMapaProducao(mapaProducao);
-      }
-
-      return {
-        success: true,
-        importacaoId,
-        totalVendas: todasVendas.length,
-        totalMapaProducao: mapaProducao.length,
-      };
-    }),
-
-  list: protectedProcedure.query(async () => {
-    return await dbImportacoes.listImportacoes();
-  }),
-
-  getById: protectedProcedure
-    .input(z.number().int())
-    .query(async ({ input }) => {
-      return await dbImportacoes.getImportacaoById(input);
-    }),
-
-  delete: protectedProcedure
-    .input(z.number().int())
-    .mutation(async ({ input }) => {
-      await dbImportacoes.deleteImportacao(input);
-      return { success: true };
-    }),
-});
-
-export const mapaProducaoRouter = router({
-  getByImportacao: protectedProcedure
-    .input(z.number().int())
-    .query(async ({ input }) => {
-      return await dbImportacoes.getMapaProducaoByImportacao(input);
-    }),
-
-  updateQuantidade: protectedProcedure
-    .input(
-      z.object({
-        id: z.number().int(),
-        quantidadePlanejada: z.string(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      await dbImportacoes.updateQuantidadePlanejada(input.id, input.quantidadePlanejada);
-      return { success: true };
-    }),
-});
-
-async function parseCSV(
-  csvContent: string,
-  dataReferenciaHistorico: Date,
-  diasSemana: number[],
-  importacaoId: number
-) {
-  const lines = csvContent.trim().split("\n");
-  if (lines.length < 2) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "Arquivo CSV vazio ou inválido",
-    });
-  }
-
-  const vendas: any[] = [];
-  const erros: string[] = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const values = line.split(",").map((v) => v.trim());
-    
-    if (values.length < 3 + diasSemana.length) {
-      erros.push(`Linha ${i + 1}: número de colunas inválido`);
-      continue;
-    }
-
-    const codigoProduto = values[0];
-    const unidadeMedida = values[2].toLowerCase();
-
-    if (unidadeMedida !== "kg" && unidadeMedida !== "un") {
-      erros.push(`Linha ${i + 1}: unidade de medida inválida "${unidadeMedida}"`);
-      continue;
-    }
-
-    const produto = await dbImportacoes.getProdutoByCodigo(codigoProduto);
-    if (!produto) {
-      erros.push(`Linha ${i + 1}: produto não encontrado (código: ${codigoProduto})`);
-      continue;
-    }
-
-    for (let j = 0; j < diasSemana.length; j++) {
-      const quantidade = values[3 + j];
-      const quantidadeNum = parseFloat(quantidade);
-
-      if (isNaN(quantidadeNum) || quantidadeNum < 0) {
-        continue;
-      }
-
-      const dataVenda = new Date(dataReferenciaHistorico);
-      dataVenda.setDate(dataVenda.getDate() + (diasSemana[j] - 1));
-
-      vendas.push({
-        importacaoId,
-        produtoId: produto.id,
-        dataVenda,
-        quantidade: quantidadeNum.toFixed(5),
-        unidade: unidadeMedida as "kg" | "un",
-      });
-    }
-  }
-
-  if (erros.length > 0) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: `Erros encontrados no arquivo CSV:\n${erros.join("\n")}`,
-    });
-  }
-
-  return vendas;
-}
-
-function gerarMapaProducao(
-  vendas: any[],
-  dataReferenciaPlanejamento: Date,
-  importacaoId: number
-) {
-  const mapa: any[] = [];
-  const agrupado: Record<string, Record<number, any>> = {};
-
-  for (const venda of vendas) {
-    const key = `${venda.produtoId}`;
-    const diaSemana = new Date(venda.dataVenda).getDay();
-
-    if (!agrupado[key]) {
-      agrupado[key] = {};
-    }
-
-    if (!agrupado[key][diaSemana]) {
-      agrupado[key][diaSemana] = {
-        produtoId: venda.produtoId,
-        quantidade: 0,
-        unidade: venda.unidade,
-      };
-    }
-
-    agrupado[key][diaSemana].quantidade += parseFloat(venda.quantidade);
-  }
-
-  for (const produtoKey in agrupado) {
-    for (const diaSemana in agrupado[produtoKey]) {
-      const dia = parseInt(diaSemana);
-      const dados = agrupado[produtoKey][dia];
-
-      const dataPlanejada = new Date(dataReferenciaPlanejamento);
-      dataPlanejada.setDate(dataPlanejada.getDate() + (dia - 1));
-
-      mapa.push({
-        importacaoId,
-        produtoId: dados.produtoId,
-        diaSemana: dia,
-        dataPlanejada,
-        quantidadePlanejada: dados.quantidade.toFixed(5),
-        unidade: dados.unidade,
-      });
-    }
-  }
-
-  return mapa;
-}
-// ==================== ROUTERS ====================
-
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -622,9 +414,48 @@ export const appRouter = router({
       }),
   }),
 
-  // ==================== IMPORTAÇÕES E MAPA ====================
-  importacoes: importacoesRouter,
-  mapaProducao: mapaProducaoRouter,
+  importacoesV2: router({
+    importar: protectedProcedure
+      .input(
+        z.object({
+          dataReferencia: z.string(),
+          arquivoSegQua: z.string(),
+          arquivoQuiSab: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const importacaoId = await dbImportacoesV2.criarImportacaoV2(
+          input.dataReferencia,
+          ctx.user.id
+        );
+        return { importacaoId };
+      }),
+
+    obterMapa: protectedProcedure
+      .input(z.object({ importacaoId: z.number() }))
+      .query(async ({ input }) => {
+        return await dbImportacoesV2.getMapaProducaoV2(input.importacaoId);
+      }),
+
+    atualizarQuantidade: protectedProcedure
+      .input(
+        z.object({
+          importacaoId: z.number(),
+          produtoId: z.number(),
+          diaSemana: z.number(),
+          quantidade: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await dbImportacoesV2.atualizarQuantidadeV2(
+          input.importacaoId,
+          input.produtoId,
+          input.diaSemana,
+          input.quantidade
+        );
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
