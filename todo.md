@@ -242,3 +242,11 @@
 - [x] Exibir seções separadas para cada dia (2, 3, 4, 5, 6, 7)
 - [x] Manter funcionalidades de edição dentro de cada grupo
 - [x] Testar visualização agrupada
+
+
+## Ajuste: Dropdown de Percentual no Mapa de Produção
+
+- [x] Substituir input de texto por dropdown/select
+- [x] Opções com incremento de 10% (-50%, -40%, -30%, -20%, -10%, 0%, +10%, +20%, +30%, +40%, +50%)
+- [x] Manter recálculo automático de Qtd_Planejada ao selecionar
+- [x] Testar funcionalidade

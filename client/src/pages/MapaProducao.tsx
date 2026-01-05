@@ -24,6 +24,21 @@ const DIAS_SEMANA = [
 
 const EQUIPES = ["Equipe 1", "Equipe 2", "Equipe 3"];
 
+// Opções de percentual com incremento de 10%
+const PERCENTUAIS = [
+  { valor: -50, label: "-50%" },
+  { valor: -40, label: "-40%" },
+  { valor: -30, label: "-30%" },
+  { valor: -20, label: "-20%" },
+  { valor: -10, label: "-10%" },
+  { valor: 0, label: "0%" },
+  { valor: 10, label: "+10%" },
+  { valor: 20, label: "+20%" },
+  { valor: 30, label: "+30%" },
+  { valor: 40, label: "+40%" },
+  { valor: 50, label: "+50%" },
+];
+
 export default function MapaProducao() {
   const [mapa, setMapa] = useState<ItemMapa[]>([]);
   const [feriados, setFeriados] = useState<number[]>([]);
@@ -274,21 +289,26 @@ export default function MapaProducao() {
                             {item.qtdImportada.toFixed(2)}
                           </td>
                           <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #eee" }}>
-                            <input
-                              type="number"
+                            <select
                               value={item.percentualAjuste}
                               onChange={(e) =>
-                                handlePercentualChange(item.id, parseFloat(e.target.value) || 0)
+                                handlePercentualChange(item.id, parseInt(e.target.value))
                               }
                               style={{
-                                width: 60,
-                                padding: 4,
-                                textAlign: "center",
-                                border: "1px solid #ccc",
+                                padding: "4px 8px",
                                 borderRadius: 4,
+                                border: "1px solid #ccc",
+                                backgroundColor: "#fff",
+                                cursor: "pointer",
+                                minWidth: 70,
                               }}
-                            />
-                            %
+                            >
+                              {PERCENTUAIS.map((p) => (
+                                <option key={p.valor} value={p.valor}>
+                                  {p.label}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                           <td
                             style={{
