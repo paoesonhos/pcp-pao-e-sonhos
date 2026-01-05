@@ -184,3 +184,20 @@
 - [ ] Testar importação com arquivo modelo
 - [ ] Validar grid de visualização
 - [ ] Validar exibição JSON
+
+
+
+## Módulo 1.6: ImportaV5 - Ultra-Minimalista FUNCIONAL
+
+- [x] Remover completamente módulo ImportaV4 (arquivos, routers)
+- [x] Criar endpoint tRPC: importaV5.parsear (apenas parse, sem banco)
+- [x] Parser detecta separador automaticamente (vírgula ou ponto-e-vírgula)
+- [x] Parser converte vírgula decimal para ponto (85,67 → 85.67)
+- [x] Parser trata quebras de linha CRLF e LF
+- [x] Criar página ImportaV5.tsx com HTML puro (sem shadcn)
+- [x] Interface: input texto para data, input file para CSV, botão importar
+- [x] Exibição de JSON formatado após importação
+- [x] Adicionar rota /importa-v5 no App.tsx
+- [x] Adicionar link no Home.tsx
+- [x] Testar importação com arquivo modelo - SUCESSO!
+- [x] Validar 7 produtos importados corretamente

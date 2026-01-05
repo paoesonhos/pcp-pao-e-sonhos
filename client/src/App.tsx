@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Categorias from "./pages/Categorias";
-import ImportaV4 from "./pages/ImportaV4";
+import ImportaV5 from "./pages/ImportaV5";
 import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
@@ -23,7 +23,7 @@ function Router() {
       <Route path={"/insumos"} component={Insumos} />
       <Route path={"/produtos"} component={Produtos} />
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
-      <Route path={"/importa-v4"} component={ImportaV4} />
+      <Route path={"/importa-v5"} component={ImportaV5} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

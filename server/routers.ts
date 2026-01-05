@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import * as dbImportacoesV4 from "./db-importacoes-v4";
+
 
 
 
@@ -416,57 +416,66 @@ export const appRouter = router({
       }),
   }),
 
-  importacoesV4: router({
-    importar: protectedProcedure
+  // ImportaV5 - Ultra simples, apenas parse CSV e retorna JSON
+  importaV5: router({
+    parsear: protectedProcedure
       .input(
         z.object({
           dataReferencia: z.string(),
           csvContent: z.string(),
         })
       )
-      .mutation(async ({ input, ctx }) => {
-        try {
-          const importacaoId = await dbImportacoesV4.criarImportacaoV4(
-            input.dataReferencia,
-            ctx.user.id
-          );
+      .mutation(async ({ input }) => {
+        // Parser CSV ultra-simples
+        const linhas = input.csvContent
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n")
+          .split("\n")
+          .filter((l) => l.trim());
 
-          const { vendas, erros } = dbImportacoesV4.parseCSVV4(input.csvContent);
+        if (linhas.length < 2) {
+          return { success: false, erro: "Arquivo vazio ou sem dados", dados: [] };
+        }
 
-          if (vendas.length === 0) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Nenhum produto válido encontrado no arquivo",
-            });
-          }
+        // Detectar separador (ponto-e-vírgula ou vírgula)
+        const primeiraLinha = linhas[0];
+        const separador = primeiraLinha.includes(";") ? ";" : ",";
 
-          const totalInserido = await dbImportacoesV4.inserirVendasV4(
-            importacaoId,
-            vendas
-          );
+        // Pular cabeçalho, processar dados
+        const dados = [];
+        for (let i = 1; i < linhas.length; i++) {
+          const linha = linhas[i].trim();
+          if (!linha) continue;
 
-          const mapa = await dbImportacoesV4.getMapaProducaoV4(importacaoId);
+          const cols = linha.split(separador);
+          if (cols.length < 9) continue;
 
-          return {
-            success: true,
-            importacaoId,
-            totalProdutos: vendas.length,
-            totalInserido,
-            erros,
-            mapa,
+          // Converter vírgula decimal para ponto
+          const converterNumero = (val: string) => {
+            const limpo = val.trim().replace(",", ".");
+            const num = parseFloat(limpo);
+            return isNaN(num) ? 0 : num;
           };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Erro ao importar arquivo",
+
+          dados.push({
+            codigo_produto: cols[0].trim(),
+            nome_produto: cols[1].trim(),
+            unidade_medida: cols[2].trim(),
+            dia2: converterNumero(cols[3]),
+            dia3: converterNumero(cols[4]),
+            dia4: converterNumero(cols[5]),
+            dia5: converterNumero(cols[6]),
+            dia6: converterNumero(cols[7]),
+            dia7: converterNumero(cols[8]),
           });
         }
-      }),
 
-    getMapa: protectedProcedure
-      .input(z.number().int())
-      .query(async ({ input }) => {
-        return await dbImportacoesV4.getMapaProducaoV4(input);
+        return {
+          success: true,
+          dataReferencia: input.dataReferencia,
+          totalProdutos: dados.length,
+          dados,
+        };
       }),
   }),
 
