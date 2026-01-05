@@ -152,3 +152,19 @@
 - [x] Exibir dados formatados após importação bem-sucedida
 - [x] Adicionar botão para copiar JSON
 - [x] Adicionar botão para baixar JSON como arquivo
+
+
+## Módulo 1.4: ImportaV3 - Upload Único Simplificado
+- [x] Remover completamente módulo ImportaV2 (arquivos, routers, tabelas)
+- [x] Criar nova tabela importacoes_v3 (id, data_referencia, usuario_id, created_at)
+- [x] Criar nova tabela vendas_v3 (id, importacao_id, codigo_produto, nome_produto, unidade, dia2-dia7)
+- [x] Implementar helper db-importacoes-v3.ts com parser CSV simples
+- [x] Implementar endpoint tRPC: importacoesV3.importar (upload único)
+- [x] Implementar endpoint tRPC: importacoesV3.getMapa (visualização grid)
+- [x] Criar página ImportaV3.tsx com interface minimalista
+- [x] Adicionar rota /importa-v3 no App.tsx
+- [x] Adicionar link no Home.tsx
+- [x] Testar interface no navegador
+- [ ] Testar importação com arquivo modelo
+- [ ] Validar grid de visualização
+- [ ] Validar exibição JSON

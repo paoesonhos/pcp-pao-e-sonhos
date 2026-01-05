@@ -9,8 +9,8 @@ import Categorias from "./pages/Categorias";
 import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
-import ImportaV2 from "./pages/ImportaV2";
-import MapaProducaoV2 from "./pages/MapaProducaoV2";
+import ImportaV3 from "./pages/ImportaV3";
+
 
 
 function Router() {
@@ -22,8 +22,8 @@ function Router() {
       <Route path={"/insumos"} component={Insumos} />
       <Route path={"/produtos"} component={Produtos} />
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
-      <Route path={"/importa-v2"} component={ImportaV2} />
-      <Route path={"/mapa-producao-v2/:importacaoId"} component={MapaProducaoV2} />
+      <Route path={"/importa-v3"} component={ImportaV3} />
+
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

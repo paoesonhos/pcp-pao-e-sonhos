@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, unique } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, text, timestamp, boolean, index, unique, decimal, mysqlEnum } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -54,16 +54,16 @@ export type Insumo = typeof insumos.$inferSelect;
 export type InsertInsumo = typeof insumos.$inferInsert;
 
 /**
- * Produtos finais produzidos pela padaria
+ * Produtos finais (pães, bolos, etc.)
  */
 export const produtos = mysqlTable("produtos", {
   id: int("id").autoincrement().primaryKey(),
   codigoProduto: varchar("codigoProduto", { length: 50 }).notNull().unique(),
   nome: varchar("nome", { length: 200 }).notNull(),
   unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
-  pesoUnitario: decimal("pesoUnitario", { precision: 10, scale: 5 }).notNull(), // IMUTÁVEL após criação
-  percentualPerdaLiquida: decimal("percentualPerdaLiquida", { precision: 5, scale: 2 }),
-  shelfLife: int("shelfLife"), // Dias de validade
+  pesoUnitario: decimal("pesoUnitario", { precision: 10, scale: 5 }).default("0").notNull(),
+  percentualPerdaLiquida: decimal("percentualPerdaLiquida", { precision: 5, scale: 2 }).default("0"),
+  shelfLife: int("shelfLife"),
   categoriaId: int("categoriaId").references(() => categorias.id),
   tipoEmbalagem: varchar("tipoEmbalagem", { length: 100 }).notNull(),
   quantidadePorEmbalagem: int("quantidadePorEmbalagem").notNull(),
@@ -79,69 +79,58 @@ export type Produto = typeof produtos.$inferSelect;
 export type InsertProduto = typeof produtos.$inferInsert;
 
 /**
- * Ficha técnica - relaciona produtos com seus componentes
- * Suporta até 2 níveis de hierarquia:
- * - Nível 1: ingredientes diretos, sub-receitas (massa base)
- * - Nível 2: sub-blocos dentro de sub-receitas
+ * Ficha Técnica - Componentes de receitas (hierarquia até 2 níveis)
  */
 export const fichaTecnica = mysqlTable("ficha_tecnica", {
   id: int("id").autoincrement().primaryKey(),
   produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
-  componenteId: int("componenteId").notNull(), // ID do Insumo ou Produto
+  componenteId: int("componenteId").notNull(),
   tipoComponente: mysqlEnum("tipoComponente", ["ingrediente", "massa_base", "sub_bloco"]).notNull(),
   quantidadeBase: decimal("quantidadeBase", { precision: 10, scale: 5 }).notNull(),
   unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
   receitaMinima: decimal("receitaMinima", { precision: 10, scale: 5 }),
-  ordem: int("ordem").default(0).notNull(),
-  nivel: int("nivel").default(1).notNull(), // 1 ou 2
-  paiId: int("paiId").references((): any => fichaTecnica.id, { onDelete: "cascade" }), // Para sub-blocos (nível 2)
+  ordem: int("ordem").default(0),
+  nivel: int("nivel").notNull(),
+  paiId: int("paiId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
-  produtoIdx: index("produto_idx").on(table.produtoId),
-  componenteIdx: index("componente_idx").on(table.componenteId, table.tipoComponente),
-  paiIdx: index("pai_idx").on(table.paiId),
+  produtoIdx: index("ficha_produto_idx").on(table.produtoId),
 }));
 
 export type FichaTecnica = typeof fichaTecnica.$inferSelect;
 export type InsertFichaTecnica = typeof fichaTecnica.$inferInsert;
 
 /**
- * Configuração de blocos da divisora
- * Apenas para produtos com unidade = 'un'
+ * Blocos da divisora (30 unidades por bloco)
  */
 export const blocos = mysqlTable("blocos", {
   id: int("id").autoincrement().primaryKey(),
-  produtoId: int("produtoId").notNull().unique().references(() => produtos.id, { onDelete: "cascade" }),
+  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
   unidadesPorBloco: int("unidadesPorBloco").default(30).notNull(),
-  pesoBloco: decimal("pesoBloco", { precision: 10, scale: 5 }).notNull(), // Peso total do bloco em kg
+  pesoBloco: decimal("pesoBloco", { precision: 10, scale: 5 }).notNull(),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  produtoIdx: index("bloco_produto_idx").on(table.produtoId),
-}));
+});
 
 export type Bloco = typeof blocos.$inferSelect;
 export type InsertBloco = typeof blocos.$inferInsert;
 
 /**
- * Relations para queries mais eficientes
+ * Relations
  */
+export const categoriasRelations = relations(categorias, ({ many }) => ({
+  produtos: many(produtos),
+}));
+
 export const produtosRelations = relations(produtos, ({ one, many }) => ({
   categoria: one(categorias, {
     fields: [produtos.categoriaId],
     references: [categorias.id],
   }),
   fichaTecnica: many(fichaTecnica),
-  bloco: one(blocos, {
-    fields: [produtos.id],
-    references: [blocos.produtoId],
-  }),
-}));
-
-export const categoriasRelations = relations(categorias, ({ many }) => ({
-  produtos: many(produtos),
+  blocos: many(blocos),
 }));
 
 export const fichaTecnicaRelations = relations(fichaTecnica, ({ one, many }) => ({
@@ -168,59 +157,56 @@ export const blocosRelations = relations(blocos, ({ one }) => ({
 
 
 /**
- * Importações V2: Vendas históricas com dias numéricos
- * Dias da semana representados por números: 2,3,4,5,6,7
+ * Importacoes V3: Versao simplificada com upload unico
  */
-export const importacoesV2 = mysqlTable("importacoes_v2", {
+export const importacoesV3 = mysqlTable("importacoes_v3", {
   id: int("id").autoincrement().primaryKey(),
-  dataReferencia: varchar("dataReferencia", { length: 50 }).notNull(), // Texto livre, sem validação
+  dataReferencia: varchar("dataReferencia", { length: 50 }).notNull(),
   usuarioId: int("usuarioId").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type ImportacaoV2 = typeof importacoesV2.$inferSelect;
-export type InsertImportacaoV2 = typeof importacoesV2.$inferInsert;
+export type ImportacaoV3 = typeof importacoesV3.$inferSelect;
+export type InsertImportacaoV3 = typeof importacoesV3.$inferInsert;
 
 /**
- * Vendas V2: Dados de vendas por produto e dia numérico
- * Dias: 2,3,4,5,6,7 (sem validação de data real)
+ * Vendas V3: Dados de vendas simples com todos os dias em colunas
  */
-export const vendasV2 = mysqlTable("vendas_v2", {
+export const vendasV3 = mysqlTable("vendas_v3", {
   id: int("id").autoincrement().primaryKey(),
-  importacaoId: int("importacaoId").notNull().references(() => importacoesV2.id, { onDelete: "cascade" }),
-  produtoId: int("produtoId").notNull().references(() => produtos.id),
-  diaSemana: int("diaSemana").notNull(), // 2,3,4,5,6,7
-  quantidade: decimal("quantidade", { precision: 10, scale: 5 }).notNull(),
+  importacaoId: int("importacaoId").notNull().references(() => importacoesV3.id, { onDelete: "cascade" }),
+  codigoProduto: varchar("codigoProduto", { length: 50 }).notNull(),
+  nomeProduto: varchar("nomeProduto", { length: 200 }).notNull(),
   unidade: mysqlEnum("unidade", ["kg", "un"]).notNull(),
+  dia2: decimal("dia2", { precision: 10, scale: 5 }).default("0"),
+  dia3: decimal("dia3", { precision: 10, scale: 5 }).default("0"),
+  dia4: decimal("dia4", { precision: 10, scale: 5 }).default("0"),
+  dia5: decimal("dia5", { precision: 10, scale: 5 }).default("0"),
+  dia6: decimal("dia6", { precision: 10, scale: 5 }).default("0"),
+  dia7: decimal("dia7", { precision: 10, scale: 5 }).default("0"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
-  importacaoIdx: index("venda_v2_importacao_idx").on(table.importacaoId),
-  produtoIdx: index("venda_v2_produto_idx").on(table.produtoId),
-  diaIdx: index("venda_v2_dia_idx").on(table.diaSemana),
-  uniqueVenda: unique("unique_v2_produto_dia").on(table.importacaoId, table.produtoId, table.diaSemana),
+  importacaoIdx: index("venda_v3_importacao_idx").on(table.importacaoId),
+  codigoIdx: index("venda_v3_codigo_idx").on(table.codigoProduto),
 }));
 
-export type VendaV2 = typeof vendasV2.$inferSelect;
-export type InsertVendaV2 = typeof vendasV2.$inferInsert;
+export type VendaV3 = typeof vendasV3.$inferSelect;
+export type InsertVendaV3 = typeof vendasV3.$inferInsert;
 
 /**
- * Relations para importações V2
+ * Relations para importacoes V3
  */
-export const importacoesV2Relations = relations(importacoesV2, ({ one, many }) => ({
+export const importacoesV3Relations = relations(importacoesV3, ({ one, many }) => ({
   usuario: one(users, {
-    fields: [importacoesV2.usuarioId],
+    fields: [importacoesV3.usuarioId],
     references: [users.id],
   }),
-  vendas: many(vendasV2),
+  vendas: many(vendasV3),
 }));
 
-export const vendasV2Relations = relations(vendasV2, ({ one }) => ({
-  importacao: one(importacoesV2, {
-    fields: [vendasV2.importacaoId],
-    references: [importacoesV2.id],
-  }),
-  produto: one(produtos, {
-    fields: [vendasV2.produtoId],
-    references: [produtos.id],
+export const vendasV3Relations = relations(vendasV3, ({ one }) => ({
+  importacao: one(importacoesV3, {
+    fields: [vendasV3.importacaoId],
+    references: [importacoesV3.id],
   }),
 }));

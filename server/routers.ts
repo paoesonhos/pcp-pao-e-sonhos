@@ -5,7 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import * as dbImportacoesV2 from "./db-importacoes-v2";
+import * as dbImportacoesV3 from "./db-importacoes-v3";
+
 
 // ==================== SCHEMAS DE VALIDAÇÃO ====================
 
@@ -414,78 +415,64 @@ export const appRouter = router({
       }),
   }),
 
-  importacoesV2: router({
+  importacoesV3: router({
     importar: protectedProcedure
       .input(
         z.object({
           dataReferencia: z.string(),
-          arquivoSegQua: z.string(),
-          arquivoQuiSab: z.string(),
+          csvContent: z.string(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const importacaoId = await dbImportacoesV2.criarImportacaoV2(
-          input.dataReferencia,
-          ctx.user.id
-        );
-        return { importacaoId };
+        try {
+          // Criar importação
+          const importacaoId = await dbImportacoesV3.criarImportacaoV3(
+            input.dataReferencia,
+            ctx.user.id
+          );
+
+          // Parse CSV
+          const { vendas, erros } = dbImportacoesV3.parseCSVV3(input.csvContent);
+
+          if (vendas.length === 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Nenhum produto válido encontrado no arquivo",
+            });
+          }
+
+          // Inserir vendas
+          const totalInserido = await dbImportacoesV3.inserirVendasV3(
+            importacaoId,
+            vendas
+          );
+
+          // Obter mapa
+          const mapa = await dbImportacoesV3.getMapaProducaoV3(importacaoId);
+
+          return {
+            success: true,
+            importacaoId,
+            totalProdutos: vendas.length,
+            totalInserido,
+            erros,
+            mapa,
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Erro ao importar arquivo",
+          });
+        }
       }),
 
-    obterMapa: protectedProcedure
-      .input(z.object({ importacaoId: z.number() }))
+    getMapa: protectedProcedure
+      .input(z.number().int())
       .query(async ({ input }) => {
-        return await dbImportacoesV2.getMapaProducaoV2(input.importacaoId);
-      }),
-
-    atualizarQuantidade: protectedProcedure
-      .input(
-        z.object({
-          importacaoId: z.number(),
-          produtoId: z.number(),
-          diaSemana: z.number(),
-          quantidade: z.string(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        await dbImportacoesV2.atualizarQuantidadeV2(
-          input.importacaoId,
-          input.produtoId,
-          input.diaSemana,
-          input.quantidade
-        );
-        return { success: true };
-      }),
-
-    exportarJSON: protectedProcedure
-      .input(z.object({ importacaoId: z.number() }))
-      .query(async ({ input }) => {
-        const mapa = await dbImportacoesV2.getMapaProducaoV2(input.importacaoId);
-        
-        const dados = mapa.map((item: any) => ({
-          codigoProduto: item.codigoProduto,
-          nomeProduto: item.nomeProduto,
-          unidade: item.unidade,
-          dias: {
-            dia2: item.dia2 ? parseFloat(item.dia2) : 0,
-            dia3: item.dia3 ? parseFloat(item.dia3) : 0,
-            dia4: item.dia4 ? parseFloat(item.dia4) : 0,
-            dia5: item.dia5 ? parseFloat(item.dia5) : 0,
-            dia6: item.dia6 ? parseFloat(item.dia6) : 0,
-            dia7: item.dia7 ? parseFloat(item.dia7) : 0,
-          },
-          total: [item.dia2, item.dia3, item.dia4, item.dia5, item.dia6, item.dia7]
-            .map(d => d ? parseFloat(d) : 0)
-            .reduce((a: number, b: number) => a + b, 0),
-        }));
-
-        return {
-          importacaoId: input.importacaoId,
-          dataExportacao: new Date().toISOString(),
-          totalProdutos: dados.length,
-          produtos: dados,
-        };
+        return await dbImportacoesV3.getMapaProducaoV3(input);
       }),
   }),
+
 });
 
 export type AppRouter = typeof appRouter;
