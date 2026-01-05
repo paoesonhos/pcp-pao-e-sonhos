@@ -234,3 +234,11 @@
 - [x] Dia_Produzir editável (dropdown)
 - [x] Gestão de feriados (checkbox por dia, zera Qtd_Planejada)
 - [x] Testar funcionalidades
+
+
+## Ajuste: Agrupar Mapa de Produção por Dia
+
+- [x] Modificar MapaProducao.tsx para agrupar itens por Dia Produzir
+- [x] Exibir seções separadas para cada dia (2, 3, 4, 5, 6, 7)
+- [x] Manter funcionalidades de edição dentro de cada grupo
+- [x] Testar visualização agrupada
