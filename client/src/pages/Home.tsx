@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tags, FileText, ShoppingCart, Upload, Calendar } from "lucide-react";
+import { Package, Tags, FileText, ShoppingCart, Upload, Calendar, Calculator } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 
@@ -81,6 +81,13 @@ export default function Home() {
       icon: Calendar,
       href: "/mapa-producao",
       color: "text-green-700",
+    },
+    {
+      title: "Processamento PCP",
+      description: "Cálculo e fichas de produção",
+      icon: Calculator,
+      href: "/processamento-pcp",
+      color: "text-blue-700",
     },
   ];
 

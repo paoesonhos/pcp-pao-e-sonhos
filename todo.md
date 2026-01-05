@@ -250,3 +250,36 @@
 - [x] Opções com incremento de 10% (-50%, -40%, -30%, -20%, -10%, 0%, +10%, +20%, +30%, +40%, +50%)
 - [x] Manter recálculo automático de Qtd_Planejada ao selecionar
 - [x] Testar funcionalidade
+
+## Módulo PCP - Cálculo e Processamento
+
+
+### 1. Explosão de Insumos
+- [x] Criar engine de cálculo que multiplica Qtd_Planejada pelas proporções da Ficha Técnica
+- [x] Implementar Regra de Ouro: arredondar insumos em kg para baixo em múltiplos de 0,005 kg
+- [x] Trava de segurança: apenas Fermento editável após processamento
+- [x] Testes unitários (17 testes passando)
+
+### 2. Processamento da Divisora (produtos em kg)
+- [x] Calcular Blocos Inteiros (grupos de 30 unidades)
+- [x] Calcular Pedaço de Ajuste (saldo × peso unitário)
+
+### 3. Integridade de Unidades
+- [x] Produtos em "un" nunca exibem decimais
+- [x] Arredondamento sempre para baixo
+
+### 4. Subprodutos
+- [x] Processar segundo nível de receitas (ex: Massa Amarelinha)
+- [x] Aplicar mesmas regras de arredondamento
+
+### 5. Saídas (Documentação)
+- [x] Ficha de Pré-Pesagem: Ingrediente | Qtd Calculada | Check Manual
+- [x] Ficha de Produção: Separar Blocos (Divisora) de Pedaços (Manual)
+
+### 6. Integração
+- [x] Criar página de Processamento PCP
+- [x] Integrar com Mapa de Produção (receber Qtd_Planejada)
+- [x] Adicionar link no menu principal
+
+### Observação
+- Para testar completamente, é necessário cadastrar Fichas Técnicas para os produtos

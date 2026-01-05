@@ -632,6 +632,215 @@ export const appRouter = router({
     }),
   }),
 
+  // ==================== PCP - CÁLCULO E PROCESSAMENTO ====================
+  pcp: router({
+    // Processa um item do mapa de produção e retorna explosão de insumos
+    processarItem: protectedProcedure
+      .input(z.object({
+        codigoProduto: z.string(),
+        nomeProduto: z.string(),
+        unidade: z.enum(["kg", "un"]),
+        qtdPlanejada: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const database = await db.getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { produtos, fichaTecnica, insumos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const { arredondarPesagem, arredondarUnidades, processarDivisora, explodirInsumos } = await import("@shared/pcp-utils");
+
+        // Buscar produto pelo código
+        const [produto] = await database
+          .select()
+          .from(produtos)
+          .where(eq(produtos.codigoProduto, input.codigoProduto))
+          .limit(1);
+
+        if (!produto) {
+          return {
+            success: false,
+            erro: `Produto ${input.codigoProduto} não encontrado no cadastro`,
+            resultado: null,
+          };
+        }
+
+        // Buscar ficha técnica do produto
+        const fichaItens = await database
+          .select()
+          .from(fichaTecnica)
+          .where(eq(fichaTecnica.produtoId, produto.id));
+
+        if (fichaItens.length === 0) {
+          return {
+            success: false,
+            erro: `Produto ${input.codigoProduto} não possui ficha técnica cadastrada`,
+            resultado: null,
+          };
+        }
+
+        // Buscar nomes dos insumos
+        const insumosDb = await database.select().from(insumos);
+        const insumosMap = new Map(insumosDb.map(i => [i.id, i]));
+
+        // Preparar ficha técnica para processamento
+        const fichaTecnicaProcessada = fichaItens.map(item => {
+          const insumo = insumosMap.get(item.componenteId);
+          return {
+            componenteId: item.componenteId,
+            nomeComponente: insumo?.nome || `Insumo ${item.componenteId}`,
+            tipoComponente: item.tipoComponente as 'ingrediente' | 'massa_base' | 'sub_bloco',
+            quantidadeBase: parseFloat(item.quantidadeBase),
+            unidade: item.unidade as 'kg' | 'un',
+            nivel: item.nivel,
+            paiId: item.paiId || undefined,
+          };
+        });
+
+        // Processar divisora se produto for em kg
+        let divisora = null;
+        let massaParaExplosao = input.qtdPlanejada;
+        const pesoUnitario = parseFloat(produto.pesoUnitario);
+
+        if (input.unidade === 'kg' && pesoUnitario > 0) {
+          divisora = processarDivisora(input.qtdPlanejada, pesoUnitario);
+          massaParaExplosao = divisora.massaTotal;
+        } else if (input.unidade === 'un') {
+          // Arredondar unidades para baixo
+          massaParaExplosao = arredondarUnidades(input.qtdPlanejada);
+        }
+
+        // Explodir insumos
+        const insumosExplodidos = explodirInsumos(massaParaExplosao, fichaTecnicaProcessada);
+
+        return {
+          success: true,
+          resultado: {
+            codigoProduto: input.codigoProduto,
+            nomeProduto: input.nomeProduto,
+            unidade: input.unidade,
+            qtdPlanejada: input.qtdPlanejada,
+            pesoUnitario,
+            divisora,
+            insumos: insumosExplodidos,
+          },
+        };
+      }),
+
+    // Processa múltiplos itens do mapa de produção
+    processarMapa: protectedProcedure
+      .input(z.array(z.object({
+        codigoProduto: z.string(),
+        nomeProduto: z.string(),
+        unidade: z.enum(["kg", "un"]),
+        qtdPlanejada: z.number(),
+        diaProduzir: z.number(),
+      })))
+      .query(async ({ input }) => {
+        const database = await db.getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { produtos, fichaTecnica, insumos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const { arredondarPesagem, arredondarUnidades, processarDivisora, explodirInsumos } = await import("@shared/pcp-utils");
+
+        // Buscar todos os produtos e insumos de uma vez
+        const produtosDb = await database.select().from(produtos);
+        const produtosMap = new Map(produtosDb.map(p => [p.codigoProduto, p]));
+
+        const insumosDb = await database.select().from(insumos);
+        const insumosMap = new Map(insumosDb.map(i => [i.id, i]));
+
+        // Buscar todas as fichas técnicas
+        const fichasDb = await database.select().from(fichaTecnica);
+        const fichasMap = new Map<number, typeof fichasDb>();
+        for (const ficha of fichasDb) {
+          if (!fichasMap.has(ficha.produtoId)) {
+            fichasMap.set(ficha.produtoId, []);
+          }
+          fichasMap.get(ficha.produtoId)!.push(ficha);
+        }
+
+        const resultados: Array<{
+          codigoProduto: string;
+          nomeProduto: string;
+          unidade: string;
+          qtdPlanejada: number;
+          diaProduzir: number;
+          pesoUnitario: number;
+          divisora: ReturnType<typeof processarDivisora> | null;
+          insumos: ReturnType<typeof explodirInsumos>;
+          erro?: string;
+        }> = [];
+
+        for (const item of input) {
+          const produto = produtosMap.get(item.codigoProduto);
+
+          if (!produto) {
+            resultados.push({
+              ...item,
+              pesoUnitario: 0,
+              divisora: null,
+              insumos: [],
+              erro: `Produto não cadastrado`,
+            });
+            continue;
+          }
+
+          const fichaItens = fichasMap.get(produto.id) || [];
+
+          if (fichaItens.length === 0) {
+            resultados.push({
+              ...item,
+              pesoUnitario: parseFloat(produto.pesoUnitario),
+              divisora: null,
+              insumos: [],
+              erro: `Sem ficha técnica`,
+            });
+            continue;
+          }
+
+          // Preparar ficha técnica
+          const fichaTecnicaProcessada = fichaItens.map(ft => {
+            const insumo = insumosMap.get(ft.componenteId);
+            return {
+              componenteId: ft.componenteId,
+              nomeComponente: insumo?.nome || `Insumo ${ft.componenteId}`,
+              tipoComponente: ft.tipoComponente as 'ingrediente' | 'massa_base' | 'sub_bloco',
+              quantidadeBase: parseFloat(ft.quantidadeBase),
+              unidade: ft.unidade as 'kg' | 'un',
+              nivel: ft.nivel,
+              paiId: ft.paiId || undefined,
+            };
+          });
+
+          // Processar
+          let divisora = null;
+          let massaParaExplosao = item.qtdPlanejada;
+          const pesoUnitario = parseFloat(produto.pesoUnitario);
+
+          if (item.unidade === 'kg' && pesoUnitario > 0) {
+            divisora = processarDivisora(item.qtdPlanejada, pesoUnitario);
+            massaParaExplosao = divisora.massaTotal;
+          } else if (item.unidade === 'un') {
+            massaParaExplosao = arredondarUnidades(item.qtdPlanejada);
+          }
+
+          const insumosExplodidos = explodirInsumos(massaParaExplosao, fichaTecnicaProcessada);
+
+          resultados.push({
+            ...item,
+            pesoUnitario,
+            divisora,
+            insumos: insumosExplodidos,
+          });
+        }
+
+        return {
+          success: true,
+          resultados,
+        };
+      }),
+  }),
+
 });
 
 export type AppRouter = typeof appRouter;

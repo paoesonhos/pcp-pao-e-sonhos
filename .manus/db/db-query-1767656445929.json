@@ -1,0 +1,9 @@
+{
+  "query": "SELECT ft.id, ft.produtoId, p.nome as produto, ft.componenteId, i.nome as insumo, ft.quantidadeBase, ft.unidade \nFROM ficha_tecnica ft \nLEFT JOIN produtos p ON ft.produtoId = p.id \nLEFT JOIN insumos i ON ft.componenteId = i.id \nLIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT ft.id, ft.produtoId, p.nome as produto, ft.componenteId, i.nome as insumo, ft.quantidadeBase, ft.unidade \nFROM ficha_tecnica ft \nLEFT JOIN produtos p ON ft.produtoId = p.id \nLEFT JOIN insumos i ON ft.componenteId = i.id \nLIMIT 20;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 110
+}

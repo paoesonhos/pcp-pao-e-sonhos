@@ -11,6 +11,7 @@ import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
 import MapaProducao from "./pages/MapaProducao";
+import ProcessamentoPCP from "./pages/ProcessamentoPCP";
 
 
 
@@ -26,6 +27,7 @@ function Router() {
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
       <Route path={"/importa-v5"} component={ImportaV5} />
       <Route path={"/mapa-producao"} component={MapaProducao} />
+      <Route path={"/processamento-pcp"} component={ProcessamentoPCP} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
