@@ -414,8 +414,8 @@ export default function FichaTecnica() {
         </CardContent>
       </Card>
 
-      {/* Configuração de Blocos (se produto for em unidades) */}
-      {produto && produto.unidade === "un" && (
+      {/* Configuração de Blocos (Divisora) */}
+      {produto && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Configuração de Blocos (Divisora)</CardTitle>

@@ -290,3 +290,9 @@
 - [x] Criar página de listagem FichasTecnicas.tsx
 - [x] Adicionar rota /fichas-tecnicas no App.tsx
 - [x] Testar navegação para ficha técnica individual
+
+
+## Correção: Configuração de Blocos para todos os produtos
+
+- [x] Remover condição que limitava exibição apenas para produtos em "un"
+- [x] Seção "Configuração de Blocos (Divisora)" agora aparece para todos os produtos (kg e un)
