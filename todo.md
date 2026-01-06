@@ -296,3 +296,5 @@
 
 - [x] Remover condição que limitava exibição apenas para produtos em "un"
 - [x] Seção "Configuração de Blocos (Divisora)" agora aparece para todos os produtos (kg e un)
+
+- [x] Remover validação do backend que bloqueava blocos para produtos em kg

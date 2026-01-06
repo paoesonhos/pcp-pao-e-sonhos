@@ -374,13 +374,6 @@ export const appRouter = router({
           });
         }
 
-        if (produto.unidade !== "un") {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: "Apenas produtos em unidades podem ter configuração de blocos" 
-          });
-        }
-
         // Validar consistência: pesoBloco = unidadesPorBloco × pesoUnitario
         const pesoBloco = parseFloat(input.pesoBloco);
         const pesoUnitario = parseFloat(produto.pesoUnitario);
