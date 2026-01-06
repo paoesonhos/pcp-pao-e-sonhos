@@ -298,3 +298,12 @@
 - [x] Seção "Configuração de Blocos (Divisora)" agora aparece para todos os produtos (kg e un)
 
 - [x] Remover validação do backend que bloqueava blocos para produtos em kg
+
+
+## Estrutura de Cascata (Produto-Insumo)
+
+- [x] Modificar modal "Adicionar Componente" para listar Insumos + Produtos (já implementado)
+- [x] Implementar explosão recursiva no engine PCP
+- [x] Consolidar insumos repetidos (somar quantidades)
+- [x] Aplicar arredondamento 0,005 kg apenas no total final consolidado
+- [x] Testes unitários (34 testes passando, incluindo 6 novos para cascata)

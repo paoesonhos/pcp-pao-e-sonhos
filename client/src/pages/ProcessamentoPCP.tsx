@@ -18,17 +18,15 @@ import {
   Boxes
 } from "lucide-react";
 
-// Tipos
-interface InsumoExplodido {
+// Tipos - Atualizado para suportar explosão recursiva com consolidação
+interface InsumoConsolidado {
   componenteId: number;
   nomeComponente: string;
-  tipoComponente: 'ingrediente' | 'massa_base' | 'sub_bloco';
-  quantidadeCalculada: number;
+  quantidadeTotal: number;
   quantidadeArredondada: number;
   unidade: 'kg' | 'un';
-  nivel: number;
-  paiId?: number;
   editavel: boolean;
+  origens: string[]; // Lista de produtos de onde veio o insumo
 }
 
 interface ResultadoDivisora {
@@ -48,7 +46,7 @@ interface ItemProcessado {
   diaProduzir: number;
   pesoUnitario: number;
   divisora: ResultadoDivisora | null;
-  insumos: InsumoExplodido[];
+  insumos: InsumoConsolidado[];
   erro?: string;
 }
 
@@ -114,7 +112,7 @@ export default function ProcessamentoPCP() {
     return Array.from(dias).sort();
   }, [mapaData?.mapa]);
 
-  // Agregar insumos de todos os produtos do dia
+  // Agregar insumos de todos os produtos do dia (com suporte a cascata)
   const insumosAgregados = useMemo(() => {
     if (!processamentoData?.resultados) return [];
 
@@ -125,6 +123,7 @@ export default function ProcessamentoPCP() {
       unidade: string;
       editavel: boolean;
       produtos: string[];
+      origens: string[]; // Origens da cascata (massas base, etc.)
     }>();
 
     for (const item of processamentoData.resultados) {
@@ -134,7 +133,15 @@ export default function ProcessamentoPCP() {
         const existing = agregado.get(insumo.componenteId);
         if (existing) {
           existing.quantidadeTotal += insumo.quantidadeArredondada;
-          existing.produtos.push(item.nomeProduto);
+          if (!existing.produtos.includes(item.nomeProduto)) {
+            existing.produtos.push(item.nomeProduto);
+          }
+          // Adicionar origens da cascata
+          for (const origem of (insumo.origens || [])) {
+            if (!existing.origens.includes(origem)) {
+              existing.origens.push(origem);
+            }
+          }
         } else {
           agregado.set(insumo.componenteId, {
             componenteId: insumo.componenteId,
@@ -143,6 +150,7 @@ export default function ProcessamentoPCP() {
             unidade: insumo.unidade,
             editavel: insumo.editavel,
             produtos: [item.nomeProduto],
+            origens: insumo.origens || [],
           });
         }
       }
