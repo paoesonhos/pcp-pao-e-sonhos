@@ -77,27 +77,11 @@ export default function FichaTecnica() {
     if (!produtoId) return;
 
     const formData = new FormData(e.currentTarget);
-    const tipoComponenteSelecionado = formData.get("tipoComponente") as "ingrediente" | "massa_base" | "sub_bloco";
-    const componenteIdRaw = formData.get("componenteId") as string;
+    const tipoComponente = formData.get("tipoComponente") as "ingrediente" | "massa_base" | "sub_bloco";
+    const componenteId = parseInt(formData.get("componenteId") as string);
     const quantidadeBase = formData.get("quantidadeBase") as string;
     const unidade = formData.get("unidade") as "kg" | "un";
     const receitaMinima = formData.get("receitaMinima") as string || undefined;
-
-    // Parsear componenteId com prefixo (insumo-X ou produto-X)
-    let componenteId: number;
-    let tipoComponente: "ingrediente" | "massa_base" | "sub_bloco";
-    
-    if (componenteIdRaw.startsWith("insumo-")) {
-      componenteId = parseInt(componenteIdRaw.replace("insumo-", ""));
-      tipoComponente = "ingrediente";
-    } else if (componenteIdRaw.startsWith("produto-")) {
-      componenteId = parseInt(componenteIdRaw.replace("produto-", ""));
-      tipoComponente = "massa_base";
-    } else {
-      // Fallback para compatibilidade
-      componenteId = parseInt(componenteIdRaw);
-      tipoComponente = tipoComponenteSelecionado;
-    }
 
     // Determinar nível e paiId
     let nivel = 1;
@@ -106,7 +90,6 @@ export default function FichaTecnica() {
     if (selectedPai) {
       nivel = 2;
       paiId = selectedPai;
-      tipoComponente = "sub_bloco";
     }
 
     createMutation.mutate({
@@ -243,7 +226,7 @@ export default function FichaTecnica() {
                         <SelectContent>
                           <optgroup label="Insumos">
                             {insumos?.map((insumo) => (
-                              <SelectItem key={`i-${insumo.id}`} value={`insumo-${insumo.id}`}>
+                              <SelectItem key={`i-${insumo.id}`} value={insumo.id.toString()}>
                                 {insumo.codigoInsumo} – {insumo.nome}
                               </SelectItem>
                             ))}
@@ -253,7 +236,7 @@ export default function FichaTecnica() {
                               {produtos
                                 ?.filter((p) => p.id !== produtoId)
                                 .map((prod) => (
-                                  <SelectItem key={`p-${prod.id}`} value={`produto-${prod.id}`}>
+                                  <SelectItem key={`p-${prod.id}`} value={prod.id.toString()}>
                                     {prod.codigoProduto} – {prod.nome}
                                   </SelectItem>
                                 ))}
