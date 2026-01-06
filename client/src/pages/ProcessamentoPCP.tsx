@@ -19,16 +19,14 @@ import {
 } from "lucide-react";
 
 // Tipos
-interface InsumoExplodido {
+interface InsumoConsolidado {
   componenteId: number;
   nomeComponente: string;
-  tipoComponente: 'ingrediente' | 'massa_base' | 'sub_bloco';
-  quantidadeCalculada: number;
+  quantidadeTotal: number;
   quantidadeArredondada: number;
   unidade: 'kg' | 'un';
-  nivel: number;
-  paiId?: number;
   editavel: boolean;
+  origens: string[]; // lista de produtos de onde veio o insumo
 }
 
 interface ResultadoDivisora {
@@ -48,7 +46,7 @@ interface ItemProcessado {
   diaProduzir: number;
   pesoUnitario: number;
   divisora: ResultadoDivisora | null;
-  insumos: InsumoExplodido[];
+  insumos: InsumoConsolidado[];
   erro?: string;
 }
 
@@ -114,7 +112,7 @@ export default function ProcessamentoPCP() {
     return Array.from(dias).sort();
   }, [mapaData?.mapa]);
 
-  // Agregar insumos de todos os produtos do dia
+  // Agregar insumos de todos os produtos do dia (com suporte a cascata)
   const insumosAgregados = useMemo(() => {
     if (!processamentoData?.resultados) return [];
 
@@ -124,7 +122,7 @@ export default function ProcessamentoPCP() {
       quantidadeTotal: number;
       unidade: string;
       editavel: boolean;
-      produtos: string[];
+      origens: string[]; // origens da cascata (massas base, produtos)
     }>();
 
     for (const item of processamentoData.resultados) {
@@ -134,7 +132,12 @@ export default function ProcessamentoPCP() {
         const existing = agregado.get(insumo.componenteId);
         if (existing) {
           existing.quantidadeTotal += insumo.quantidadeArredondada;
-          existing.produtos.push(item.nomeProduto);
+          // Merge origens sem duplicatas
+          for (const origem of insumo.origens || [item.nomeProduto]) {
+            if (!existing.origens.includes(origem)) {
+              existing.origens.push(origem);
+            }
+          }
         } else {
           agregado.set(insumo.componenteId, {
             componenteId: insumo.componenteId,
@@ -142,7 +145,7 @@ export default function ProcessamentoPCP() {
             quantidadeTotal: insumo.quantidadeArredondada,
             unidade: insumo.unidade,
             editavel: insumo.editavel,
-            produtos: [item.nomeProduto],
+            origens: insumo.origens || [item.nomeProduto],
           });
         }
       }
@@ -354,8 +357,8 @@ export default function ProcessamentoPCP() {
                                 </Badge>
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-500">
-                                {insumo.produtos.slice(0, 3).join(", ")}
-                                {insumo.produtos.length > 3 && ` +${insumo.produtos.length - 3}`}
+                                {insumo.origens.slice(0, 3).join(", ")}
+                                {insumo.origens.length > 3 && ` +${insumo.origens.length - 3}`}
                               </td>
                             </tr>
                           );

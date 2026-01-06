@@ -298,3 +298,25 @@
 - [x] Seção "Configuração de Blocos (Divisora)" agora aparece para todos os produtos (kg e un)
 
 - [x] Remover validação do backend que bloqueava blocos para produtos em kg
+
+
+## Nova Versão: Módulo Ficha Técnica com Cascata
+
+### 1. Modal "Adicionar Componente" - Novo Design
+- [x] Remover dropdown de "Tipo" (Ingrediente/Massa Base)
+- [x] Lista unificada de Insumos + Produtos
+- [x] Ao selecionar produto, ele se torna insumo do produto atual
+- [x] Campos: Componente (busca), Quantidade Base, Unidade
+
+### 2. Estrutura de Dados
+- [x] Simplificar tabela ficha_tecnica_componentes (remover campos de sub-blocos)
+- [x] Adicionar campo para identificar se componente é insumo ou produto
+
+### 3. Engine PCP - Explosão Recursiva
+- [x] Implementar função que "mergulha" em todas as camadas
+- [x] Consolidar insumos repetidos (somar quantidades)
+- [x] Aplicar arredondamento 0,005 kg apenas no total final consolidado
+
+### 4. Preservar
+- [x] Seção "Configuração de Blocos (Divisora)" - sem alterações
+- [x] Integridade da divisora para Ficha de Produção

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -16,18 +16,12 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, ArrowLeft, Package, Layers } from "lucide-react";
@@ -39,7 +33,9 @@ export default function FichaTecnica() {
   const produtoId = params?.id ? parseInt(params.id) : null;
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedPai, setSelectedPai] = useState<number | null>(null);
+  const [selectedComponente, setSelectedComponente] = useState<string>("");
+  const [quantidadeBase, setQuantidadeBase] = useState("");
+  const [unidade, setUnidade] = useState<"kg" | "un">("kg");
 
   const utils = trpc.useUtils();
 
@@ -55,7 +51,7 @@ export default function FichaTecnica() {
       toast.success("Componente adicionado com sucesso");
       utils.fichaTecnica.getByProduto.invalidate();
       setIsAddDialogOpen(false);
-      setSelectedPai(null);
+      resetForm();
     },
     onError: (error) => {
       toast.error(error.message || "Erro ao adicionar componente");
@@ -72,25 +68,22 @@ export default function FichaTecnica() {
     },
   });
 
+  const resetForm = () => {
+    setSelectedComponente("");
+    setQuantidadeBase("");
+    setUnidade("kg");
+  };
+
   const handleAdd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!produtoId) return;
+    if (!produtoId || !selectedComponente) return;
 
-    const formData = new FormData(e.currentTarget);
-    const tipoComponente = formData.get("tipoComponente") as "ingrediente" | "massa_base" | "sub_bloco";
-    const componenteId = parseInt(formData.get("componenteId") as string);
-    const quantidadeBase = formData.get("quantidadeBase") as string;
-    const unidade = formData.get("unidade") as "kg" | "un";
-    const receitaMinima = formData.get("receitaMinima") as string || undefined;
-
-    // Determinar nível e paiId
-    let nivel = 1;
-    let paiId = null;
-
-    if (selectedPai) {
-      nivel = 2;
-      paiId = selectedPai;
-    }
+    // Parse o componente selecionado (formato: "insumo-ID" ou "produto-ID")
+    const [tipo, idStr] = selectedComponente.split("-");
+    const componenteId = parseInt(idStr);
+    
+    // Determinar tipo do componente
+    const tipoComponente = tipo === "insumo" ? "ingrediente" : "massa_base";
 
     createMutation.mutate({
       produtoId,
@@ -98,10 +91,8 @@ export default function FichaTecnica() {
       tipoComponente,
       quantidadeBase,
       unidade,
-      receitaMinima,
       ordem: 0,
-      nivel,
-      paiId: paiId || undefined,
+      nivel: 1,
     });
   };
 
@@ -110,19 +101,6 @@ export default function FichaTecnica() {
       deleteMutation.mutate(id);
     }
   };
-
-  // Organizar ficha técnica em hierarquia
-  const fichaTecnicaHierarquica = useMemo(() => {
-    if (!fichaTecnica) return [];
-
-    const nivel1 = fichaTecnica.filter((item) => item.nivel === 1);
-    const nivel2 = fichaTecnica.filter((item) => item.nivel === 2);
-
-    return nivel1.map((item) => ({
-      ...item,
-      filhos: nivel2.filter((filho) => filho.paiId === item.id),
-    }));
-  }, [fichaTecnica]);
 
   const getComponenteNome = (item: any) => {
     if (item.tipoComponente === "ingrediente") {
@@ -134,18 +112,7 @@ export default function FichaTecnica() {
     }
   };
 
-  const getTipoLabel = (tipo: string) => {
-    switch (tipo) {
-      case "ingrediente":
-        return "Ingrediente";
-      case "massa_base":
-        return "Massa Base";
-      case "sub_bloco":
-        return "Sub-bloco";
-      default:
-        return tipo;
-    }
-  };
+  const isInsumo = (item: any) => item.tipoComponente === "ingrediente";
 
   if (!produtoId) {
     return (
@@ -160,7 +127,7 @@ export default function FichaTecnica() {
   return (
     <div className="container py-8">
       <div className="mb-8 flex items-center gap-4">
-        <Link href="/produtos">
+        <Link href="/fichas-tecnicas">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -181,12 +148,15 @@ export default function FichaTecnica() {
             <div>
               <CardTitle>Composição do Produto</CardTitle>
               <CardDescription>
-                Estrutura hierárquica com até 2 níveis (ingredientes, massas base e sub-blocos)
+                Adicione insumos ou produtos (massa base) como componentes
               </CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+              setIsAddDialogOpen(open);
+              if (!open) resetForm();
+            }}>
               <DialogTrigger asChild>
-                <Button onClick={() => setSelectedPai(null)}>
+                <Button>
                   <Plus className="mr-2 h-4 w-4" />
                   Adicionar Componente
                 </Button>
@@ -194,54 +164,47 @@ export default function FichaTecnica() {
               <DialogContent>
                 <form onSubmit={handleAdd}>
                   <DialogHeader>
-                    <DialogTitle>
-                      {selectedPai ? "Adicionar Sub-bloco (Nível 2)" : "Adicionar Componente (Nível 1)"}
-                    </DialogTitle>
+                    <DialogTitle>Adicionar Componente</DialogTitle>
                     <DialogDescription>
-                      {selectedPai
-                        ? "Adicione um sub-bloco ao componente selecionado"
-                        : "Adicione um ingrediente ou massa base ao produto"}
+                      Selecione um insumo ou produto para adicionar à ficha técnica
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="tipoComponente">Tipo *</Label>
-                      <Select name="tipoComponente" required>
+                      <Label htmlFor="componente">Componente *</Label>
+                      <Select 
+                        value={selectedComponente} 
+                        onValueChange={setSelectedComponente}
+                        required
+                      >
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder="Selecione um insumo ou produto" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ingrediente">Ingrediente</SelectItem>
-                          {!selectedPai && <SelectItem value="massa_base">Massa Base</SelectItem>}
-                          {selectedPai && <SelectItem value="sub_bloco">Sub-bloco</SelectItem>}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="componenteId">Componente *</Label>
-                      <Select name="componenteId" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <optgroup label="Insumos">
+                          <SelectGroup>
+                            <SelectLabel>Insumos</SelectLabel>
                             {insumos?.map((insumo) => (
-                              <SelectItem key={`i-${insumo.id}`} value={insumo.id.toString()}>
+                              <SelectItem 
+                                key={`insumo-${insumo.id}`} 
+                                value={`insumo-${insumo.id}`}
+                              >
                                 {insumo.codigoInsumo} – {insumo.nome}
                               </SelectItem>
                             ))}
-                          </optgroup>
-                          {!selectedPai && (
-                            <optgroup label="Produtos (Massa Base)">
-                              {produtos
-                                ?.filter((p) => p.id !== produtoId)
-                                .map((prod) => (
-                                  <SelectItem key={`p-${prod.id}`} value={prod.id.toString()}>
-                                    {prod.codigoProduto} – {prod.nome}
-                                  </SelectItem>
-                                ))}
-                            </optgroup>
-                          )}
+                          </SelectGroup>
+                          <SelectGroup>
+                            <SelectLabel>Produtos (Massa Base)</SelectLabel>
+                            {produtos
+                              ?.filter((p) => p.id !== produtoId)
+                              .map((prod) => (
+                                <SelectItem 
+                                  key={`produto-${prod.id}`} 
+                                  value={`produto-${prod.id}`}
+                                >
+                                  {prod.codigoProduto} – {prod.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </div>
@@ -250,16 +213,20 @@ export default function FichaTecnica() {
                         <Label htmlFor="quantidadeBase">Quantidade Base *</Label>
                         <Input
                           id="quantidadeBase"
-                          name="quantidadeBase"
                           type="number"
                           step="0.00001"
                           placeholder="0.00000"
+                          value={quantidadeBase}
+                          onChange={(e) => setQuantidadeBase(e.target.value)}
                           required
                         />
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="unidade">Unidade *</Label>
-                        <Select name="unidade" defaultValue="kg" required>
+                        <Select 
+                          value={unidade} 
+                          onValueChange={(v) => setUnidade(v as "kg" | "un")}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -270,16 +237,6 @@ export default function FichaTecnica() {
                         </Select>
                       </div>
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="receitaMinima">Receita Mínima</Label>
-                      <Input
-                        id="receitaMinima"
-                        name="receitaMinima"
-                        type="number"
-                        step="0.00001"
-                        placeholder="Opcional"
-                      />
-                    </div>
                   </div>
                   <DialogFooter>
                     <Button
@@ -287,12 +244,15 @@ export default function FichaTecnica() {
                       variant="outline"
                       onClick={() => {
                         setIsAddDialogOpen(false);
-                        setSelectedPai(null);
+                        resetForm();
                       }}
                     >
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={createMutation.isPending}>
+                    <Button 
+                      type="submit" 
+                      disabled={createMutation.isPending || !selectedComponente || !quantidadeBase}
+                    >
                       {createMutation.isPending ? "Adicionando..." : "Adicionar"}
                     </Button>
                   </DialogFooter>
@@ -306,107 +266,45 @@ export default function FichaTecnica() {
             <div className="text-center py-8 text-muted-foreground">
               Carregando ficha técnica...
             </div>
-          ) : !fichaTecnicaHierarquica || fichaTecnicaHierarquica.length === 0 ? (
+          ) : !fichaTecnica || fichaTecnica.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum componente cadastrado. Clique em "Adicionar Componente" para começar.
             </div>
           ) : (
-            <div className="space-y-6">
-              {fichaTecnicaHierarquica.map((item) => (
-                <div key={item.id} className="border rounded-lg p-4">
-                  {/* Nível 1 */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="mt-1">
-                        {item.tipoComponente === "ingrediente" ? (
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <Layers className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{getComponenteNome(item)}</span>
-                          <Badge variant="outline">{getTipoLabel(item.tipoComponente)}</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-mono">
-                            {parseFloat(item.quantidadeBase).toFixed(5)} {item.unidade}
-                          </span>
-                          {item.receitaMinima && (
-                            <span className="ml-4">
-                              Receita mín: {parseFloat(item.receitaMinima).toFixed(5)} {item.unidade}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(item.tipoComponente === "massa_base" || item.tipoComponente === "sub_bloco") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPai(item.id);
-                            setIsAddDialogOpen(true);
-                          }}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Sub-bloco
-                        </Button>
+            <div className="space-y-3">
+              {fichaTecnica.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-muted">
+                      {isInsumo(item) ? (
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Layers className="h-4 w-4 text-primary" />
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{getComponenteNome(item)}</span>
+                        <Badge variant={isInsumo(item) ? "outline" : "default"} className="text-xs">
+                          {isInsumo(item) ? "Insumo" : "Produto"}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground font-mono">
+                        {parseFloat(item.quantidadeBase).toFixed(5)} {item.unidade}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Nível 2 - Sub-blocos */}
-                  {item.filhos && item.filhos.length > 0 && (
-                    <div className="ml-8 mt-4 space-y-2 border-l-2 border-muted pl-4">
-                      {item.filhos.map((filho: any) => (
-                        <div key={filho.id} className="flex items-start justify-between">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="mt-1">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium">{getComponenteNome(filho)}</span>
-                                <Badge variant="secondary" className="text-xs">
-                                  {getTipoLabel(filho.tipoComponente)}
-                                </Badge>
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                <span className="font-mono">
-                                  {parseFloat(filho.quantidadeBase).toFixed(5)} {filho.unidade}
-                                </span>
-                                {filho.receitaMinima && (
-                                  <span className="ml-4">
-                                    Receita mín: {parseFloat(filho.receitaMinima).toFixed(5)} {filho.unidade}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleDelete(filho.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(item.id)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -432,7 +330,7 @@ export default function FichaTecnica() {
   );
 }
 
-// Componente para configuração de blocos
+// Componente para configuração de blocos (preservado)
 function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }) {
   const [isEditing, setIsEditing] = useState(false);
   const utils = trpc.useUtils();

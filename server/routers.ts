@@ -719,7 +719,7 @@ export const appRouter = router({
         };
       }),
 
-    // Processa múltiplos itens do mapa de produção
+    // Processa múltiplos itens do mapa de produção com explosão recursiva
     processarMapa: protectedProcedure
       .input(z.array(z.object({
         codigoProduto: z.string(),
@@ -732,12 +732,18 @@ export const appRouter = router({
         const database = await db.getDb();
         if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { produtos, fichaTecnica, insumos } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-        const { arredondarPesagem, arredondarUnidades, processarDivisora, explodirInsumos } = await import("@shared/pcp-utils");
+        const { 
+          arredondarUnidades, 
+          processarDivisora, 
+          explodirRecursivo,
+          consolidarInsumos
+        } = await import("@shared/pcp-utils");
+        type ComponenteFichaTecnica = import("@shared/pcp-utils").ComponenteFichaTecnica;
 
         // Buscar todos os produtos e insumos de uma vez
         const produtosDb = await database.select().from(produtos);
         const produtosMap = new Map(produtosDb.map(p => [p.codigoProduto, p]));
+        const produtosIdMap = new Map(produtosDb.map(p => [p.id, p]));
 
         const insumosDb = await database.select().from(insumos);
         const insumosMap = new Map(insumosDb.map(i => [i.id, i]));
@@ -752,6 +758,32 @@ export const appRouter = router({
           fichasMap.get(ficha.produtoId)!.push(ficha);
         }
 
+        // Função para buscar ficha técnica (usada na explosão recursiva)
+        const buscaFichaTecnica = (produtoId: number): ComponenteFichaTecnica[] | null => {
+          const fichaItens = fichasMap.get(produtoId);
+          if (!fichaItens || fichaItens.length === 0) return null;
+          
+          return fichaItens.map(ft => {
+            // Determinar nome do componente
+            let nomeComponente = '';
+            if (ft.tipoComponente === 'ingrediente') {
+              const insumo = insumosMap.get(ft.componenteId);
+              nomeComponente = insumo?.nome || `Insumo ${ft.componenteId}`;
+            } else {
+              const prod = produtosIdMap.get(ft.componenteId);
+              nomeComponente = prod?.nome || `Produto ${ft.componenteId}`;
+            }
+            
+            return {
+              componenteId: ft.componenteId,
+              nomeComponente,
+              tipoComponente: ft.tipoComponente as 'ingrediente' | 'massa_base',
+              quantidadeBase: parseFloat(ft.quantidadeBase),
+              unidade: ft.unidade as 'kg' | 'un',
+            };
+          });
+        };
+
         const resultados: Array<{
           codigoProduto: string;
           nomeProduto: string;
@@ -760,7 +792,15 @@ export const appRouter = router({
           diaProduzir: number;
           pesoUnitario: number;
           divisora: ReturnType<typeof processarDivisora> | null;
-          insumos: ReturnType<typeof explodirInsumos>;
+          insumos: Array<{
+            componenteId: number;
+            nomeComponente: string;
+            quantidadeTotal: number;
+            quantidadeArredondada: number;
+            unidade: string;
+            editavel: boolean;
+            origens: string[];
+          }>;
           erro?: string;
         }> = [];
 
@@ -791,21 +831,7 @@ export const appRouter = router({
             continue;
           }
 
-          // Preparar ficha técnica
-          const fichaTecnicaProcessada = fichaItens.map(ft => {
-            const insumo = insumosMap.get(ft.componenteId);
-            return {
-              componenteId: ft.componenteId,
-              nomeComponente: insumo?.nome || `Insumo ${ft.componenteId}`,
-              tipoComponente: ft.tipoComponente as 'ingrediente' | 'massa_base' | 'sub_bloco',
-              quantidadeBase: parseFloat(ft.quantidadeBase),
-              unidade: ft.unidade as 'kg' | 'un',
-              nivel: ft.nivel,
-              paiId: ft.paiId || undefined,
-            };
-          });
-
-          // Processar
+          // Processar divisora
           let divisora = null;
           let massaParaExplosao = item.qtdPlanejada;
           const pesoUnitario = parseFloat(produto.pesoUnitario);
@@ -817,13 +843,21 @@ export const appRouter = router({
             massaParaExplosao = arredondarUnidades(item.qtdPlanejada);
           }
 
-          const insumosExplodidos = explodirInsumos(massaParaExplosao, fichaTecnicaProcessada);
+          // Explosão recursiva com consolidação
+          const mapaInsumos = explodirRecursivo(
+            produto.id,
+            produto.nome,
+            massaParaExplosao,
+            buscaFichaTecnica
+          );
+          
+          const insumosConsolidados = consolidarInsumos(mapaInsumos);
 
           resultados.push({
             ...item,
             pesoUnitario,
             divisora,
-            insumos: insumosExplodidos,
+            insumos: insumosConsolidados,
           });
         }
 

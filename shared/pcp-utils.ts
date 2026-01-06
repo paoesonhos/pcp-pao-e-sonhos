@@ -238,3 +238,173 @@ export function formatarPesagem(valor: number): string {
 export function formatarUnidades(valor: number): string {
   return Math.floor(valor).toString();
 }
+
+// ============================================
+// EXPLOSÃO RECURSIVA E CONSOLIDAÇÃO DE INSUMOS
+// ============================================
+
+/**
+ * Interface para componente da ficha técnica (simplificada para cascata)
+ */
+export interface ComponenteFichaTecnica {
+  componenteId: number;
+  nomeComponente: string;
+  tipoComponente: 'ingrediente' | 'massa_base';
+  quantidadeBase: number; // proporção em relação ao produto
+  unidade: 'kg' | 'un';
+}
+
+/**
+ * Interface para insumo consolidado (resultado final da explosão)
+ */
+export interface InsumoConsolidado {
+  componenteId: number;
+  nomeComponente: string;
+  quantidadeTotal: number; // soma de todas as origens
+  quantidadeArredondada: number; // após regra de 0,005 kg
+  unidade: 'kg' | 'un';
+  editavel: boolean; // true apenas para Fermento
+  origens: string[]; // lista de produtos de onde veio o insumo
+}
+
+/**
+ * Função para buscar ficha técnica de um produto
+ * Deve ser fornecida pelo chamador (backend)
+ */
+export type BuscaFichaTecnicaFn = (produtoId: number) => ComponenteFichaTecnica[] | null;
+
+/**
+ * Explode recursivamente um produto até encontrar insumos brutos
+ * Retorna mapa de componenteId -> { quantidade, origens }
+ */
+export function explodirRecursivo(
+  produtoId: number,
+  nomeProduto: string,
+  quantidade: number,
+  buscaFichaTecnica: BuscaFichaTecnicaFn,
+  visitados: Set<number> = new Set(),
+  profundidade: number = 0
+): Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }> {
+  const resultado = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }>();
+  
+  // Proteção contra referência circular
+  if (visitados.has(produtoId) || profundidade > 10) {
+    return resultado;
+  }
+  visitados.add(produtoId);
+  
+  // Busca ficha técnica do produto
+  const fichaTecnica = buscaFichaTecnica(produtoId);
+  
+  if (!fichaTecnica || fichaTecnica.length === 0) {
+    return resultado;
+  }
+  
+  for (const componente of fichaTecnica) {
+    // Calcula quantidade proporcional
+    const qtdComponente = quantidade * componente.quantidadeBase;
+    
+    if (componente.tipoComponente === 'ingrediente') {
+      // É insumo bruto - adiciona ao resultado
+      const existente = resultado.get(componente.componenteId);
+      if (existente) {
+        existente.quantidade += qtdComponente;
+        if (!existente.origens.includes(nomeProduto)) {
+          existente.origens.push(nomeProduto);
+        }
+      } else {
+        resultado.set(componente.componenteId, {
+          quantidade: qtdComponente,
+          nome: componente.nomeComponente,
+          unidade: componente.unidade,
+          origens: [nomeProduto],
+        });
+      }
+    } else {
+      // É produto (massa_base) - explode recursivamente
+      const subResultado = explodirRecursivo(
+        componente.componenteId,
+        componente.nomeComponente,
+        qtdComponente,
+        buscaFichaTecnica,
+        new Set(visitados),
+        profundidade + 1
+      );
+      
+      // Merge dos resultados
+      for (const [id, dados] of Array.from(subResultado.entries())) {
+        const existente = resultado.get(id);
+        if (existente) {
+          existente.quantidade += dados.quantidade;
+          for (const origem of dados.origens) {
+            if (!existente.origens.includes(origem)) {
+              existente.origens.push(origem);
+            }
+          }
+        } else {
+          resultado.set(id, { ...dados });
+        }
+      }
+    }
+  }
+  
+  return resultado;
+}
+
+/**
+ * Consolida insumos e aplica arredondamento final
+ * Regra: arredondamento 0,005 kg apenas no total final consolidado
+ */
+export function consolidarInsumos(
+  mapaInsumos: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }>,
+  nomeFermento: string = 'FERMENTO'
+): InsumoConsolidado[] {
+  const resultado: InsumoConsolidado[] = [];
+  
+  for (const [componenteId, dados] of Array.from(mapaInsumos.entries())) {
+    // Aplica arredondamento no total final
+    let quantidadeArredondada: number;
+    if (dados.unidade === 'kg') {
+      quantidadeArredondada = arredondarPesagem(dados.quantidade);
+    } else {
+      quantidadeArredondada = arredondarUnidades(dados.quantidade);
+    }
+    
+    // Verifica se é fermento (editável)
+    const isFermento = dados.nome.toUpperCase().includes(nomeFermento);
+    
+    resultado.push({
+      componenteId,
+      nomeComponente: dados.nome,
+      quantidadeTotal: dados.quantidade,
+      quantidadeArredondada,
+      unidade: dados.unidade,
+      editavel: isFermento,
+      origens: dados.origens,
+    });
+  }
+  
+  // Ordena por nome
+  resultado.sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
+  
+  return resultado;
+}
+
+/**
+ * Função principal: explode e consolida insumos de um produto
+ */
+export function processarExplosaoCompleta(
+  produtoId: number,
+  nomeProduto: string,
+  quantidade: number,
+  buscaFichaTecnica: BuscaFichaTecnicaFn
+): InsumoConsolidado[] {
+  const mapaInsumos = explodirRecursivo(
+    produtoId,
+    nomeProduto,
+    quantidade,
+    buscaFichaTecnica
+  );
+  
+  return consolidarInsumos(mapaInsumos);
+}
