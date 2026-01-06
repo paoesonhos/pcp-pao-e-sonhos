@@ -307,3 +307,11 @@
 - [x] Consolidar insumos repetidos (somar quantidades)
 - [x] Aplicar arredondamento 0,005 kg apenas no total final consolidado
 - [x] Testes unitários (34 testes passando, incluindo 6 novos para cascata)
+
+
+## Bug: Dropdown de Componentes vazio para Massa Base
+
+- [x] Corrigir dropdown de componentes para listar produtos quando tipo "Massa Base" for selecionado
+- [x] Corrigir chaves duplicadas no React (prefixo insumo-/produto- nos values)
+- [x] Ajustar handleAdd para parsear componenteId com prefixo
+- [x] Testar adição de ingrediente em ficha técnica (farinha mix 5kg adicionado com sucesso)
