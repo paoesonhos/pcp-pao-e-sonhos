@@ -337,3 +337,11 @@
 - [x] Exibir "Peso Total dos Componentes" na seção Composição do Produto
 - [x] Campo Peso do Bloco passa a ser somente leitura (calculado)
 - [x] Testar cálculo automático ao adicionar/remover componentes (7.50000 kg = 5.00 + 2.50)
+
+
+## Ajuste: Layout da Ficha de Pré-Pesagem
+
+- [x] Alterar layout para exibir checklist de ingredientes agrupados por produto
+- [x] Exibir Nome e ID do produto como cabeçalho de cada seção
+- [x] Manter regra: apenas Fermento é editável
+- [x] Testar novo layout com produtos do Mapa de Produção

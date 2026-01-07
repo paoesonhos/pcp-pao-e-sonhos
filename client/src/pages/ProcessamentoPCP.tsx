@@ -287,85 +287,95 @@ export default function ProcessamentoPCP() {
                     Ficha de Pré-Pesagem - {DIAS_SEMANA[diaSelecionado]}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
-                    Checklist de ingredientes agregados para o dia. Apenas Fermento é editável.
+                    Checklist de ingredientes abertos por produto. Apenas Fermento é editável.
                   </p>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <table className="w-full">
-                    <thead className="bg-amber-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-12">✓</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Calculada</th>
-                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produtos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {insumosAgregados.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                            Nenhum insumo para processar neste dia
-                          </td>
-                        </tr>
-                      ) : (
-                        insumosAgregados.map((insumo, idx) => {
-                          const checkKey = `${diaSelecionado}-${insumo.componenteId}`;
-                          const fermentoKey = `${diaSelecionado}-${insumo.componenteId}`;
-                          const isChecked = checksPesagem[checkKey] || false;
-                          const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeTotal;
+                <CardContent className="p-4 space-y-6">
+                  {!processamentoData?.resultados || processamentoData.resultados.filter(r => !r.erro && r.insumos.length > 0).length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      Nenhum insumo para processar neste dia
+                    </div>
+                  ) : (
+                    processamentoData.resultados
+                      .filter(r => !r.erro && r.insumos.length > 0)
+                      .map((item, prodIdx) => (
+                        <div key={prodIdx} className="border border-orange-200 rounded-lg overflow-hidden">
+                          {/* Cabeçalho do Produto */}
+                          <div className="bg-amber-100 px-4 py-3 border-b border-orange-200">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                              <Boxes className="w-4 h-4 text-orange-600" />
+                              {item.codigoProduto} – {item.nomeProduto}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              Qtd Planejada: {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
+                            </p>
+                          </div>
+                          {/* Tabela de Ingredientes */}
+                          <table className="w-full">
+                            <thead className="bg-amber-50">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 w-12">✓</th>
+                                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
+                                <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Qtd Calculada</th>
+                                <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Unid.</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.insumos.map((insumo, idx) => {
+                                const checkKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
+                                const fermentoKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
+                                const isChecked = checksPesagem[checkKey] || false;
+                                const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeArredondada;
 
-                          return (
-                            <tr 
-                              key={insumo.componenteId} 
-                              className={`border-b border-gray-100 ${isChecked ? 'bg-green-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                            >
-                              <td className="px-4 py-3">
-                                <Checkbox 
-                                  checked={isChecked}
-                                  onCheckedChange={() => toggleCheck(checkKey)}
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                  {insumo.nomeComponente}
-                                </span>
-                                {insumo.editavel && (
-                                  <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                                    Editável
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                {insumo.editavel ? (
-                                  <Input
-                                    type="number"
-                                    step="0.005"
-                                    value={valorFermento}
-                                    onChange={(e) => atualizarFermento(fermentoKey, parseFloat(e.target.value) || 0)}
-                                    className="w-24 text-right ml-auto"
-                                  />
-                                ) : (
-                                  <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
-                                    {formatarNumero(insumo.quantidadeTotal, insumo.unidade)}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <Badge variant="secondary" className="bg-gray-100">
-                                  {insumo.unidade}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500">
-                                {insumo.origens.slice(0, 3).join(", ")}
-                                {insumo.origens.length > 3 && ` +${insumo.origens.length - 3}`}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                                return (
+                                  <tr 
+                                    key={insumo.componenteId} 
+                                    className={`border-b border-gray-100 ${isChecked ? 'bg-green-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                                  >
+                                    <td className="px-4 py-2">
+                                      <Checkbox 
+                                        checked={isChecked}
+                                        onCheckedChange={() => toggleCheck(checkKey)}
+                                      />
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                        {insumo.nomeComponente}
+                                      </span>
+                                      {insumo.editavel && (
+                                        <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                                          Editável
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                      {insumo.editavel ? (
+                                        <Input
+                                          type="number"
+                                          step="0.005"
+                                          value={valorFermento}
+                                          onChange={(e) => atualizarFermento(fermentoKey, parseFloat(e.target.value) || 0)}
+                                          className="w-24 text-right ml-auto h-8"
+                                        />
+                                      ) : (
+                                        <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
+                                          {formatarNumero(insumo.quantidadeArredondada, insumo.unidade)}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-center">
+                                      <Badge variant="secondary" className="bg-gray-100">
+                                        {insumo.unidade}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
