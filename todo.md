@@ -329,3 +329,11 @@
 - [x] Adicionar mensagem informativa: unidades ≠ 30 = "Pedaço" (produção manual)
 - [x] Labels dinâmicos: "Unidades por Pedaço" / "Peso do Pedaço" quando ≠ 30
 - [x] Testar salvamento com valores diferentes de 30 (20 unidades = 0.60000 kg)
+
+
+## Ajuste: Peso do Bloco Automático
+
+- [x] Calcular Peso do Bloco automaticamente a partir da soma dos componentes
+- [x] Exibir "Peso Total dos Componentes" na seção Composição do Produto
+- [x] Campo Peso do Bloco passa a ser somente leitura (calculado)
+- [x] Testar cálculo automático ao adicionar/remover componentes (7.50000 kg = 5.00 + 2.50)

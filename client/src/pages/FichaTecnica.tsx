@@ -309,6 +309,29 @@ export default function FichaTecnica() {
               ))}
             </div>
           )}
+          
+          {/* Peso Total dos Componentes */}
+          {fichaTecnica && fichaTecnica.length > 0 && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Peso Total dos Componentes:</span>
+                <span className="text-xl font-mono font-bold text-primary">
+                  {fichaTecnica
+                    .filter((item) => item.unidade === "kg")
+                    .reduce((sum, item) => sum + parseFloat(item.quantidadeBase), 0)
+                    .toFixed(5)} kg
+                </span>
+              </div>
+              {fichaTecnica.some((item) => item.unidade === "un") && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  + {fichaTecnica
+                    .filter((item) => item.unidade === "un")
+                    .reduce((sum, item) => sum + parseFloat(item.quantidadeBase), 0)
+                    .toFixed(0)} un (não somado ao peso)
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -322,7 +345,15 @@ export default function FichaTecnica() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BlocoConfig produtoId={produtoId} produto={produto} />
+            <BlocoConfig 
+              produtoId={produtoId} 
+              produto={produto} 
+              pesoTotalComponentes={
+                fichaTecnica
+                  ?.filter((item) => item.unidade === "kg")
+                  .reduce((sum, item) => sum + parseFloat(item.quantidadeBase), 0) || 0
+              }
+            />
           </CardContent>
         </Card>
       )}
@@ -331,7 +362,7 @@ export default function FichaTecnica() {
 }
 
 // Componente para configuração de blocos (preservado)
-function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }) {
+function BlocoConfig({ produtoId, produto, pesoTotalComponentes }: { produtoId: number; produto: any; pesoTotalComponentes: number }) {
   const [isEditing, setIsEditing] = useState(false);
   const [unidadesInput, setUnidadesInput] = useState<number>(30);
   const utils = trpc.useUtils();
@@ -369,7 +400,8 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const unidadesPorBloco = parseInt(formData.get("unidadesPorBloco") as string);
-    const pesoBloco = formData.get("pesoBloco") as string;
+    // Usar peso total dos componentes como peso do bloco
+    const pesoBloco = pesoTotalComponentes > 0 ? pesoTotalComponentes.toFixed(5) : formData.get("pesoBloco") as string;
 
     if (bloco) {
       // Atualizar bloco existente
@@ -391,19 +423,24 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
     }
   };
 
-  // Calcular peso esperado do bloco baseado nas unidades atuais
+  // Usar peso total dos componentes se disponível, senão calcular pelo peso unitário
   const pesoUnitario = parseFloat(produto.pesoUnitario);
   const unidadesAtual = bloco?.unidadesPorBloco || 30;
-  const pesoEsperado = (unidadesAtual * pesoUnitario).toFixed(5);
   
-  // Calcular peso esperado dinâmico baseado no input
-  const pesoEsperadoDinamico = (unidadesInput * pesoUnitario).toFixed(5);
+  // Peso do bloco vem da soma dos componentes (automático)
+  const pesoBloco = pesoTotalComponentes > 0 ? pesoTotalComponentes : (unidadesAtual * pesoUnitario);
+  const pesoEsperado = pesoBloco.toFixed(5);
+  
+  // Calcular peso dinâmico (para exibição durante edição)
+  const pesoEsperadoDinamico = pesoTotalComponentes > 0 ? pesoTotalComponentes.toFixed(5) : (unidadesInput * pesoUnitario).toFixed(5);
 
   // Verificar se é bloco (30 unidades) ou pedaço (diferente de 30)
   const isPedaco = unidadesInput !== 30;
 
   if (bloco && !isEditing) {
     const blocoIsPedaco = bloco.unidadesPorBloco !== 30;
+    // Usar peso dos componentes se disponível
+    const pesoExibido = pesoTotalComponentes > 0 ? pesoTotalComponentes : parseFloat(bloco.pesoBloco);
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -413,7 +450,10 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
           </div>
           <div>
             <Label className="text-muted-foreground">Peso do {blocoIsPedaco ? "Pedaço" : "Bloco"}</Label>
-            <div className="text-lg font-medium font-mono">{parseFloat(bloco.pesoBloco).toFixed(5)} kg</div>
+            <div className="text-lg font-medium font-mono">{pesoExibido.toFixed(5)} kg</div>
+            {pesoTotalComponentes > 0 && (
+              <div className="text-xs text-muted-foreground">(soma dos componentes)</div>
+            )}
           </div>
         </div>
         {blocoIsPedaco && (
@@ -421,9 +461,11 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
             ⚠️ Quantidade diferente de 30: será processado como <strong>pedaço</strong> (produção manual)
           </div>
         )}
-        <div className="text-sm text-muted-foreground">
-          Peso esperado: {pesoEsperado} kg ({bloco.unidadesPorBloco} × {pesoUnitario.toFixed(5)} kg)
-        </div>
+        {pesoTotalComponentes > 0 && (
+          <div className="text-sm text-green-600 bg-green-50 p-2 rounded border border-green-200">
+            ✅ Peso do bloco calculado automaticamente a partir da soma dos componentes
+          </div>
+        )}
         <Button variant="outline" onClick={() => {
           setUnidadesInput(bloco.unidadesPorBloco);
           setIsEditing(true);
@@ -452,15 +494,30 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="pesoBloco">Peso do {isPedaco ? "Pedaço" : "Bloco"} (kg) *</Label>
-          <Input
-            id="pesoBloco"
-            name="pesoBloco"
-            type="number"
-            step="0.00001"
-            defaultValue={bloco?.pesoBloco || pesoEsperadoDinamico}
-            required
-          />
+          <Label htmlFor="pesoBloco">Peso do {isPedaco ? "Pedaço" : "Bloco"} (kg)</Label>
+          {pesoTotalComponentes > 0 ? (
+            <div className="flex items-center gap-2">
+              <Input
+                id="pesoBloco"
+                name="pesoBloco"
+                type="number"
+                step="0.00001"
+                value={pesoTotalComponentes.toFixed(5)}
+                readOnly
+                className="bg-muted"
+              />
+              <span className="text-xs text-muted-foreground whitespace-nowrap">(automático)</span>
+            </div>
+          ) : (
+            <Input
+              id="pesoBloco"
+              name="pesoBloco"
+              type="number"
+              step="0.00001"
+              defaultValue={bloco?.pesoBloco || pesoEsperadoDinamico}
+              required
+            />
+          )}
         </div>
       </div>
       {isPedaco && (
@@ -468,9 +525,16 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
           ⚠️ Quantidade diferente de 30: será processado como <strong>pedaço</strong> (produção manual, sem divisora)
         </div>
       )}
-      <div className="text-sm text-muted-foreground">
-        Peso esperado: {pesoEsperadoDinamico} kg ({unidadesInput} × {pesoUnitario.toFixed(5)} kg)
-      </div>
+      {pesoTotalComponentes > 0 && (
+        <div className="text-sm text-green-600 bg-green-50 p-2 rounded border border-green-200">
+          ✅ Peso calculado automaticamente: soma dos componentes da ficha técnica
+        </div>
+      )}
+      {pesoTotalComponentes === 0 && (
+        <div className="text-sm text-muted-foreground">
+          Peso esperado: {pesoEsperadoDinamico} kg ({unidadesInput} × {pesoUnitario.toFixed(5)} kg)
+        </div>
+      )}
       <div className="flex gap-2">
         <Button type="submit" disabled={isPending}>
           {isPending ? "Salvando..." : "Salvar Configuração"}
