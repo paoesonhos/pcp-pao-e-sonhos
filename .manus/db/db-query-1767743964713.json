@@ -1,0 +1,109 @@
+{
+  "query": "SELECT * FROM blocos;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT * FROM blocos;",
+  "rows": [
+    {
+      "id": "1",
+      "produtoId": "30001",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "1.50000",
+      "ativo": "1",
+      "createdAt": "2026-01-05 23:51:21",
+      "updatedAt": "2026-01-05 23:51:21"
+    },
+    {
+      "id": "2",
+      "produtoId": "6",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "2.40000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:04:17",
+      "updatedAt": "2026-01-06 00:04:17"
+    },
+    {
+      "id": "3",
+      "produtoId": "4",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "2.19000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:13:00",
+      "updatedAt": "2026-01-06 00:13:00"
+    },
+    {
+      "id": "4",
+      "produtoId": "7",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "0.90000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:13:34",
+      "updatedAt": "2026-01-06 00:13:34"
+    },
+    {
+      "id": "5",
+      "produtoId": "8",
+      "unidadesPorBloco": "18",
+      "pesoBloco": "0.72000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:14:57",
+      "updatedAt": "2026-01-06 00:14:57"
+    },
+    {
+      "id": "6",
+      "produtoId": "9",
+      "unidadesPorBloco": "8",
+      "pesoBloco": "5.20000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:15:30",
+      "updatedAt": "2026-01-06 00:15:30"
+    },
+    {
+      "id": "7",
+      "produtoId": "10",
+      "unidadesPorBloco": "3",
+      "pesoBloco": "1.65000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:16:04",
+      "updatedAt": "2026-01-06 00:16:04"
+    },
+    {
+      "id": "8",
+      "produtoId": "11",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "21.00000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:16:17",
+      "updatedAt": "2026-01-06 00:16:17"
+    },
+    {
+      "id": "9",
+      "produtoId": "12",
+      "unidadesPorBloco": "30",
+      "pesoBloco": "0.90000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:16:39",
+      "updatedAt": "2026-01-06 00:16:39"
+    },
+    {
+      "id": "10",
+      "produtoId": "13",
+      "unidadesPorBloco": "60",
+      "pesoBloco": "1.20000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 00:18:07",
+      "updatedAt": "2026-01-06 00:18:07"
+    },
+    {
+      "id": "30001",
+      "produtoId": "90001",
+      "unidadesPorBloco": "1",
+      "pesoBloco": "49.00000",
+      "ativo": "1",
+      "createdAt": "2026-01-06 02:18:24",
+      "updatedAt": "2026-01-06 02:18:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprodutoId\tunidadesPorBloco\tpesoBloco\tativo\tcreatedAt\tupdatedAt\n1\t30001\t30\t1.50000\t1\t2026-01-05 23:51:21\t2026-01-05 23:51:21\n2\t6\t30\t2.40000\t1\t2026-01-06 00:04:17\t2026-01-06 00:04:17\n3\t4\t30\t2.19000\t1\t2026-01-06 00:13:00\t2026-01-06 00:13:00\n4\t7\t30\t0.90000\t1\t2026-01-06 00:13:34\t2026-01-06 00:13:34\n5\t8\t18\t0.72000\t1\t2026-01-06 00:14:57\t2026-01-06 00:14:57\n6\t9\t8\t5.20000\t1\t2026-01-06 00:15:30\t2026-01-06 00:15:30\n7\t10\t3\t1.65000\t1\t2026-01-06 00:16:04\t2026-01-06 00:16:04\n8\t11\t30\t21.00000\t1\t2026-01-06 00:16:17\t2026-01-06 00:16:17\n9\t12\t30\t0.90000\t1\t2026-01-06 00:16:39\t2026-01-06 00:16:39\n10\t13\t60\t1.20000\t1\t2026-01-06 00:18:07\t2026-01-06 00:18:07\n30001\t90001\t1\t49.00000\t1\t2026-01-06 02:18:24\t2026-01-06 02:18:24\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

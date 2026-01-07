@@ -738,7 +738,15 @@ export const appRouter = router({
           explodirRecursivo,
           consolidarInsumos
         } = await import("@shared/pcp-utils");
-        type ComponenteFichaTecnica = import("@shared/pcp-utils").ComponenteFichaTecnica;
+        
+        // Tipo definido inline para evitar problemas de import
+        type FichaTecnicaComponente = {
+          componenteId: number;
+          nomeComponente: string;
+          tipoComponente: 'ingrediente' | 'massa_base';
+          quantidadeBase: number;
+          unidade: 'kg' | 'un';
+        };
 
         // Buscar todos os produtos e insumos de uma vez
         const produtosDb = await database.select().from(produtos);
@@ -759,7 +767,7 @@ export const appRouter = router({
         }
 
         // Função para buscar ficha técnica (usada na explosão recursiva)
-        const buscaFichaTecnica = (produtoId: number): ComponenteFichaTecnica[] | null => {
+        const buscaFichaTecnica = (produtoId: number): FichaTecnicaComponente[] | null => {
           const fichaItens = fichasMap.get(produtoId);
           if (!fichaItens || fichaItens.length === 0) return null;
           

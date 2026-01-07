@@ -333,9 +333,15 @@ export default function FichaTecnica() {
 // Componente para configuração de blocos (preservado)
 function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [unidadesInput, setUnidadesInput] = useState<number>(30);
   const utils = trpc.useUtils();
 
   const { data: bloco } = trpc.blocos.getByProduto.useQuery(produtoId);
+
+  // Atualizar unidadesInput quando bloco carregar
+  useState(() => {
+    if (bloco) setUnidadesInput(bloco.unidadesPorBloco);
+  });
 
   const createMutation = trpc.blocos.create.useMutation({
     onSuccess: () => {
@@ -348,79 +354,126 @@ function BlocoConfig({ produtoId, produto }: { produtoId: number; produto: any }
     },
   });
 
+  const updateMutation = trpc.blocos.update.useMutation({
+    onSuccess: () => {
+      toast.success("Configuração de bloco atualizada com sucesso");
+      utils.blocos.getByProduto.invalidate();
+      setIsEditing(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao atualizar configuração de bloco");
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const unidadesPorBloco = parseInt(formData.get("unidadesPorBloco") as string);
     const pesoBloco = formData.get("pesoBloco") as string;
 
-    createMutation.mutate({
-      produtoId,
-      unidadesPorBloco,
-      pesoBloco,
-      ativo: true,
-    });
+    if (bloco) {
+      // Atualizar bloco existente
+      updateMutation.mutate({
+        id: bloco.id,
+        data: {
+          unidadesPorBloco,
+          pesoBloco,
+        },
+      });
+    } else {
+      // Criar novo bloco
+      createMutation.mutate({
+        produtoId,
+        unidadesPorBloco,
+        pesoBloco,
+        ativo: true,
+      });
+    }
   };
 
-  // Calcular peso esperado do bloco
-  const pesoEsperado = bloco
-    ? (bloco.unidadesPorBloco * parseFloat(produto.pesoUnitario)).toFixed(5)
-    : (30 * parseFloat(produto.pesoUnitario)).toFixed(5);
+  // Calcular peso esperado do bloco baseado nas unidades atuais
+  const pesoUnitario = parseFloat(produto.pesoUnitario);
+  const unidadesAtual = bloco?.unidadesPorBloco || 30;
+  const pesoEsperado = (unidadesAtual * pesoUnitario).toFixed(5);
+  
+  // Calcular peso esperado dinâmico baseado no input
+  const pesoEsperadoDinamico = (unidadesInput * pesoUnitario).toFixed(5);
+
+  // Verificar se é bloco (30 unidades) ou pedaço (diferente de 30)
+  const isPedaco = unidadesInput !== 30;
 
   if (bloco && !isEditing) {
+    const blocoIsPedaco = bloco.unidadesPorBloco !== 30;
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-muted-foreground">Unidades por Bloco</Label>
+            <Label className="text-muted-foreground">Unidades por {blocoIsPedaco ? "Pedaço" : "Bloco"}</Label>
             <div className="text-lg font-medium">{bloco.unidadesPorBloco}</div>
           </div>
           <div>
-            <Label className="text-muted-foreground">Peso do Bloco</Label>
+            <Label className="text-muted-foreground">Peso do {blocoIsPedaco ? "Pedaço" : "Bloco"}</Label>
             <div className="text-lg font-medium font-mono">{parseFloat(bloco.pesoBloco).toFixed(5)} kg</div>
           </div>
         </div>
+        {blocoIsPedaco && (
+          <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+            ⚠️ Quantidade diferente de 30: será processado como <strong>pedaço</strong> (produção manual)
+          </div>
+        )}
         <div className="text-sm text-muted-foreground">
-          Peso esperado: {pesoEsperado} kg ({bloco.unidadesPorBloco} × {parseFloat(produto.pesoUnitario).toFixed(5)} kg)
+          Peso esperado: {pesoEsperado} kg ({bloco.unidadesPorBloco} × {pesoUnitario.toFixed(5)} kg)
         </div>
-        <Button variant="outline" onClick={() => setIsEditing(true)}>
+        <Button variant="outline" onClick={() => {
+          setUnidadesInput(bloco.unidadesPorBloco);
+          setIsEditing(true);
+        }}>
           Editar Configuração
         </Button>
       </div>
     );
   }
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="unidadesPorBloco">Unidades por Bloco *</Label>
+          <Label htmlFor="unidadesPorBloco">Unidades por {isPedaco ? "Pedaço" : "Bloco"} *</Label>
           <Input
             id="unidadesPorBloco"
             name="unidadesPorBloco"
             type="number"
-            defaultValue={bloco?.unidadesPorBloco || 30}
+            min="1"
+            value={unidadesInput}
+            onChange={(e) => setUnidadesInput(parseInt(e.target.value) || 30)}
             required
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="pesoBloco">Peso do Bloco (kg) *</Label>
+          <Label htmlFor="pesoBloco">Peso do {isPedaco ? "Pedaço" : "Bloco"} (kg) *</Label>
           <Input
             id="pesoBloco"
             name="pesoBloco"
             type="number"
             step="0.00001"
-            defaultValue={bloco?.pesoBloco || pesoEsperado}
+            defaultValue={bloco?.pesoBloco || pesoEsperadoDinamico}
             required
           />
         </div>
       </div>
+      {isPedaco && (
+        <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+          ⚠️ Quantidade diferente de 30: será processado como <strong>pedaço</strong> (produção manual, sem divisora)
+        </div>
+      )}
       <div className="text-sm text-muted-foreground">
-        Peso esperado: {pesoEsperado} kg (30 × {parseFloat(produto.pesoUnitario).toFixed(5)} kg)
+        Peso esperado: {pesoEsperadoDinamico} kg ({unidadesInput} × {pesoUnitario.toFixed(5)} kg)
       </div>
       <div className="flex gap-2">
-        <Button type="submit" disabled={createMutation.isPending}>
-          {createMutation.isPending ? "Salvando..." : "Salvar Configuração"}
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Salvando..." : "Salvar Configuração"}
         </Button>
         {isEditing && (
           <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
