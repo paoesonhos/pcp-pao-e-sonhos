@@ -345,3 +345,11 @@
 - [x] Exibir Nome e ID do produto como cabeçalho de cada seção
 - [x] Manter regra: apenas Fermento é editável
 - [x] Testar novo layout com produtos do Mapa de Produção
+
+
+---
+
+## VERSÃO SEMIFINAL - 06/01/2026
+
+Checkpoint de referência com todas as funcionalidades core implementadas e testadas.
+
