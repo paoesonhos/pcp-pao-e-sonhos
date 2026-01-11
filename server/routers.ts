@@ -38,6 +38,9 @@ const produtoSchema = z.object({
   categoriaId: z.number().int().optional(),
   tipoEmbalagem: z.string().min(1).max(100),
   quantidadePorEmbalagem: z.number().int().min(1),
+  destinoId: z.number().int().optional(),
+  saldoEstoque: z.string().default("0"),
+  estoqueMinimoDias: z.number().int().min(1).default(4),
   ativo: z.boolean().default(true),
 });
 

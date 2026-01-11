@@ -52,6 +52,7 @@ export default function Produtos() {
   });
 
   const { data: categorias } = trpc.categorias.list.useQuery({ ativo: true });
+  const { data: destinos } = trpc.destinos.list.useQuery({ ativo: true });
 
   // Mutations
   const createMutation = trpc.produtos.create.useMutation({
@@ -110,6 +111,9 @@ export default function Produtos() {
       categoriaId: formData.get("categoriaId") ? parseInt(formData.get("categoriaId") as string) : undefined,
       tipoEmbalagem: formData.get("tipoEmbalagem") as string,
       quantidadePorEmbalagem: parseInt(formData.get("quantidadePorEmbalagem") as string),
+      destinoId: formData.get("destinoId") ? parseInt(formData.get("destinoId") as string) : undefined,
+      saldoEstoque: formData.get("saldoEstoque") as string || "0",
+      estoqueMinimoDias: formData.get("estoqueMinimoDias") ? parseInt(formData.get("estoqueMinimoDias") as string) : 4,
       ativo: true,
     });
   };
@@ -129,6 +133,9 @@ export default function Produtos() {
         categoriaId: formData.get("categoriaId") ? parseInt(formData.get("categoriaId") as string) : undefined,
         tipoEmbalagem: formData.get("tipoEmbalagem") as string,
         quantidadePorEmbalagem: parseInt(formData.get("quantidadePorEmbalagem") as string),
+        destinoId: formData.get("destinoId") ? parseInt(formData.get("destinoId") as string) : undefined,
+        saldoEstoque: formData.get("saldoEstoque") as string || "0",
+        estoqueMinimoDias: formData.get("estoqueMinimoDias") ? parseInt(formData.get("estoqueMinimoDias") as string) : 4,
       },
     });
   };
@@ -289,6 +296,50 @@ export default function Produtos() {
                           placeholder="10"
                           required
                         />
+                      </div>
+                    </div>
+                    {/* Campos de Expedição/Estoque */}
+                    <div className="border-t pt-4 mt-2">
+                      <p className="text-sm font-medium text-muted-foreground mb-3">Configurações de Expedição</p>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="destinoId">Destino</Label>
+                          <Select name="destinoId">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {destinos?.map((dest) => (
+                                <SelectItem key={dest.id} value={dest.id.toString()}>
+                                  {dest.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="saldoEstoque">Saldo Estoque (un)</Label>
+                          <Input
+                            id="saldoEstoque"
+                            name="saldoEstoque"
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            defaultValue="0"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="estoqueMinimoDias">Estoque Mín. (dias)</Label>
+                          <Input
+                            id="estoqueMinimoDias"
+                            name="estoqueMinimoDias"
+                            type="number"
+                            min="1"
+                            placeholder="4"
+                            defaultValue="4"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -529,6 +580,48 @@ export default function Produtos() {
                     defaultValue={editingProduto?.quantidadePorEmbalagem}
                     required
                   />
+                </div>
+              </div>
+              {/* Campos de Expedição/Estoque */}
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Configurações de Expedição</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-destinoId">Destino</Label>
+                    <Select name="destinoId" defaultValue={editingProduto?.destinoId?.toString() || ""}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {destinos?.map((dest) => (
+                          <SelectItem key={dest.id} value={dest.id.toString()}>
+                            {dest.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-saldoEstoque">Saldo Estoque (un)</Label>
+                    <Input
+                      id="edit-saldoEstoque"
+                      name="saldoEstoque"
+                      type="number"
+                      min="0"
+                      step="1"
+                      defaultValue={editingProduto ? Math.floor(parseFloat(editingProduto.saldoEstoque || '0')) : 0}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-estoqueMinimoDias">Estoque Mín. (dias)</Label>
+                    <Input
+                      id="edit-estoqueMinimoDias"
+                      name="estoqueMinimoDias"
+                      type="number"
+                      min="1"
+                      defaultValue={editingProduto?.estoqueMinimoDias || 4}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

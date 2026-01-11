@@ -362,7 +362,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Backend: CRUD destinos
 - [x] Backend: APIs expedição (listar, confirmar separação)
 - [x] Frontend: Página cadastro de Destinos
-- [ ] Frontend: Atualizar cadastro de Produtos (novos campos)
+- [x] Frontend: Atualizar cadastro de Produtos (campos Destino, Saldo, Estoque Mínimo)
 - [x] Frontend: Exibir saldo na listagem de Produtos
 - [x] Frontend: Nova aba Expedição no Processamento PCP
 - [x] Backend: Inteligência de reposição (validação na importação)
