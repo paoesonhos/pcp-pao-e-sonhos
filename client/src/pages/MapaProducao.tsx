@@ -12,7 +12,7 @@ interface ItemMapa {
   qtdPlanejada: number;
   equipe: string;
   diaProduzir: number;
-  produtoId?: number;
+  produtoId?: number | null;
   isReposicao?: boolean;
 }
 
@@ -217,6 +217,9 @@ export default function MapaProducao() {
     try {
       const itensParaSalvar = mapa.map(item => ({
         produtoId: item.produtoId || 0,
+        codigoProduto: item.codigo,
+        nomeProduto: item.nome,
+        unidade: item.unidade,
         quantidade: item.qtdPlanejada.toString(),
         percentualAjuste: item.percentualAjuste,
         diaProduzir: item.diaProduzir,

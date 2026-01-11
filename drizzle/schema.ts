@@ -333,7 +333,10 @@ export const movimentacoesEstoqueRelations = relations(movimentacoesEstoque, ({ 
  */
 export const mapaBase = mysqlTable("mapa_base", {
   id: int("id").autoincrement().primaryKey(),
-  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  produtoId: int("produtoId"),
+  codigoProduto: varchar("codigoProduto", { length: 50 }).notNull(),
+  nomeProduto: varchar("nomeProduto", { length: 200 }).notNull(),
+  unidade: varchar("unidade", { length: 20 }).notNull(),
   quantidade: decimal("quantidade", { precision: 10, scale: 2 }).notNull(),
   percentualAjuste: int("percentualAjuste").default(0).notNull(),
   diaProduzir: int("diaProduzir").notNull(), // 2=Seg, 3=Ter, etc.

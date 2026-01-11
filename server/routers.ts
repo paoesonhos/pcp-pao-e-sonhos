@@ -766,6 +766,9 @@ export const appRouter = router({
       .input(z.object({
         itens: z.array(z.object({
           produtoId: z.number().int(),
+          codigoProduto: z.string(),
+          nomeProduto: z.string(),
+          unidade: z.string(),
           quantidade: z.string(),
           percentualAjuste: z.number().int(),
           diaProduzir: z.number().int(),

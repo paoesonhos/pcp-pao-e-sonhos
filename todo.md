@@ -389,3 +389,4 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Bug: Corrigir erro ao salvar mapa - produtoId não preenchido nos itens importados
 - [x] Bug: Erro persiste ao salvar mapa - valores undefined/null
+- [x] Bug: Erro ao salvar Mapa Base - mesma correção do rascunho

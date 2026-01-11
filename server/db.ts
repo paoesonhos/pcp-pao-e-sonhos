@@ -546,22 +546,21 @@ export async function getMapaBase() {
     .select({
       id: mapaBase.id,
       produtoId: mapaBase.produtoId,
+      codigoProduto: mapaBase.codigoProduto,
+      nomeProduto: mapaBase.nomeProduto,
+      unidade: mapaBase.unidade,
       quantidade: mapaBase.quantidade,
       percentualAjuste: mapaBase.percentualAjuste,
       diaProduzir: mapaBase.diaProduzir,
       equipe: mapaBase.equipe,
-      codigoProduto: produtos.codigoProduto,
-      nomeProduto: produtos.nome,
-      unidade: produtos.unidade,
     })
     .from(mapaBase)
-    .innerJoin(produtos, eq(mapaBase.produtoId, produtos.id))
-    .orderBy(asc(mapaBase.diaProduzir), asc(produtos.nome));
+    .orderBy(asc(mapaBase.diaProduzir), asc(mapaBase.nomeProduto));
 
   return result;
 }
 
-export async function salvarMapaBase(itens: { produtoId: number; quantidade: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
+export async function salvarMapaBase(itens: { produtoId: number; codigoProduto: string; nomeProduto: string; unidade: string; quantidade: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -571,7 +570,10 @@ export async function salvarMapaBase(itens: { produtoId: number; quantidade: str
   // Inserir novos itens
   if (itens.length > 0) {
     await db.insert(mapaBase).values(itens.map(item => ({
-      produtoId: item.produtoId,
+      produtoId: item.produtoId || null,
+      codigoProduto: item.codigoProduto,
+      nomeProduto: item.nomeProduto,
+      unidade: item.unidade,
       quantidade: item.quantidade,
       percentualAjuste: item.percentualAjuste,
       diaProduzir: item.diaProduzir,
