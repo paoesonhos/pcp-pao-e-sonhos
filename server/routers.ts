@@ -578,6 +578,11 @@ export const appRouter = router({
         .from(vendasV5)
         .where(eq(vendasV5.importacaoId, ultimaImportacao.id));
 
+      // Buscar todos os produtos para vincular pelo código
+      const { produtos } = await import("../drizzle/schema");
+      const todosProdutos = await database.select().from(produtos);
+      const produtosPorCodigo = new Map(todosProdutos.map(p => [p.codigoProduto, p]));
+
       // Gerar mapa de produção expandido (uma linha por produto por dia)
       const mapa: Array<{
         id: number;
@@ -589,6 +594,7 @@ export const appRouter = router({
         qtdPlanejada: number;
         equipe: string;
         diaProduzir: number;
+        produtoId: number;
       }> = [];
 
       let idCounter = 1;
@@ -605,6 +611,7 @@ export const appRouter = router({
 
         for (const d of dias) {
           if (d.qtd > 0) {
+            const produtoCadastrado = produtosPorCodigo.get(venda.codigoProduto);
             mapa.push({
               id: idCounter++,
               codigo: venda.codigoProduto,
@@ -615,6 +622,7 @@ export const appRouter = router({
               qtdPlanejada: d.qtd,
               equipe: "Equipe 1",
               diaProduzir: d.dia,
+              produtoId: produtoCadastrado?.id || 0,
             });
           }
         }
@@ -622,7 +630,7 @@ export const appRouter = router({
 
       // ========== INTELIGÊNCIA DE REPOSIÇÃO ==========
       // Buscar produtos com destino Congelado ou Pré-Preparo que estão em ruptura
-      const { produtos, destinos } = await import("../drizzle/schema");
+      const { destinos } = await import("../drizzle/schema");
       const { and, inArray } = await import("drizzle-orm");
 
       // Buscar destinos de expedição
@@ -687,6 +695,7 @@ export const appRouter = router({
                 qtdPlanejada: qtdSugerida,
                 equipe: "Reposição de Estoque",
                 diaProduzir: 2, // Segunda-feira
+                produtoId: produto.id,
               });
             }
           }
