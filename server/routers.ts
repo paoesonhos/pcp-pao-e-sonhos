@@ -617,6 +617,79 @@ export const appRouter = router({
         }
       }
 
+      // ========== INTELIGÊNCIA DE REPOSIÇÃO ==========
+      // Buscar produtos com destino Congelado ou Pré-Preparo que estão em ruptura
+      const { produtos, destinos } = await import("../drizzle/schema");
+      const { and, inArray } = await import("drizzle-orm");
+
+      // Buscar destinos de expedição
+      const destinosExpedicao = await database
+        .select()
+        .from(destinos)
+        .where(eq(destinos.ativo, true));
+
+      const destinoIds = destinosExpedicao
+        .filter(d => d.nome === 'Congelado' || d.nome === 'Pré-Preparo')
+        .map(d => d.id);
+
+      if (destinoIds.length > 0) {
+        // Buscar produtos com esses destinos
+        const produtosExpedicao = await database
+          .select()
+          .from(produtos)
+          .where(and(
+            eq(produtos.ativo, true),
+            inArray(produtos.destinoId, destinoIds)
+          ));
+
+        // Calcular média diária de cada produto (soma dos 6 dias / 6)
+        for (const produto of produtosExpedicao) {
+          // Buscar vendas deste produto na última importação
+          const vendaProduto = vendas.find(v => v.codigoProduto === produto.codigoProduto);
+          
+          let mediaDiaria = 0;
+          if (vendaProduto) {
+            const totalSemana = 
+              parseFloat(vendaProduto.dia2 || "0") +
+              parseFloat(vendaProduto.dia3 || "0") +
+              parseFloat(vendaProduto.dia4 || "0") +
+              parseFloat(vendaProduto.dia5 || "0") +
+              parseFloat(vendaProduto.dia6 || "0") +
+              parseFloat(vendaProduto.dia7 || "0");
+            mediaDiaria = totalSemana / 6;
+          }
+
+          // Calcular estoque mínimo
+          const estoqueMinimo = mediaDiaria * produto.estoqueMinimoDias;
+          const saldoAtual = parseFloat(produto.saldoEstoque || "0");
+
+          // Se em ruptura, adicionar ao mapa na segunda-feira (dia 2)
+          if (saldoAtual < estoqueMinimo && mediaDiaria > 0) {
+            // Quantidade sugerida: estoqueMinimoDias * média diária
+            const qtdSugerida = Math.ceil(produto.estoqueMinimoDias * mediaDiaria);
+
+            // Verificar se já não existe no mapa
+            const jaExiste = mapa.some(
+              m => m.codigo === produto.codigoProduto && m.diaProduzir === 2
+            );
+
+            if (!jaExiste) {
+              mapa.push({
+                id: idCounter++,
+                codigo: produto.codigoProduto,
+                nome: produto.nome + " [REPOSIÇÃO]",
+                unidade: produto.unidade,
+                qtdImportada: 0,
+                percentualAjuste: 0,
+                qtdPlanejada: qtdSugerida,
+                equipe: "Reposição de Estoque",
+                diaProduzir: 2, // Segunda-feira
+              });
+            }
+          }
+        }
+      }
+
       return {
         success: true,
         importacao: ultimaImportacao,
@@ -873,6 +946,140 @@ export const appRouter = router({
           success: true,
           resultados,
         };
+      }),
+  }),
+
+  // ==================== DESTINOS ====================
+  destinos: router({
+    list: protectedProcedure
+      .input(z.object({
+        ativo: z.boolean().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.listDestinos(input);
+      }),
+
+    getById: protectedProcedure
+      .input(z.number().int())
+      .query(async ({ input }) => {
+        const destino = await db.getDestinoById(input);
+        if (!destino) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Destino não encontrado" });
+        }
+        return destino;
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        nome: z.string().min(1).max(100),
+        descricao: z.string().optional(),
+        ativo: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        await db.createDestino(input);
+        return { success: true };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number().int(),
+        data: z.object({
+          nome: z.string().min(1).max(100).optional(),
+          descricao: z.string().optional(),
+          ativo: z.boolean().optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateDestino(input.id, input.data);
+        return { success: true };
+      }),
+
+    toggle: protectedProcedure
+      .input(z.number().int())
+      .mutation(async ({ input }) => {
+        await db.toggleDestino(input);
+        return { success: true };
+      }),
+  }),
+
+  // ==================== EXPEDIÇÃO ====================
+  expedicao: router({
+    // Listar produtos para expedição (Congelado e Pré-Preparo)
+    listarProdutos: protectedProcedure
+      .query(async () => {
+        return await db.getProdutosParaExpedicao(['Congelado', 'Pré-Preparo']);
+      }),
+
+    // Confirmar separação (baixa em lote)
+    confirmarSeparacao: protectedProcedure
+      .input(z.object({
+        itens: z.array(z.object({
+          produtoId: z.number().int(),
+          quantidade: z.number().positive(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const userId = ctx.user?.id;
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Usuário não autenticado" });
+        }
+
+        for (const item of input.itens) {
+          await db.atualizarSaldoEstoque(
+            item.produtoId,
+            item.quantidade,
+            'saida',
+            'Separação para expedição',
+            userId
+          );
+        }
+
+        return { success: true, message: `${input.itens.length} itens processados` };
+      }),
+
+    // Atualizar saldo de estoque manualmente
+    atualizarSaldo: protectedProcedure
+      .input(z.object({
+        produtoId: z.number().int(),
+        novoSaldo: z.number().min(0),
+      }))
+      .mutation(async ({ input }) => {
+        await db.atualizarSaldoEstoqueDireto(input.produtoId, input.novoSaldo);
+        return { success: true };
+      }),
+
+    // Registrar entrada de estoque
+    registrarEntrada: protectedProcedure
+      .input(z.object({
+        produtoId: z.number().int(),
+        quantidade: z.number().positive(),
+        motivo: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const userId = ctx.user?.id;
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Usuário não autenticado" });
+        }
+
+        const novoSaldo = await db.atualizarSaldoEstoque(
+          input.produtoId,
+          input.quantidade,
+          'entrada',
+          input.motivo || 'Entrada manual',
+          userId
+        );
+
+        return { success: true, novoSaldo };
+      }),
+
+    // Histórico de movimentações
+    historico: protectedProcedure
+      .input(z.object({
+        produtoId: z.number().int().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getMovimentacoesEstoque(input?.produtoId);
       }),
   }),
 

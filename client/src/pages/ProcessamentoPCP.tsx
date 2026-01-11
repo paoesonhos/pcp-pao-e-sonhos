@@ -15,7 +15,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Scale,
-  Boxes
+  Boxes,
+  Truck,
+  Package
 } from "lucide-react";
 
 // Tipos
@@ -275,6 +277,10 @@ export default function ProcessamentoPCP() {
               <TabsTrigger value="detalhes" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
                 <ClipboardList className="w-4 h-4 mr-2" />
                 Detalhes por Produto
+              </TabsTrigger>
+              <TabsTrigger value="expedicao" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
+                <Truck className="w-4 h-4 mr-2" />
+                Expedição
               </TabsTrigger>
             </TabsList>
 
@@ -564,9 +570,195 @@ export default function ProcessamentoPCP() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Expedição */}
+            <TabsContent value="expedicao">
+              <ExpedicaoTab diaSelecionado={diaSelecionado} />
+            </TabsContent>
           </Tabs>
         )}
       </div>
     </div>
+  );
+}
+
+// Componente da aba Expedição
+function ExpedicaoTab({ diaSelecionado }: { diaSelecionado: number }) {
+  const [checksExpedicao, setChecksExpedicao] = useState<Record<number, boolean>>({});
+  const [quantidades, setQuantidades] = useState<Record<number, number>>({});
+
+  // Buscar produtos para expedição
+  const { data: produtosExpedicao, isLoading, refetch } = trpc.expedicao.listarProdutos.useQuery();
+
+  // Mutação para confirmar separação
+  const confirmarMutation = trpc.expedicao.confirmarSeparacao.useMutation({
+    onSuccess: (data) => {
+      alert(data.message);
+      setChecksExpedicao({});
+      setQuantidades({});
+      refetch();
+    },
+    onError: (error) => {
+      alert("Erro ao confirmar separação: " + error.message);
+    },
+  });
+
+  // Toggle check
+  const toggleCheck = (produtoId: number, saldoAtual: number) => {
+    setChecksExpedicao(prev => {
+      const newChecks = { ...prev, [produtoId]: !prev[produtoId] };
+      // Se marcou, define quantidade padrão como saldo atual
+      if (newChecks[produtoId] && !quantidades[produtoId]) {
+        setQuantidades(q => ({ ...q, [produtoId]: Math.floor(saldoAtual) }));
+      }
+      return newChecks;
+    });
+  };
+
+  // Confirmar separação
+  const handleConfirmar = () => {
+    const itens = Object.entries(checksExpedicao)
+      .filter(([_, checked]) => checked)
+      .map(([produtoId, _]) => ({
+        produtoId: parseInt(produtoId),
+        quantidade: quantidades[parseInt(produtoId)] || 0,
+      }))
+      .filter(item => item.quantidade > 0);
+
+    if (itens.length === 0) {
+      alert("Selecione pelo menos um produto e defina a quantidade.");
+      return;
+    }
+
+    if (confirm(`Confirmar separação de ${itens.length} item(s)?`)) {
+      confirmarMutation.mutate({ itens });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="border-orange-200">
+        <CardContent className="p-8 text-center">
+          <div className="animate-pulse">Carregando produtos para expedição...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!produtosExpedicao || produtosExpedicao.length === 0) {
+    return (
+      <Card className="border-orange-200">
+        <CardContent className="p-8 text-center">
+          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum Produto para Expedição</h3>
+          <p className="text-gray-500">
+            Não há produtos com destino "Congelado" ou "Pré-Preparo" cadastrados.
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Cadastre destinos em Destinos e associe aos produtos.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const itensSelecionados = Object.values(checksExpedicao).filter(Boolean).length;
+
+  return (
+    <Card className="border-orange-200">
+      <CardHeader className="bg-blue-50 border-b border-blue-200">
+        <CardTitle className="flex items-center gap-2">
+          <Truck className="w-5 h-5 text-blue-600" />
+          Checklist de Expedição - {DIAS_SEMANA[diaSelecionado]}
+        </CardTitle>
+        <p className="text-sm text-gray-600">
+          Marque os produtos conforme retira do estoque de congelados
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="p-3 text-left w-12">Check</th>
+              <th className="p-3 text-left">Código</th>
+              <th className="p-3 text-left">Produto</th>
+              <th className="p-3 text-right">Saldo Estoque</th>
+              <th className="p-3 text-right w-32">Qtd. Separar</th>
+              <th className="p-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {produtosExpedicao.map((produto) => {
+              const saldo = parseFloat(produto.saldoEstoque || '0');
+              const estoqueMinimo = produto.estoqueMinimoDias * 10; // Simplificado: 10 un/dia
+              const emRuptura = saldo < estoqueMinimo;
+              const isChecked = checksExpedicao[produto.id] || false;
+
+              return (
+                <tr 
+                  key={produto.id} 
+                  className={`border-b hover:bg-gray-50 ${emRuptura ? 'bg-red-50' : ''}`}
+                >
+                  <td className="p-3">
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={() => toggleCheck(produto.id, saldo)}
+                    />
+                  </td>
+                  <td className="p-3 font-mono text-sm">{produto.codigoProduto}</td>
+                  <td className="p-3 font-medium">{produto.nome}</td>
+                  <td className={`p-3 text-right font-mono ${emRuptura ? 'text-red-600 font-bold' : ''}`}>
+                    {Math.floor(saldo)} un
+                  </td>
+                  <td className="p-3">
+                    {isChecked && (
+                      <Input
+                        type="number"
+                        min="0"
+                        max={Math.floor(saldo)}
+                        value={quantidades[produto.id] || ''}
+                        onChange={(e) => setQuantidades(q => ({ 
+                          ...q, 
+                          [produto.id]: parseInt(e.target.value) || 0 
+                        }))}
+                        className="w-24 text-right ml-auto"
+                      />
+                    )}
+                  </td>
+                  <td className="p-3 text-center">
+                    {emRuptura ? (
+                      <Badge variant="destructive" className="text-xs">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Ruptura
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-green-600 text-xs">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        OK
+                      </Badge>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Botão Confirmar */}
+        <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
+          <span className="text-sm text-gray-600">
+            {itensSelecionados} item(s) selecionado(s)
+          </span>
+          <Button
+            onClick={handleConfirmar}
+            disabled={itensSelecionados === 0 || confirmarMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+            {confirmarMutation.isPending ? 'Processando...' : 'Confirmar Separação'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tags, FileText, ShoppingCart, Upload, Calendar, Calculator } from "lucide-react";
+import { Package, Tags, FileText, ShoppingCart, Upload, Calendar, Calculator, MapPin } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 
@@ -88,6 +88,13 @@ export default function Home() {
       icon: Calculator,
       href: "/processamento-pcp",
       color: "text-blue-700",
+    },
+    {
+      title: "Destinos",
+      description: "Congelado, Pré-Preparo, etc.",
+      icon: MapPin,
+      href: "/destinos",
+      color: "text-purple-700",
     },
   ];
 

@@ -13,6 +13,7 @@ import FichaTecnica from "./pages/FichaTecnica";
 import FichasTecnicas from "./pages/FichasTecnicas";
 import MapaProducao from "./pages/MapaProducao";
 import ProcessamentoPCP from "./pages/ProcessamentoPCP";
+import Destinos from "./pages/Destinos";
 
 
 
@@ -30,6 +31,7 @@ function Router() {
       <Route path={"/importa-v5"} component={ImportaV5} />
       <Route path={"/mapa-producao"} component={MapaProducao} />
       <Route path={"/processamento-pcp"} component={ProcessamentoPCP} />
+      <Route path={"/destinos"} component={Destinos} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

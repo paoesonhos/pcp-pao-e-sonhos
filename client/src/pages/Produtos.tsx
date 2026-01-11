@@ -357,6 +357,7 @@ export default function Produtos() {
                   <TableHead>Unidade</TableHead>
                   <TableHead>Peso Unit.</TableHead>
                   <TableHead>Embalagem</TableHead>
+                  <TableHead>Saldo Estoque</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -377,6 +378,9 @@ export default function Produtos() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {produto.tipoEmbalagem} ({produto.quantidadePorEmbalagem})
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {parseFloat(produto.saldoEstoque || '0').toFixed(0)} un
                     </TableCell>
                     <TableCell>
                       <Badge variant={produto.ativo ? "default" : "secondary"}>

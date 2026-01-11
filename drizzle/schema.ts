@@ -65,6 +65,9 @@ export const produtos = mysqlTable("produtos", {
   percentualPerdaLiquida: decimal("percentualPerdaLiquida", { precision: 5, scale: 2 }).default("0"),
   shelfLife: int("shelfLife"),
   categoriaId: int("categoriaId").references(() => categorias.id),
+  destinoId: int("destinoId"),
+  saldoEstoque: decimal("saldoEstoque", { precision: 10, scale: 5 }).default("0").notNull(),
+  estoqueMinimoDias: int("estoqueMinimoDias").default(4).notNull(),
   tipoEmbalagem: varchar("tipoEmbalagem", { length: 100 }).notNull(),
   quantidadePorEmbalagem: int("quantidadePorEmbalagem").notNull(),
   ativo: boolean("ativo").default(true).notNull(),
@@ -73,6 +76,7 @@ export const produtos = mysqlTable("produtos", {
 }, (table) => ({
   codigoIdx: index("codigo_produto_idx").on(table.codigoProduto),
   categoriaIdx: index("categoria_idx").on(table.categoriaId),
+  destinoIdx: index("destino_idx").on(table.destinoId),
 }));
 
 export type Produto = typeof produtos.$inferSelect;
@@ -129,8 +133,13 @@ export const produtosRelations = relations(produtos, ({ one, many }) => ({
     fields: [produtos.categoriaId],
     references: [categorias.id],
   }),
+  destino: one(destinos, {
+    fields: [produtos.destinoId],
+    references: [destinos.id],
+  }),
   fichaTecnica: many(fichaTecnica),
   blocos: many(blocos),
+  movimentacoesEstoque: many(movimentacoesEstoque),
 }));
 
 export const fichaTecnicaRelations = relations(fichaTecnica, ({ one, many }) => ({
@@ -263,5 +272,57 @@ export const vendasV5Relations = relations(vendasV5, ({ one }) => ({
   importacao: one(importacoesV5, {
     fields: [vendasV5.importacaoId],
     references: [importacoesV5.id],
+  }),
+}));
+
+/**
+ * Destinos de produtos (Congelado, Pré-Preparo, Venda Direta, etc.)
+ */
+export const destinos = mysqlTable("destinos", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull().unique(),
+  descricao: text("descricao"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Destino = typeof destinos.$inferSelect;
+export type InsertDestino = typeof destinos.$inferInsert;
+
+/**
+ * Movimentações de estoque de produtos acabados
+ */
+export const movimentacoesEstoque = mysqlTable("movimentacoes_estoque", {
+  id: int("id").autoincrement().primaryKey(),
+  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  tipo: mysqlEnum("tipo", ["entrada", "saida"]).notNull(),
+  quantidade: decimal("quantidade", { precision: 10, scale: 5 }).notNull(),
+  motivo: varchar("motivo", { length: 200 }),
+  usuarioId: int("usuarioId").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MovimentacaoEstoque = typeof movimentacoesEstoque.$inferSelect;
+export type InsertMovimentacaoEstoque = typeof movimentacoesEstoque.$inferInsert;
+
+/**
+ * Relations para destinos
+ */
+export const destinosRelations = relations(destinos, ({ many }) => ({
+  produtos: many(produtos),
+}));
+
+/**
+ * Relations para movimentações de estoque
+ */
+export const movimentacoesEstoqueRelations = relations(movimentacoesEstoque, ({ one }) => ({
+  produto: one(produtos, {
+    fields: [movimentacoesEstoque.produtoId],
+    references: [produtos.id],
+  }),
+  usuario: one(users, {
+    fields: [movimentacoesEstoque.usuarioId],
+    references: [users.id],
   }),
 }));

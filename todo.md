@@ -353,3 +353,18 @@
 
 Checkpoint de referência com todas as funcionalidades core implementadas e testadas.
 
+
+
+## Módulo Expedição - 11/01/2026
+
+- [x] Schema: Criar tabela destinos
+- [x] Schema: Adicionar campos destinoId, saldoEstoque, estoqueMinimoDias em produtos
+- [x] Backend: CRUD destinos
+- [x] Backend: APIs expedição (listar, confirmar separação)
+- [x] Frontend: Página cadastro de Destinos
+- [ ] Frontend: Atualizar cadastro de Produtos (novos campos)
+- [x] Frontend: Exibir saldo na listagem de Produtos
+- [x] Frontend: Nova aba Expedição no Processamento PCP
+- [x] Backend: Inteligência de reposição (validação na importação)
+- [x] Backend: Auto-inclusão de produtos em ruptura no Mapa
+

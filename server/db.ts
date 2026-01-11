@@ -1,6 +1,6 @@
-import { eq, and, like, or, desc, asc } from "drizzle-orm";
+import { eq, and, like, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco } from "../drizzle/schema";
+import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, destinos, movimentacoesEstoque, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco, Destino, InsertDestino, MovimentacaoEstoque, InsertMovimentacaoEstoque } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -386,4 +386,148 @@ export async function deleteBloco(produtoId: number) {
   if (!db) throw new Error("Database not available");
 
   await db.delete(blocos).where(eq(blocos.produtoId, produtoId));
+}
+
+// ==================== DESTINOS ====================
+
+export async function listDestinos(filters?: { ativo?: boolean; search?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let conditions = [];
+  if (filters?.ativo !== undefined) {
+    conditions.push(eq(destinos.ativo, filters.ativo));
+  }
+  if (filters?.search) {
+    conditions.push(like(destinos.nome, `%${filters.search}%`));
+  }
+
+  const result = await db
+    .select()
+    .from(destinos)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(destinos.nome));
+
+  return result;
+}
+
+export async function getDestinoById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(destinos).where(eq(destinos.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createDestino(data: InsertDestino) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(destinos).values(data);
+  return result;
+}
+
+export async function updateDestino(id: number, data: Partial<InsertDestino>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(destinos).set(data).where(eq(destinos.id, id));
+}
+
+export async function toggleDestino(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const destino = await getDestinoById(id);
+  if (!destino) throw new Error("Destino not found");
+
+  await db.update(destinos).set({ ativo: !destino.ativo }).where(eq(destinos.id, id));
+}
+
+// ==================== EXPEDIÇÃO / ESTOQUE ====================
+
+export async function getProdutosParaExpedicao(destinoNomes: string[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar IDs dos destinos pelos nomes
+  const destinosResult = await db
+    .select()
+    .from(destinos)
+    .where(and(
+      eq(destinos.ativo, true),
+      sql`${destinos.nome} IN (${sql.join(destinoNomes.map(n => sql`${n}`), sql`, `)})`
+    ));
+
+  if (destinosResult.length === 0) return [];
+
+  const destinoIds = destinosResult.map(d => d.id);
+
+  // Buscar produtos com esses destinos
+  const result = await db
+    .select()
+    .from(produtos)
+    .where(and(
+      eq(produtos.ativo, true),
+      sql`${produtos.destinoId} IN (${sql.join(destinoIds.map(id => sql`${id}`), sql`, `)})`
+    ))
+    .orderBy(asc(produtos.codigoProduto));
+
+  return result;
+}
+
+export async function atualizarSaldoEstoque(produtoId: number, quantidade: number, tipo: 'entrada' | 'saida', motivo: string, usuarioId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Registrar movimentação
+  await db.insert(movimentacoesEstoque).values({
+    produtoId,
+    tipo,
+    quantidade: quantidade.toFixed(5),
+    motivo,
+    usuarioId,
+  });
+
+  // Atualizar saldo do produto
+  const produto = await getProdutoById(produtoId);
+  if (!produto) throw new Error("Produto not found");
+
+  const saldoAtual = parseFloat(produto.saldoEstoque || '0');
+  const novoSaldo = tipo === 'entrada' 
+    ? saldoAtual + quantidade 
+    : Math.max(0, saldoAtual - quantidade);
+
+  await db.update(produtos)
+    .set({ saldoEstoque: novoSaldo.toFixed(5) })
+    .where(eq(produtos.id, produtoId));
+
+  return novoSaldo;
+}
+
+export async function getMovimentacoesEstoque(produtoId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let conditions = [];
+  if (produtoId) {
+    conditions.push(eq(movimentacoesEstoque.produtoId, produtoId));
+  }
+
+  const result = await db
+    .select()
+    .from(movimentacoesEstoque)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(movimentacoesEstoque.createdAt));
+
+  return result;
+}
+
+export async function atualizarSaldoEstoqueDireto(produtoId: number, novoSaldo: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(produtos)
+    .set({ saldoEstoque: novoSaldo.toFixed(5) })
+    .where(eq(produtos.id, produtoId));
 }
