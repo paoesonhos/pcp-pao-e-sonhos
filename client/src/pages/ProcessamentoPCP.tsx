@@ -81,8 +81,8 @@ export default function ProcessamentoPCP() {
   const [fermentoEditado, setFermentoEditado] = useState<Record<string, number>>({});
   const [checksPesagem, setChecksPesagem] = useState<Record<string, boolean>>({});
 
-  // Buscar mapa de produção
-  const { data: mapaData, isLoading: loadingMapa } = trpc.mapaProducao.gerarMapa.useQuery();
+  // Buscar mapa do rascunho salvo (obrigatório salvar antes de processar)
+  const { data: mapaData, isLoading: loadingMapa } = trpc.mapaProducao.carregarRascunho.useQuery();
 
   // Filtrar itens do dia selecionado
   const itensDoDia = useMemo(() => {
@@ -187,7 +187,7 @@ export default function ProcessamentoPCP() {
     );
   }
 
-  if (!mapaData?.success || !mapaData.importacao) {
+  if (!mapaData?.success || mapaData.mapa.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -198,12 +198,12 @@ export default function ProcessamentoPCP() {
           <Card className="border-orange-200">
             <CardContent className="p-8 text-center">
               <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Nenhuma Importação Encontrada</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Nenhum Mapa Salvo</h2>
               <p className="text-gray-600 mb-4">
-                É necessário importar dados de vendas antes de processar o PCP.
+                É necessário salvar o Mapa de Produção antes de processar o PCP.
               </p>
-              <Button onClick={() => navigate("/importa-v5")} className="bg-orange-600 hover:bg-orange-700">
-                Ir para Importação
+              <Button onClick={() => navigate("/mapa-producao")} className="bg-orange-600 hover:bg-orange-700">
+                Ir para Mapa de Produção
               </Button>
             </CardContent>
           </Card>
@@ -229,7 +229,7 @@ export default function ProcessamentoPCP() {
                   Processamento PCP
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Importação #{mapaData.importacao.id} - {mapaData.importacao.dataReferencia}
+                  Mapa salvo com {mapaData.mapa.length} produto(s)
                 </p>
               </div>
             </div>
