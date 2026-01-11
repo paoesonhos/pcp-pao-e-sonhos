@@ -392,3 +392,12 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Bug: Erro ao salvar Mapa Base - mesma correção do rascunho
 
 - [x] Alterar Processamento PCP para buscar qtdPlanejada apenas do rascunho salvo
+
+## Inteligência de Mapa e Validação de Ruptura v2.5 - 11/01/2026
+
+- [x] Backend: Implementar função validarRupturaEstoque
+- [x] Backend: Calcular média diária do mapa recém salvo
+- [x] Frontend: Executar validação após salvar alterações
+- [x] Frontend: Destacar produtos em ruptura em vermelho
+- [x] Frontend: Adicionar tag [REPOSIÇÃO] ao nome
+- [x] Backend: Auto-incluir na segunda-feira sem duplicar

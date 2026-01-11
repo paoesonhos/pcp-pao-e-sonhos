@@ -13,7 +13,7 @@ interface ItemMapa {
   equipe: string;
   diaProduzir: number;
   produtoId?: number | null;
-  isReposicao?: boolean;
+  isReposicao?: boolean | null;
 }
 
 const DIAS_SEMANA = [
@@ -57,6 +57,10 @@ export default function MapaProducao() {
   const salvarMapaBaseMutation = trpc.mapaProducao.salvarMapaBase.useMutation();
   const { data: hasMapaBase } = trpc.mapaProducao.hasMapaBase.useQuery();
   const { data: mapaBaseData, refetch: refetchMapaBase } = trpc.mapaProducao.carregarMapaBase.useQuery(undefined, { enabled: false });
+  const { refetch: validarRuptura } = trpc.mapaProducao.validarRupturaEstoque.useQuery(undefined, { enabled: false });
+  
+  // Estado para produtos em ruptura
+  const [produtosEmRuptura, setProdutosEmRuptura] = useState<string[]>([]);
 
   const { data, isLoading, error } = trpc.mapaProducao.gerarMapa.useQuery();
 
@@ -191,7 +195,41 @@ export default function MapaProducao() {
       });
 
       setAlterado(false);
-      alert("Alterações salvas com sucesso!");
+      
+      // Executar validação de ruptura após salvar
+      const { data: rupturaData } = await validarRuptura();
+      
+      if (rupturaData?.produtosEmRuptura && rupturaData.produtosEmRuptura.length > 0) {
+        // Atualizar lista de produtos em ruptura
+        setProdutosEmRuptura(rupturaData.produtosEmRuptura.map((p: any) => p.codigoProduto));
+        
+        // Se houve itens adicionados, atualizar o mapa
+        if (rupturaData.itensAdicionados && rupturaData.itensAdicionados.length > 0) {
+          // Recarregar o mapa para incluir os novos itens de reposição
+          const novoRascunho = await trpc.useUtils().mapaProducao.carregarRascunho.fetch();
+          if (novoRascunho?.mapa) {
+            setMapa(novoRascunho.mapa);
+          }
+          
+          const nomesAdicionados = rupturaData.itensAdicionados.map((i: any) => i.nomeProduto).join('\n- ');
+          alert(
+            `Alterações salvas com sucesso!\n\n` +
+            `⚠️ ALERTA DE RUPTURA:\n` +
+            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do mínimo.\n\n` +
+            `Itens adicionados automaticamente para segunda-feira:\n- ${nomesAdicionados}`
+          );
+        } else {
+          alert(
+            `Alterações salvas com sucesso!\n\n` +
+            `⚠️ ALERTA DE RUPTURA:\n` +
+            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do mínimo.\n` +
+            `(Já existem itens de reposição no mapa)`
+          );
+        }
+      } else {
+        setProdutosEmRuptura([]);
+        alert("Alterações salvas com sucesso!");
+      }
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
     } finally {
@@ -487,22 +525,30 @@ export default function MapaProducao() {
                       </tr>
                     </thead>
                     <tbody>
-                      {itensGrupo.map((item, idx) => (
+                      {itensGrupo.map((item, idx) => {
+                        const emRuptura = produtosEmRuptura.includes(item.codigo);
+                        const isReposicao = item.isReposicao || item.nome.includes('[REPOSIÇÃO]');
+                        
+                        return (
                         <tr
                           key={item.id}
                           style={{
-                            backgroundColor: isFeriado
+                            backgroundColor: emRuptura || isReposicao
+                              ? "#ffebee"
+                              : isFeriado
                               ? "#fdd"
                               : idx % 2 === 0
                               ? "#fff"
                               : "#fafafa",
+                            borderLeft: emRuptura || isReposicao ? "4px solid #e74c3c" : "none",
                           }}
                         >
-                          <td style={{ padding: 8, borderBottom: "1px solid #eee" }}>
+                          <td style={{ padding: 8, borderBottom: "1px solid #eee", color: emRuptura ? "#c0392b" : "inherit", fontWeight: emRuptura ? "bold" : "normal" }}>
                             {item.codigo}
                           </td>
-                          <td style={{ padding: 8, borderBottom: "1px solid #eee" }}>
+                          <td style={{ padding: 8, borderBottom: "1px solid #eee", color: emRuptura || isReposicao ? "#c0392b" : "inherit", fontWeight: emRuptura || isReposicao ? "bold" : "normal" }}>
                             {item.nome}
+                            {emRuptura && !isReposicao && <span style={{ marginLeft: 8, fontSize: 11, background: "#e74c3c", color: "#fff", padding: "2px 6px", borderRadius: 4 }}>RUPTURA</span>}
                           </td>
                           <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #eee" }}>
                             {item.unidade}
@@ -573,7 +619,8 @@ export default function MapaProducao() {
                             </select>
                           </td>
                         </tr>
-                      ))}
+                      );
+                      })}
                     </tbody>
                   </table>
                 ) : (

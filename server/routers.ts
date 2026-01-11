@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import { eq, sql } from "drizzle-orm";
 
 
 
@@ -802,6 +803,128 @@ export const appRouter = router({
     // Verificar se existe Mapa Base
     hasMapaBase: protectedProcedure.query(async () => {
       return await db.hasMapaBase();
+    }),
+
+    // Validar ruptura de estoque após salvar
+    validarRupturaEstoque: protectedProcedure.query(async () => {
+      const database = await db.getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      
+      const { produtos, destinos, mapaRascunho } = await import("../drizzle/schema");
+      
+      // Buscar rascunho salvo
+      const rascunho = await database.select().from(mapaRascunho);
+      if (rascunho.length === 0) {
+        return { success: true, produtosEmRuptura: [], itensAdicionados: [] };
+      }
+      
+      // Calcular média diária do mapa recém salvo
+      // Agrupar por produto e calcular média
+      const mediaPorProduto = new Map<string, { total: number; dias: Set<number>; codigo: string; nome: string; unidade: string }>();
+      
+      for (const item of rascunho) {
+        const key = item.codigoProduto;
+        if (!mediaPorProduto.has(key)) {
+          mediaPorProduto.set(key, {
+            total: 0,
+            dias: new Set(),
+            codigo: item.codigoProduto,
+            nome: item.nomeProduto,
+            unidade: item.unidade,
+          });
+        }
+        const entry = mediaPorProduto.get(key)!;
+        entry.total += parseFloat(item.qtdPlanejada);
+        entry.dias.add(item.diaProduzir);
+      }
+      
+      // Buscar produtos com destino "Congelado"
+      const produtosCongelados = await database
+        .select()
+        .from(produtos)
+        .leftJoin(destinos, eq(produtos.destinoId, destinos.id))
+        .where(sql`LOWER(${destinos.nome}) = 'congelado'`);
+      
+      const produtosEmRuptura: Array<{
+        codigoProduto: string;
+        nomeProduto: string;
+        unidade: string;
+        saldoAtual: number;
+        estoqueMinimo: number;
+        mediaDiaria: number;
+        qtdSugerida: number;
+      }> = [];
+      
+      const itensAdicionados: Array<{
+        codigoProduto: string;
+        nomeProduto: string;
+        unidade: string;
+        qtdSugerida: number;
+      }> = [];
+      
+      for (const { produtos: produto } of produtosCongelados) {
+        if (!produto) continue;
+        
+        const mediaInfo = mediaPorProduto.get(produto.codigoProduto);
+        if (!mediaInfo) continue;
+        
+        const diasComProducao = mediaInfo.dias.size || 1;
+        const mediaDiaria = mediaInfo.total / diasComProducao;
+        const estoqueMinimoDias = produto.estoqueMinimoDias || 4;
+        const estoqueMinimo = mediaDiaria * estoqueMinimoDias;
+        const saldoAtual = parseFloat(produto.saldoEstoque || '0');
+        
+        if (saldoAtual < estoqueMinimo) {
+          const qtdSugerida = estoqueMinimoDias * mediaDiaria;
+          
+          produtosEmRuptura.push({
+            codigoProduto: produto.codigoProduto,
+            nomeProduto: produto.nome,
+            unidade: produto.unidade,
+            saldoAtual,
+            estoqueMinimo,
+            mediaDiaria,
+            qtdSugerida,
+          });
+          
+          // Verificar se já existe item [REPOSIÇÃO] na segunda-feira
+          const jaExiste = rascunho.some(
+            item => item.codigoProduto === produto.codigoProduto && 
+                    item.diaProduzir === 2 && 
+                    item.nomeProduto.includes('[REPOSIÇÃO]')
+          );
+          
+          if (!jaExiste) {
+            // Inserir no rascunho para segunda-feira
+            await database.insert(mapaRascunho).values({
+              importacaoId: null,
+              produtoId: produto.id,
+              codigoProduto: produto.codigoProduto,
+              nomeProduto: produto.nome + ' [REPOSIÇÃO]',
+              unidade: produto.unidade,
+              qtdImportada: '0',
+              percentualAjuste: 0,
+              qtdPlanejada: qtdSugerida.toFixed(2),
+              diaProduzir: 2, // Segunda-feira
+              equipe: 'Reposição',
+              isReposicao: true,
+            });
+            
+            itensAdicionados.push({
+              codigoProduto: produto.codigoProduto,
+              nomeProduto: produto.nome + ' [REPOSIÇÃO]',
+              unidade: produto.unidade,
+              qtdSugerida,
+            });
+          }
+        }
+      }
+      
+      return {
+        success: true,
+        produtosEmRuptura,
+        itensAdicionados,
+      };
     }),
   }),
 
