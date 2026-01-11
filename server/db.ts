@@ -269,18 +269,22 @@ export async function checkProdutoCodigoExists(codigo: string, excludeId?: numbe
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let conditions = [eq(produtos.codigoProduto, codigo)];
-  if (excludeId) {
-    const result = await db
-      .select()
-      .from(produtos)
-      .where(and(conditions[0], eq(produtos.id, excludeId)))
-      .limit(1);
-    return result.length > 0;
+  // Buscar produtos com o mesmo código
+  const result = await db
+    .select()
+    .from(produtos)
+    .where(eq(produtos.codigoProduto, codigo))
+    .limit(1);
+
+  // Se não encontrou nenhum, não existe duplicata
+  if (result.length === 0) return false;
+
+  // Se encontrou e temos excludeId, verificar se é o mesmo produto
+  if (excludeId && result[0].id === excludeId) {
+    return false; // É o próprio produto, não é duplicata
   }
 
-  const result = await db.select().from(produtos).where(conditions[0]).limit(1);
-  return result.length > 0;
+  return true; // Existe outro produto com o mesmo código
 }
 
 export async function createProduto(data: InsertProduto) {

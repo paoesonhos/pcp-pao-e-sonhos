@@ -368,3 +368,5 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Backend: Inteligência de reposição (validação na importação)
 - [x] Backend: Auto-inclusão de produtos em ruptura no Mapa
 
+
+- [x] Bug: Corrigir validação de código duplicado na edição de produtos
