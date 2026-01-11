@@ -370,3 +370,9 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 
 - [x] Bug: Corrigir validação de código duplicado na edição de produtos
+
+## Gatilho Manual de Processamento - 11/01/2026
+
+- [x] Frontend: Adicionar botão "Processar PCP" no Mapa de Produção
+- [x] Backend: Implementar lógica de processamento manual
+- [x] Frontend: Processamento PCP em stand-by até clique do botão

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 
 interface ItemMapa {
   id: number;
@@ -44,6 +45,8 @@ export default function MapaProducao() {
   const [feriados, setFeriados] = useState<number[]>([]);
   const [importacao, setImportacao] = useState<any>(null);
   const [erro, setErro] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { data, isLoading, error } = trpc.mapaProducao.gerarMapa.useQuery();
 
@@ -146,6 +149,31 @@ export default function MapaProducao() {
 
   const gruposPorDia = agruparPorDia();
 
+  // Processar PCP manualmente
+  const handleProcessarPCP = async () => {
+    if (mapa.length === 0) {
+      alert("Não há itens no mapa para processar.");
+      return;
+    }
+    
+    const confirmar = window.confirm(
+      "Deseja processar o PCP com os dados atuais do mapa?\n\n" +
+      "Isso irá gerar as fichas de pré-pesagem e produção."
+    );
+    
+    if (!confirmar) return;
+    
+    setProcessando(true);
+    try {
+      // Redirecionar para a página de processamento
+      setLocation("/processamento-pcp");
+    } catch (err: any) {
+      alert("Erro ao processar: " + err.message);
+    } finally {
+      setProcessando(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={{ padding: 20, textAlign: "center" }}>
@@ -156,13 +184,37 @@ export default function MapaProducao() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1400, margin: "0 auto" }}>
-      <h1 style={{ marginBottom: 10 }}>Mapa de Produção</h1>
-
-      {importacao && (
-        <p style={{ color: "#666", marginBottom: 20 }}>
-          Importação #{importacao.id} - Data Ref: {importacao.dataReferencia}
-        </p>
-      )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h1 style={{ marginBottom: 10 }}>Mapa de Produção</h1>
+          {importacao && (
+            <p style={{ color: "#666", margin: 0 }}>
+              Importação #{importacao.id} - Data Ref: {importacao.dataReferencia}
+            </p>
+          )}
+        </div>
+        {mapa.length > 0 && (
+          <button
+            onClick={handleProcessarPCP}
+            disabled={processando}
+            style={{
+              padding: "12px 24px",
+              fontSize: 16,
+              fontWeight: "bold",
+              background: processando ? "#999" : "#27ae60",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              cursor: processando ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {processando ? "Processando..." : "▶ Processar PCP"}
+          </button>
+        )}
+      </div>
 
       {erro && (
         <div style={{ color: "red", padding: 15, background: "#fee", marginBottom: 20 }}>
