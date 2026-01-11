@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE mapa_rascunho (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  importacaoId INT,\n  produtoId INT,\n  codigoProduto VARCHAR(50) NOT NULL,\n  nomeProduto VARCHAR(200) NOT NULL,\n  unidade VARCHAR(20) NOT NULL,\n  qtdImportada DECIMAL(10,2) NOT NULL,\n  percentualAjuste INT DEFAULT 0 NOT NULL,\n  qtdPlanejada DECIMAL(10,2) NOT NULL,\n  diaProduzir INT NOT NULL,\n  equipe VARCHAR(50) DEFAULT 'Equipe 1',\n  isReposicao BOOLEAN DEFAULT FALSE,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,\n  FOREIGN KEY (importacaoId) REFERENCES importacoes_v5(id) ON DELETE CASCADE\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute CREATE TABLE mapa_rascunho (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  importacaoId INT,\n  produtoId INT,\n  codigoProduto VARCHAR(50) NOT NULL,\n  nomeProduto VARCHAR(200) NOT NULL,\n  unidade VARCHAR(20) NOT NULL,\n  qtdImportada DECIMAL(10,2) NOT NULL,\n  percentualAjuste INT DEFAULT 0 NOT NULL,\n  qtdPlanejada DECIMAL(10,2) NOT NULL,\n  diaProduzir INT NOT NULL,\n  equipe VARCHAR(50) DEFAULT 'Equipe 1',\n  isReposicao BOOLEAN DEFAULT FALSE,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,\n  FOREIGN KEY (importacaoId) REFERENCES importacoes_v5(id) ON DELETE CASCADE\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 276
+}

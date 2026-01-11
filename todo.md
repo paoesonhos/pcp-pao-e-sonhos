@@ -388,3 +388,4 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Frontend: Botão "Carregar Mapa Base"
 
 - [x] Bug: Corrigir erro ao salvar mapa - produtoId não preenchido nos itens importados
+- [x] Bug: Erro persiste ao salvar mapa - valores undefined/null

@@ -715,6 +715,9 @@ export const appRouter = router({
         importacaoId: z.number().int().nullable(),
         itens: z.array(z.object({
           produtoId: z.number().int(),
+          codigoProduto: z.string(),
+          nomeProduto: z.string(),
+          unidade: z.string(),
           qtdImportada: z.string(),
           percentualAjuste: z.number().int(),
           qtdPlanejada: z.string(),

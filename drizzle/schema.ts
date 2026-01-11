@@ -350,7 +350,10 @@ export type InsertMapaBase = typeof mapaBase.$inferInsert;
 export const mapaRascunho = mysqlTable("mapa_rascunho", {
   id: int("id").autoincrement().primaryKey(),
   importacaoId: int("importacaoId").references(() => importacoesV5.id, { onDelete: "cascade" }),
-  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  produtoId: int("produtoId"),
+  codigoProduto: varchar("codigoProduto", { length: 50 }).notNull(),
+  nomeProduto: varchar("nomeProduto", { length: 200 }).notNull(),
+  unidade: varchar("unidade", { length: 20 }).notNull(),
   qtdImportada: decimal("qtdImportada", { precision: 10, scale: 2 }).notNull(),
   percentualAjuste: int("percentualAjuste").default(0).notNull(),
   qtdPlanejada: decimal("qtdPlanejada", { precision: 10, scale: 2 }).notNull(),

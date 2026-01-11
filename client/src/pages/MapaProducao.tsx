@@ -171,9 +171,12 @@ export default function MapaProducao() {
 
     setSalvando(true);
     try {
-      // Buscar produtoId para cada item
+      // Preparar itens para salvar
       const itensParaSalvar = mapa.map(item => ({
         produtoId: item.produtoId || 0,
+        codigoProduto: item.codigo,
+        nomeProduto: item.nome,
+        unidade: item.unidade,
         qtdImportada: item.qtdImportada.toString(),
         percentualAjuste: item.percentualAjuste,
         qtdPlanejada: item.qtdPlanejada.toString(),

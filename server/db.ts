@@ -610,7 +610,7 @@ export async function getMapaRascunho() {
   return result;
 }
 
-export async function salvarMapaRascunho(importacaoId: number | null, itens: { produtoId: number; qtdImportada: string; percentualAjuste: number; qtdPlanejada: string; diaProduzir: number; equipe: string; isReposicao?: boolean }[]) {
+export async function salvarMapaRascunho(importacaoId: number | null, itens: { produtoId: number; codigoProduto: string; nomeProduto: string; unidade: string; qtdImportada: string; percentualAjuste: number; qtdPlanejada: string; diaProduzir: number; equipe: string; isReposicao?: boolean }[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -621,7 +621,10 @@ export async function salvarMapaRascunho(importacaoId: number | null, itens: { p
   if (itens.length > 0) {
     await db.insert(mapaRascunho).values(itens.map(item => ({
       importacaoId: importacaoId,
-      produtoId: item.produtoId,
+      produtoId: item.produtoId || null,
+      codigoProduto: item.codigoProduto,
+      nomeProduto: item.nomeProduto,
+      unidade: item.unidade,
       qtdImportada: item.qtdImportada,
       percentualAjuste: item.percentualAjuste,
       qtdPlanejada: item.qtdPlanejada,
