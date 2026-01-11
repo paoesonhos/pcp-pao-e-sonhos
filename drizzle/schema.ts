@@ -326,3 +326,63 @@ export const movimentacoesEstoqueRelations = relations(movimentacoesEstoque, ({ 
     references: [users.id],
   }),
 }));
+
+
+/**
+ * Mapa Base: Template de produção semanal (último mapa salvo)
+ */
+export const mapaBase = mysqlTable("mapa_base", {
+  id: int("id").autoincrement().primaryKey(),
+  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  quantidade: decimal("quantidade", { precision: 10, scale: 2 }).notNull(),
+  percentualAjuste: int("percentualAjuste").default(0).notNull(),
+  diaProduzir: int("diaProduzir").notNull(), // 2=Seg, 3=Ter, etc.
+  equipe: varchar("equipe", { length: 50 }).default("Equipe 1"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MapaBase = typeof mapaBase.$inferSelect;
+export type InsertMapaBase = typeof mapaBase.$inferInsert;
+
+/**
+ * Mapa Rascunho: Edições temporárias do mapa de produção atual
+ */
+export const mapaRascunho = mysqlTable("mapa_rascunho", {
+  id: int("id").autoincrement().primaryKey(),
+  importacaoId: int("importacaoId").references(() => importacoesV5.id, { onDelete: "cascade" }),
+  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  qtdImportada: decimal("qtdImportada", { precision: 10, scale: 2 }).notNull(),
+  percentualAjuste: int("percentualAjuste").default(0).notNull(),
+  qtdPlanejada: decimal("qtdPlanejada", { precision: 10, scale: 2 }).notNull(),
+  diaProduzir: int("diaProduzir").notNull(),
+  equipe: varchar("equipe", { length: 50 }).default("Equipe 1"),
+  isReposicao: boolean("isReposicao").default(false),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MapaRascunho = typeof mapaRascunho.$inferSelect;
+export type InsertMapaRascunho = typeof mapaRascunho.$inferInsert;
+
+/**
+ * Relations para mapa_base
+ */
+export const mapaBaseRelations = relations(mapaBase, ({ one }) => ({
+  produto: one(produtos, {
+    fields: [mapaBase.produtoId],
+    references: [produtos.id],
+  }),
+}));
+
+/**
+ * Relations para mapa_rascunho
+ */
+export const mapaRascunhoRelations = relations(mapaRascunho, ({ one }) => ({
+  produto: one(produtos, {
+    fields: [mapaRascunho.produtoId],
+    references: [produtos.id],
+  }),
+  importacao: one(importacoesV5, {
+    fields: [mapaRascunho.importacaoId],
+    references: [importacoesV5.id],
+  }),
+}));

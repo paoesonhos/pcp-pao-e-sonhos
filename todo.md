@@ -376,3 +376,13 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Frontend: Adicionar botão "Processar PCP" no Mapa de Produção
 - [x] Backend: Implementar lógica de processamento manual
 - [x] Frontend: Processamento PCP em stand-by até clique do botão
+
+## Mapa Base e Fluxo de Edição - 11/01/2026
+
+- [x] Schema: Criar tabela mapa_base
+- [x] Schema: Criar tabela mapa_rascunho
+- [x] Backend: APIs para salvar/carregar Mapa Base
+- [x] Backend: APIs para salvar/carregar Rascunho
+- [x] Frontend: Botão "Salvar Alterações"
+- [x] Frontend: Botão "Salvar como Mapa Base"
+- [x] Frontend: Botão "Carregar Mapa Base"

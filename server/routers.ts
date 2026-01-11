@@ -699,6 +699,95 @@ export const appRouter = router({
         mapa,
       };
     }),
+
+    // Salvar alterações do mapa (rascunho)
+    salvarRascunho: protectedProcedure
+      .input(z.object({
+        importacaoId: z.number().int().nullable(),
+        itens: z.array(z.object({
+          produtoId: z.number().int(),
+          qtdImportada: z.string(),
+          percentualAjuste: z.number().int(),
+          qtdPlanejada: z.string(),
+          diaProduzir: z.number().int(),
+          equipe: z.string(),
+          isReposicao: z.boolean().optional(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.salvarMapaRascunho(input.importacaoId, input.itens);
+      }),
+
+    // Carregar rascunho salvo
+    carregarRascunho: protectedProcedure.query(async () => {
+      const rascunho = await db.getMapaRascunho();
+      return {
+        success: true,
+        mapa: rascunho.map((item, idx) => ({
+          id: idx + 1,
+          codigo: item.codigoProduto,
+          nome: item.nomeProduto,
+          unidade: item.unidade,
+          qtdImportada: parseFloat(item.qtdImportada),
+          percentualAjuste: item.percentualAjuste,
+          qtdPlanejada: parseFloat(item.qtdPlanejada),
+          equipe: item.equipe || "Equipe 1",
+          diaProduzir: item.diaProduzir,
+          produtoId: item.produtoId,
+          isReposicao: item.isReposicao,
+        })),
+      };
+    }),
+
+    // Verificar se existe rascunho
+    hasRascunho: protectedProcedure.query(async () => {
+      return await db.hasMapaRascunho();
+    }),
+
+    // Limpar rascunho
+    limparRascunho: protectedProcedure.mutation(async () => {
+      return await db.limparMapaRascunho();
+    }),
+
+    // Salvar como Mapa Base (template)
+    salvarMapaBase: protectedProcedure
+      .input(z.object({
+        itens: z.array(z.object({
+          produtoId: z.number().int(),
+          quantidade: z.string(),
+          percentualAjuste: z.number().int(),
+          diaProduzir: z.number().int(),
+          equipe: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.salvarMapaBase(input.itens);
+      }),
+
+    // Carregar Mapa Base
+    carregarMapaBase: protectedProcedure.query(async () => {
+      const mapaBase = await db.getMapaBase();
+      return {
+        success: true,
+        mapa: mapaBase.map((item, idx) => ({
+          id: idx + 1,
+          codigo: item.codigoProduto,
+          nome: item.nomeProduto,
+          unidade: item.unidade,
+          qtdImportada: parseFloat(item.quantidade),
+          percentualAjuste: item.percentualAjuste,
+          qtdPlanejada: parseFloat(item.quantidade) * (1 + item.percentualAjuste / 100),
+          equipe: item.equipe || "Equipe 1",
+          diaProduzir: item.diaProduzir,
+          produtoId: item.produtoId,
+        })),
+      };
+    }),
+
+    // Verificar se existe Mapa Base
+    hasMapaBase: protectedProcedure.query(async () => {
+      return await db.hasMapaBase();
+    }),
   }),
 
   // ==================== PCP - CÁLCULO E PROCESSAMENTO ====================

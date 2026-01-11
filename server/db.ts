@@ -1,6 +1,6 @@
 import { eq, and, like, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, destinos, movimentacoesEstoque, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco, Destino, InsertDestino, MovimentacaoEstoque, InsertMovimentacaoEstoque } from "../drizzle/schema";
+import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, destinos, movimentacoesEstoque, mapaBase, mapaRascunho, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco, Destino, InsertDestino, MovimentacaoEstoque, InsertMovimentacaoEstoque, MapaBase, InsertMapaBase, MapaRascunho, InsertMapaRascunho } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -534,4 +534,126 @@ export async function atualizarSaldoEstoqueDireto(produtoId: number, novoSaldo: 
   await db.update(produtos)
     .set({ saldoEstoque: novoSaldo.toFixed(5) })
     .where(eq(produtos.id, produtoId));
+}
+
+// ==================== MAPA BASE (TEMPLATE) ====================
+
+export async function getMapaBase() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: mapaBase.id,
+      produtoId: mapaBase.produtoId,
+      quantidade: mapaBase.quantidade,
+      percentualAjuste: mapaBase.percentualAjuste,
+      diaProduzir: mapaBase.diaProduzir,
+      equipe: mapaBase.equipe,
+      codigoProduto: produtos.codigoProduto,
+      nomeProduto: produtos.nome,
+      unidade: produtos.unidade,
+    })
+    .from(mapaBase)
+    .innerJoin(produtos, eq(mapaBase.produtoId, produtos.id))
+    .orderBy(asc(mapaBase.diaProduzir), asc(produtos.nome));
+
+  return result;
+}
+
+export async function salvarMapaBase(itens: { produtoId: number; quantidade: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Limpar mapa base anterior
+  await db.delete(mapaBase);
+
+  // Inserir novos itens
+  if (itens.length > 0) {
+    await db.insert(mapaBase).values(itens.map(item => ({
+      produtoId: item.produtoId,
+      quantidade: item.quantidade,
+      percentualAjuste: item.percentualAjuste,
+      diaProduzir: item.diaProduzir,
+      equipe: item.equipe || "Equipe 1",
+    })));
+  }
+
+  return { success: true };
+}
+
+// ==================== MAPA RASCUNHO ====================
+
+export async function getMapaRascunho() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: mapaRascunho.id,
+      importacaoId: mapaRascunho.importacaoId,
+      produtoId: mapaRascunho.produtoId,
+      qtdImportada: mapaRascunho.qtdImportada,
+      percentualAjuste: mapaRascunho.percentualAjuste,
+      qtdPlanejada: mapaRascunho.qtdPlanejada,
+      diaProduzir: mapaRascunho.diaProduzir,
+      equipe: mapaRascunho.equipe,
+      isReposicao: mapaRascunho.isReposicao,
+      codigoProduto: produtos.codigoProduto,
+      nomeProduto: produtos.nome,
+      unidade: produtos.unidade,
+    })
+    .from(mapaRascunho)
+    .innerJoin(produtos, eq(mapaRascunho.produtoId, produtos.id))
+    .orderBy(asc(mapaRascunho.diaProduzir), asc(produtos.nome));
+
+  return result;
+}
+
+export async function salvarMapaRascunho(importacaoId: number | null, itens: { produtoId: number; qtdImportada: string; percentualAjuste: number; qtdPlanejada: string; diaProduzir: number; equipe: string; isReposicao?: boolean }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Limpar rascunho anterior
+  await db.delete(mapaRascunho);
+
+  // Inserir novos itens
+  if (itens.length > 0) {
+    await db.insert(mapaRascunho).values(itens.map(item => ({
+      importacaoId: importacaoId,
+      produtoId: item.produtoId,
+      qtdImportada: item.qtdImportada,
+      percentualAjuste: item.percentualAjuste,
+      qtdPlanejada: item.qtdPlanejada,
+      diaProduzir: item.diaProduzir,
+      equipe: item.equipe || "Equipe 1",
+      isReposicao: item.isReposicao || false,
+    })));
+  }
+
+  return { success: true };
+}
+
+export async function limparMapaRascunho() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(mapaRascunho);
+  return { success: true };
+}
+
+export async function hasMapaBase() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select({ count: sql<number>`count(*)` }).from(mapaBase);
+  return result[0]?.count > 0;
+}
+
+export async function hasMapaRascunho() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select({ count: sql<number>`count(*)` }).from(mapaRascunho);
+  return result[0]?.count > 0;
 }

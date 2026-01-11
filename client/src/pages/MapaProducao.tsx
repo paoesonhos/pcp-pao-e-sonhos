@@ -12,6 +12,8 @@ interface ItemMapa {
   qtdPlanejada: number;
   equipe: string;
   diaProduzir: number;
+  produtoId?: number;
+  isReposicao?: boolean;
 }
 
 const DIAS_SEMANA = [
@@ -46,7 +48,15 @@ export default function MapaProducao() {
   const [importacao, setImportacao] = useState<any>(null);
   const [erro, setErro] = useState("");
   const [processando, setProcessando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [alterado, setAlterado] = useState(false);
   const [, setLocation] = useLocation();
+
+  // Mutations para salvar
+  const salvarRascunhoMutation = trpc.mapaProducao.salvarRascunho.useMutation();
+  const salvarMapaBaseMutation = trpc.mapaProducao.salvarMapaBase.useMutation();
+  const { data: hasMapaBase } = trpc.mapaProducao.hasMapaBase.useQuery();
+  const { data: mapaBaseData, refetch: refetchMapaBase } = trpc.mapaProducao.carregarMapaBase.useQuery(undefined, { enabled: false });
 
   const { data, isLoading, error } = trpc.mapaProducao.gerarMapa.useQuery();
 
@@ -86,6 +96,7 @@ export default function MapaProducao() {
         return item;
       })
     );
+    setAlterado(true);
   };
 
   // Atualizar dia de produção
@@ -100,6 +111,7 @@ export default function MapaProducao() {
         return item;
       })
     );
+    setAlterado(true);
   };
 
   // Atualizar equipe
@@ -107,6 +119,7 @@ export default function MapaProducao() {
     setMapa((prev) =>
       prev.map((item) => (item.id === id ? { ...item, equipe: novaEquipe } : item))
     );
+    setAlterado(true);
   };
 
   // Toggle feriado
@@ -149,6 +162,97 @@ export default function MapaProducao() {
 
   const gruposPorDia = agruparPorDia();
 
+  // Salvar alterações (rascunho)
+  const handleSalvarAlteracoes = async () => {
+    if (mapa.length === 0) {
+      alert("Não há itens para salvar.");
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      // Buscar produtoId para cada item
+      const itensParaSalvar = mapa.map(item => ({
+        produtoId: item.produtoId || 0,
+        qtdImportada: item.qtdImportada.toString(),
+        percentualAjuste: item.percentualAjuste,
+        qtdPlanejada: item.qtdPlanejada.toString(),
+        diaProduzir: item.diaProduzir,
+        equipe: item.equipe,
+        isReposicao: item.isReposicao || false,
+      }));
+
+      await salvarRascunhoMutation.mutateAsync({
+        importacaoId: importacao?.id || null,
+        itens: itensParaSalvar,
+      });
+
+      setAlterado(false);
+      alert("Alterações salvas com sucesso!");
+    } catch (err: any) {
+      alert("Erro ao salvar: " + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Salvar como Mapa Base
+  const handleSalvarMapaBase = async () => {
+    if (mapa.length === 0) {
+      alert("Não há itens para salvar como Mapa Base.");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "Deseja salvar o mapa atual como Mapa Base?\n\n" +
+      "O Mapa Base anterior será substituído."
+    );
+
+    if (!confirmar) return;
+
+    setSalvando(true);
+    try {
+      const itensParaSalvar = mapa.map(item => ({
+        produtoId: item.produtoId || 0,
+        quantidade: item.qtdPlanejada.toString(),
+        percentualAjuste: item.percentualAjuste,
+        diaProduzir: item.diaProduzir,
+        equipe: item.equipe,
+      }));
+
+      await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
+      alert("Mapa Base salvo com sucesso!");
+    } catch (err: any) {
+      alert("Erro ao salvar Mapa Base: " + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Carregar Mapa Base
+  const handleCarregarMapaBase = async () => {
+    if (alterado) {
+      const confirmar = window.confirm(
+        "Existem alterações não salvas. Deseja descartá-las e carregar o Mapa Base?"
+      );
+      if (!confirmar) return;
+    }
+
+    try {
+      const result = await refetchMapaBase();
+      if (result.data?.success && result.data.mapa.length > 0) {
+        setMapa(result.data.mapa);
+        setImportacao(null);
+        setAlterado(false);
+        alert("Mapa Base carregado com sucesso!");
+      } else {
+        alert("Nenhum Mapa Base encontrado.");
+      }
+    } catch (err: any) {
+      alert("Erro ao carregar Mapa Base: " + err.message);
+    }
+  };
+
   // Processar PCP manualmente
   const handleProcessarPCP = async () => {
     if (mapa.length === 0) {
@@ -187,33 +291,93 @@ export default function MapaProducao() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
           <h1 style={{ marginBottom: 10 }}>Mapa de Produção</h1>
-          {importacao && (
+          {importacao ? (
             <p style={{ color: "#666", margin: 0 }}>
               Importação #{importacao.id} - Data Ref: {importacao.dataReferencia}
+              {alterado && <span style={{ color: "#e67e22", marginLeft: 10 }}>● Alterações não salvas</span>}
+            </p>
+          ) : mapa.length > 0 && (
+            <p style={{ color: "#3498db", margin: 0 }}>
+              📂 Mapa Base carregado
+              {alterado && <span style={{ color: "#e67e22", marginLeft: 10 }}>● Alterações não salvas</span>}
             </p>
           )}
         </div>
-        {mapa.length > 0 && (
-          <button
-            onClick={handleProcessarPCP}
-            disabled={processando}
-            style={{
-              padding: "12px 24px",
-              fontSize: 16,
-              fontWeight: "bold",
-              background: processando ? "#999" : "#27ae60",
-              color: "white",
-              border: "none",
-              borderRadius: 8,
-              cursor: processando ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            {processando ? "Processando..." : "▶ Processar PCP"}
-          </button>
-        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {/* Botão Carregar Mapa Base */}
+          {hasMapaBase && (
+            <button
+              onClick={handleCarregarMapaBase}
+              disabled={salvando}
+              style={{
+                padding: "10px 16px",
+                fontSize: 14,
+                background: "#3498db",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: salvando ? "not-allowed" : "pointer",
+              }}
+            >
+              📂 Carregar Mapa Base
+            </button>
+          )}
+          {/* Botão Salvar Alterações */}
+          {mapa.length > 0 && (
+            <button
+              onClick={handleSalvarAlteracoes}
+              disabled={salvando || !alterado}
+              style={{
+                padding: "10px 16px",
+                fontSize: 14,
+                background: alterado ? "#e67e22" : "#bdc3c7",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: salvando || !alterado ? "not-allowed" : "pointer",
+              }}
+            >
+              {salvando ? "Salvando..." : "💾 Salvar Alterações"}
+            </button>
+          )}
+          {/* Botão Salvar como Mapa Base */}
+          {mapa.length > 0 && (
+            <button
+              onClick={handleSalvarMapaBase}
+              disabled={salvando}
+              style={{
+                padding: "10px 16px",
+                fontSize: 14,
+                background: "#9b59b6",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: salvando ? "not-allowed" : "pointer",
+              }}
+            >
+              📁 Salvar como Mapa Base
+            </button>
+          )}
+          {/* Botão Processar PCP */}
+          {mapa.length > 0 && (
+            <button
+              onClick={handleProcessarPCP}
+              disabled={processando}
+              style={{
+                padding: "12px 24px",
+                fontSize: 16,
+                fontWeight: "bold",
+                background: processando ? "#999" : "#27ae60",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                cursor: processando ? "not-allowed" : "pointer",
+              }}
+            >
+              {processando ? "Processando..." : "▶ Processar PCP"}
+            </button>
+          )}
+        </div>
       </div>
 
       {erro && (
