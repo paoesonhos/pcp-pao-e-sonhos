@@ -61,6 +61,9 @@ export default function MapaProducao() {
   
   // Estado para produtos em ruptura
   const [produtosEmRuptura, setProdutosEmRuptura] = useState<string[]>([]);
+  
+  // Utils para refetch
+  const utils = trpc.useUtils();
 
   const { data, isLoading, error } = trpc.mapaProducao.gerarMapa.useQuery();
 
@@ -206,7 +209,7 @@ export default function MapaProducao() {
         // Se houve itens adicionados, atualizar o mapa
         if (rupturaData.itensAdicionados && rupturaData.itensAdicionados.length > 0) {
           // Recarregar o mapa para incluir os novos itens de reposição
-          const novoRascunho = await trpc.useUtils().mapaProducao.carregarRascunho.fetch();
+          const novoRascunho = await utils.mapaProducao.carregarRascunho.fetch();
           if (novoRascunho?.mapa) {
             setMapa(novoRascunho.mapa);
           }

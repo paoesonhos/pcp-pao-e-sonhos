@@ -401,3 +401,5 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Frontend: Destacar produtos em ruptura em vermelho
 - [x] Frontend: Adicionar tag [REPOSIÇÃO] ao nome
 - [x] Backend: Auto-incluir na segunda-feira sem duplicar
+
+- [x] Bug: Erro React #321 ao salvar alterações no Mapa de Produção
