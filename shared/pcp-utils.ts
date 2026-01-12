@@ -417,6 +417,19 @@ export function processarExplosaoCompleta(
 /**
  * Interface para produto intermediário consolidado
  */
+/**
+ * Interface para ingrediente de um intermediário
+ */
+export interface IngredienteIntermediario {
+  componenteId: number;
+  nomeComponente: string;
+  quantidadeBase: number; // proporção na ficha técnica
+  quantidadeCalculada: number; // quantidade para a massa total
+  quantidadeArredondada: number; // após arredondamento 0.005kg
+  unidade: 'kg' | 'un';
+  editavel: boolean;
+}
+
 export interface IntermediarioConsolidado {
   produtoId: number;
   nomeProduto: string;
@@ -425,6 +438,7 @@ export interface IntermediarioConsolidado {
   unidade: 'kg' | 'un';
   nivel: number; // 1 = Massa Base, 2 = Sub-bloco
   produtosFilhos: string[]; // produtos que usam este intermediário
+  ingredientes: IngredienteIntermediario[]; // ficha técnica do intermediário
 }
 
 /**
@@ -536,9 +550,11 @@ export function explodirComIntermediarios(
 
 /**
  * Consolida intermediários e aplica arredondamento
+ * Inclui ficha técnica (ingredientes) de cada intermediário
  */
 export function consolidarIntermediarios(
-  intermediariosMap: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>
+  intermediariosMap: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>,
+  buscaFichaTecnica?: BuscaFichaTecnicaFn
 ): IntermediarioConsolidado[] {
   const resultado: IntermediarioConsolidado[] = [];
   
@@ -550,6 +566,41 @@ export function consolidarIntermediarios(
       quantidadeArredondada = arredondarUnidades(dados.quantidade);
     }
     
+    // Calcular ingredientes do intermediário
+    const ingredientes: IngredienteIntermediario[] = [];
+    if (buscaFichaTecnica) {
+      const fichaTecnica = buscaFichaTecnica(produtoId);
+      if (fichaTecnica) {
+        for (const componente of fichaTecnica) {
+          // Só incluir ingredientes (não outros produtos)
+          if (componente.tipoComponente === 'ingrediente') {
+            const quantidadeCalculada = quantidadeArredondada * componente.quantidadeBase;
+            let qtdArredondada: number;
+            if (componente.unidade === 'kg') {
+              qtdArredondada = arredondarPesagem(quantidadeCalculada);
+            } else {
+              qtdArredondada = arredondarUnidades(quantidadeCalculada);
+            }
+            
+            const isFermento = componente.nomeComponente.toUpperCase().includes('FERMENTO');
+            
+            ingredientes.push({
+              componenteId: componente.componenteId,
+              nomeComponente: componente.nomeComponente,
+              quantidadeBase: componente.quantidadeBase,
+              quantidadeCalculada,
+              quantidadeArredondada: qtdArredondada,
+              unidade: componente.unidade,
+              editavel: isFermento,
+            });
+          }
+        }
+      }
+    }
+    
+    // Ordenar ingredientes por nome
+    ingredientes.sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
+    
     resultado.push({
       produtoId,
       nomeProduto: dados.nome,
@@ -558,6 +609,7 @@ export function consolidarIntermediarios(
       unidade: dados.unidade,
       nivel: dados.nivel,
       produtosFilhos: dados.filhos,
+      ingredientes,
     });
   }
   
@@ -591,7 +643,7 @@ export function processarExplosaoComIntermediarios(
   
   return {
     insumos: consolidarInsumos(mapaInsumos),
-    intermediarios: consolidarIntermediarios(intermediariosMap),
+    intermediarios: consolidarIntermediarios(intermediariosMap, buscaFichaTecnica),
   };
 }
 
@@ -649,6 +701,6 @@ export function processarMapaComIntermediarios(
   
   return {
     insumos: consolidarInsumos(insumosGlobal),
-    intermediarios: consolidarIntermediarios(intermediariosGlobal),
+    intermediarios: consolidarIntermediarios(intermediariosGlobal, buscaFichaTecnica),
   };
 }

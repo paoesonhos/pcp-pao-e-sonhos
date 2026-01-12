@@ -423,3 +423,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Exibir intermediários com: nome, quantidade total, unidade, produtos que usam
 - [x] Testar com dados reais - 42 testes passando
 - [x] Validar exibição de intermediários na interface
+
+
+## Módulo 4.1: Ficha Técnica dos Intermediários
+
+- [x] Atualizar backend para retornar ingredientes de cada intermediário
+- [x] Atualizar frontend para exibir ficha técnica detalhada na seção de intermediários
+- [x] Testar exibição com dados reais

@@ -52,6 +52,16 @@ interface ItemProcessado {
   erro?: string;
 }
 
+interface IngredienteIntermediario {
+  componenteId: number;
+  nomeComponente: string;
+  quantidadeBase: number;
+  quantidadeCalculada: number;
+  quantidadeArredondada: number;
+  unidade: 'kg' | 'un';
+  editavel: boolean;
+}
+
 interface IntermediarioConsolidado {
   produtoId: number;
   nomeProduto: string;
@@ -60,6 +70,7 @@ interface IntermediarioConsolidado {
   unidade: 'kg' | 'un';
   nivel: number; // 1 = Massa Base, 2 = Sub-bloco
   produtosFilhos: string[]; // produtos que usam este intermediário
+  ingredientes: IngredienteIntermediario[]; // ficha técnica do intermediário
 }
 
 // Função de arredondamento para pesagem (múltiplos de 0.005)
@@ -411,56 +422,113 @@ export default function ProcessamentoPCP() {
                         Produtos intermediários que devem ser preparados antes dos produtos finais
                       </p>
                     </CardHeader>
-                    <CardContent className="p-4">
-                      <table className="w-full">
-                        <thead className="bg-purple-100">
-                          <tr>
-                            <th className="px-4 py-2 text-left text-sm font-semibold text-purple-800">Massa/Intermediário</th>
-                            <th className="px-4 py-2 text-right text-sm font-semibold text-purple-800">Qtd Total</th>
-                            <th className="px-4 py-2 text-center text-sm font-semibold text-purple-800">Unid.</th>
-                            <th className="px-4 py-2 text-left text-sm font-semibold text-purple-800">Usado em</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {processamentoData.intermediarios.map((inter: IntermediarioConsolidado, idx: number) => (
-                            <tr key={inter.produtoId} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={inter.nivel === 1 ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-indigo-100 text-indigo-700 border-indigo-300'}
-                                  >
-                                    N{inter.nivel}
-                                  </Badge>
-                                  <span className="font-medium text-gray-800">{inter.nomeProduto}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <span className="font-mono font-bold text-lg text-purple-700">
-                                  {formatarNumero(inter.quantidadeArredondada, inter.unidade)}
+                    <CardContent className="p-4 space-y-6">
+                      {processamentoData.intermediarios.map((inter: IntermediarioConsolidado, idx: number) => (
+                        <div key={inter.produtoId} className="border border-purple-200 rounded-lg overflow-hidden">
+                          {/* Cabeçalho do Intermediário */}
+                          <div className="bg-purple-100 px-4 py-3 border-b border-purple-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant="outline" 
+                                  className={inter.nivel === 1 ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-indigo-200 text-indigo-800 border-indigo-400'}
+                                >
+                                  N{inter.nivel}
+                                </Badge>
+                                <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono font-bold text-xl text-purple-700">
+                                  {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
                                 </span>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <Badge variant="secondary" className="bg-gray-100">{inter.unidade}</Badge>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex flex-wrap gap-1">
-                                  {inter.produtosFilhos.slice(0, 3).map((filho, fIdx) => (
-                                    <Badge key={fIdx} variant="outline" className="text-xs bg-gray-50">
-                                      {filho}
-                                    </Badge>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span className="text-xs text-purple-600 mr-1">Usado em:</span>
+                              {inter.produtosFilhos.slice(0, 5).map((filho, fIdx) => (
+                                <Badge key={fIdx} variant="outline" className="text-xs bg-white/50 text-purple-700 border-purple-300">
+                                  {filho}
+                                </Badge>
+                              ))}
+                              {inter.produtosFilhos.length > 5 && (
+                                <Badge variant="outline" className="text-xs bg-purple-200 text-purple-700">
+                                  +{inter.produtosFilhos.length - 5}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Ficha Técnica - Ingredientes */}
+                          {inter.ingredientes && inter.ingredientes.length > 0 && (
+                            <div className="p-4 bg-white">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                <ClipboardList className="w-4 h-4 text-purple-600" />
+                                Ficha Técnica - Ingredientes
+                              </h4>
+                              <table className="w-full text-sm">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
+                                    <th className="px-3 py-2 text-right text-gray-600">Proporção</th>
+                                    <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
+                                    <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {inter.ingredientes.map((ing, iIdx) => (
+                                    <tr key={ing.componenteId} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                      <td className="px-3 py-2">
+                                        <span className="font-medium text-gray-800">{ing.nomeComponente}</span>
+                                        {ing.editavel && (
+                                          <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                                            Editável
+                                          </Badge>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-right font-mono text-gray-500">
+                                        {(ing.quantidadeBase * 100).toFixed(1)}%
+                                      </td>
+                                      <td className="px-3 py-2 text-right">
+                                        <span className="font-mono font-semibold text-purple-700">
+                                          {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2 text-center">
+                                        <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
+                                      </td>
+                                    </tr>
                                   ))}
-                                  {inter.produtosFilhos.length > 3 && (
-                                    <Badge variant="outline" className="text-xs bg-gray-100">
-                                      +{inter.produtosFilhos.length - 3}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                </tbody>
+                                <tfoot className="bg-purple-50 border-t border-purple-200">
+                                  <tr>
+                                    <td colSpan={2} className="px-3 py-2 text-right font-semibold text-purple-800">
+                                      Total de Ingredientes:
+                                    </td>
+                                    <td className="px-3 py-2 text-right">
+                                      <span className="font-mono font-bold text-purple-700">
+                                        {formatarNumero(
+                                          inter.ingredientes.reduce((sum, ing) => sum + (ing.unidade === 'kg' ? ing.quantidadeArredondada : 0), 0),
+                                          'kg'
+                                        )}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                      <Badge variant="secondary" className="text-xs bg-purple-100">kg</Badge>
+                                    </td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          )}
+                          
+                          {/* Mensagem se não houver ingredientes */}
+                          {(!inter.ingredientes || inter.ingredientes.length === 0) && (
+                            <div className="p-4 bg-white text-center text-gray-500 text-sm">
+                              Ficha técnica não disponível para este intermediário
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 )}
