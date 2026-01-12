@@ -1038,6 +1038,7 @@ export const appRouter = router({
         const { 
           arredondarUnidades, 
           processarDivisora, 
+          processarMapaComIntermediarios,
           explodirRecursivo,
           consolidarInsumos
         } = await import("@shared/pcp-utils");
@@ -1115,6 +1116,9 @@ export const appRouter = router({
           erro?: string;
         }> = [];
 
+        // Preparar itens para processamento global de intermediários
+        const itensParaProcessar: Array<{ produtoId: number; nomeProduto: string; quantidade: number }> = [];
+
         for (const item of input) {
           const produto = produtosMap.get(item.codigoProduto);
 
@@ -1170,11 +1174,26 @@ export const appRouter = router({
             divisora,
             insumos: insumosConsolidados,
           });
+
+          // Adicionar à lista para processamento global de intermediários
+          itensParaProcessar.push({
+            produtoId: produto.id,
+            nomeProduto: produto.nome,
+            quantidade: massaParaExplosao,
+          });
         }
+
+        // Processar todos os itens para consolidar intermediários globalmente
+        const resultadoGlobal = processarMapaComIntermediarios(
+          itensParaProcessar,
+          buscaFichaTecnica
+        );
 
         return {
           success: true,
           resultados,
+          intermediarios: resultadoGlobal.intermediarios,
+          insumosGlobais: resultadoGlobal.insumos,
         };
       }),
   }),

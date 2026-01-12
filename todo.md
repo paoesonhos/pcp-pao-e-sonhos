@@ -403,3 +403,23 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Backend: Auto-incluir na segunda-feira sem duplicar
 
 - [x] Bug: Erro React #321 ao salvar alterações no Mapa de Produção
+
+## Consolidação de Produtos Intermediários - 12/01/2026
+
+- [x] Backend: Atualizar engine PCP para consolidar produtos intermediários
+- [x] Backend: Calcular quantidade total de cada intermediário (soma das necessidades)
+- [ ] Frontend: Ficha de Produção com seção separada para intermediários no topo
+- [ ] Frontend: Ficha de Pré-Pesagem agrupada por intermediário consolidado
+- [x] Backend: Aplicar recursividade (Nível 1 → Nível 2 → Produto Final)
+
+
+## Módulo 4.0: Produção de Itens Intermediários (Níveis 1 e 2)
+
+- [x] Implementar função processarMapaComIntermediarios em pcp-utils.ts
+- [x] Implementar função explodirComIntermediarios para rastrear intermediários durante explosão
+- [x] Implementar função consolidarIntermediarios para consolidar quantidades totais
+- [x] Atualizar routers.ts para retornar intermediários no processamento PCP
+- [x] Adicionar seção "Massas Base a Produzir (Consolidado)" no topo da Ficha de Produção
+- [x] Exibir intermediários com: nome, quantidade total, unidade, produtos que usam
+- [x] Testar com dados reais - 42 testes passando
+- [x] Validar exibição de intermediários na interface

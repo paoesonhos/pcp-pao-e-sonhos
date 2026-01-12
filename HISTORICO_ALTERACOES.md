@@ -272,6 +272,32 @@ O Sistema PCP Pão e Sonhos foi desenvolvido do zero seguindo rigorosamente a Es
 
 ---
 
+### Dia 5 - Domingo 12/01/2026
+
+#### Módulo 4.0: Produção de Itens Intermediários (Níveis 1 e 2)
+
+**Backend - pcp-utils.ts:**
+- Implementação da função `processarMapaComIntermediarios` para consolidar intermediários globalmente
+- Implementação da função `explodirComIntermediarios` para rastrear intermediários durante explosão
+- Implementação da função `consolidarIntermediarios` para consolidar quantidades totais
+- Interface `IntermediarioConsolidado` com campos: produtoId, nomeProduto, quantidadeTotal, quantidadeArredondada, unidade, nivel, produtosFilhos
+
+**Backend - routers.ts:**
+- Atualização do endpoint `processarMapa` para retornar intermediários consolidados
+- Retorno inclui: resultados (produtos finais), intermediarios (massas base consolidadas), insumosGlobais
+
+**Frontend - ProcessamentoPCP.tsx:**
+- Adição da seção "Massas Base a Produzir (Consolidado)" no topo da Ficha de Produção
+- Exibição de intermediários com: nome, quantidade total arredondada, unidade, produtos que usam
+- Badges de nível (N1, N2) para identificar hierarquia
+- Cores diferenciadas para intermediários (roxo/purple)
+
+**Testes:**
+- 42 testes unitários passando
+- Validação visual da interface com dados reais
+
+---
+
 ## Pendências para Versão Final
 
 - [ ] Documentar regras de negócio implementadas

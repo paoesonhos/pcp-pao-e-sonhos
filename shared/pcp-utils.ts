@@ -408,3 +408,247 @@ export function processarExplosaoCompleta(
   
   return consolidarInsumos(mapaInsumos);
 }
+
+
+// ============================================
+// CONSOLIDAÇÃO DE PRODUTOS INTERMEDIÁRIOS
+// ============================================
+
+/**
+ * Interface para produto intermediário consolidado
+ */
+export interface IntermediarioConsolidado {
+  produtoId: number;
+  nomeProduto: string;
+  quantidadeTotal: number; // soma de todas as necessidades
+  quantidadeArredondada: number;
+  unidade: 'kg' | 'un';
+  nivel: number; // 1 = Massa Base, 2 = Sub-bloco
+  produtosFilhos: string[]; // produtos que usam este intermediário
+}
+
+/**
+ * Interface para resultado completo da explosão com intermediários
+ */
+export interface ResultadoExplosaoCompleta {
+  insumos: InsumoConsolidado[];
+  intermediarios: IntermediarioConsolidado[];
+}
+
+/**
+ * Explode recursivamente e rastreia produtos intermediários
+ * Retorna tanto insumos brutos quanto intermediários consolidados
+ */
+export function explodirComIntermediarios(
+  produtoId: number,
+  nomeProduto: string,
+  quantidade: number,
+  buscaFichaTecnica: BuscaFichaTecnicaFn,
+  intermediariosMap: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }> = new Map(),
+  visitados: Set<number> = new Set(),
+  profundidade: number = 0
+): Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }> {
+  const resultado = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }>();
+  
+  // Proteção contra referência circular
+  if (visitados.has(produtoId) || profundidade > 10) {
+    return resultado;
+  }
+  visitados.add(produtoId);
+  
+  // Busca ficha técnica do produto
+  const fichaTecnica = buscaFichaTecnica(produtoId);
+  
+  if (!fichaTecnica || fichaTecnica.length === 0) {
+    return resultado;
+  }
+  
+  for (const componente of fichaTecnica) {
+    // Calcula quantidade proporcional
+    const qtdComponente = quantidade * componente.quantidadeBase;
+    
+    if (componente.tipoComponente === 'ingrediente') {
+      // É insumo bruto - adiciona ao resultado
+      const existente = resultado.get(componente.componenteId);
+      if (existente) {
+        existente.quantidade += qtdComponente;
+        if (!existente.origens.includes(nomeProduto)) {
+          existente.origens.push(nomeProduto);
+        }
+      } else {
+        resultado.set(componente.componenteId, {
+          quantidade: qtdComponente,
+          nome: componente.nomeComponente,
+          unidade: componente.unidade,
+          origens: [nomeProduto],
+        });
+      }
+    } else {
+      // É produto intermediário (massa_base) - registra e explode recursivamente
+      const nivel = profundidade + 1;
+      const existenteInterm = intermediariosMap.get(componente.componenteId);
+      
+      if (existenteInterm) {
+        existenteInterm.quantidade += qtdComponente;
+        if (!existenteInterm.filhos.includes(nomeProduto)) {
+          existenteInterm.filhos.push(nomeProduto);
+        }
+      } else {
+        intermediariosMap.set(componente.componenteId, {
+          quantidade: qtdComponente,
+          nome: componente.nomeComponente,
+          unidade: componente.unidade,
+          nivel: nivel,
+          filhos: [nomeProduto],
+        });
+      }
+      
+      // Explode recursivamente
+      const subResultado = explodirComIntermediarios(
+        componente.componenteId,
+        componente.nomeComponente,
+        qtdComponente,
+        buscaFichaTecnica,
+        intermediariosMap,
+        new Set(visitados),
+        profundidade + 1
+      );
+      
+      // Merge dos resultados de insumos
+      for (const [id, dados] of Array.from(subResultado.entries())) {
+        const existente = resultado.get(id);
+        if (existente) {
+          existente.quantidade += dados.quantidade;
+          for (const origem of dados.origens) {
+            if (!existente.origens.includes(origem)) {
+              existente.origens.push(origem);
+            }
+          }
+        } else {
+          resultado.set(id, { ...dados });
+        }
+      }
+    }
+  }
+  
+  return resultado;
+}
+
+/**
+ * Consolida intermediários e aplica arredondamento
+ */
+export function consolidarIntermediarios(
+  intermediariosMap: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>
+): IntermediarioConsolidado[] {
+  const resultado: IntermediarioConsolidado[] = [];
+  
+  for (const [produtoId, dados] of Array.from(intermediariosMap.entries())) {
+    let quantidadeArredondada: number;
+    if (dados.unidade === 'kg') {
+      quantidadeArredondada = arredondarPesagem(dados.quantidade);
+    } else {
+      quantidadeArredondada = arredondarUnidades(dados.quantidade);
+    }
+    
+    resultado.push({
+      produtoId,
+      nomeProduto: dados.nome,
+      quantidadeTotal: dados.quantidade,
+      quantidadeArredondada,
+      unidade: dados.unidade,
+      nivel: dados.nivel,
+      produtosFilhos: dados.filhos,
+    });
+  }
+  
+  // Ordena por nível (1 primeiro) e depois por nome
+  resultado.sort((a, b) => {
+    if (a.nivel !== b.nivel) return a.nivel - b.nivel;
+    return a.nomeProduto.localeCompare(b.nomeProduto);
+  });
+  
+  return resultado;
+}
+
+/**
+ * Função principal: processa explosão completa com intermediários
+ */
+export function processarExplosaoComIntermediarios(
+  produtoId: number,
+  nomeProduto: string,
+  quantidade: number,
+  buscaFichaTecnica: BuscaFichaTecnicaFn
+): ResultadoExplosaoCompleta {
+  const intermediariosMap = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>();
+  
+  const mapaInsumos = explodirComIntermediarios(
+    produtoId,
+    nomeProduto,
+    quantidade,
+    buscaFichaTecnica,
+    intermediariosMap
+  );
+  
+  return {
+    insumos: consolidarInsumos(mapaInsumos),
+    intermediarios: consolidarIntermediarios(intermediariosMap),
+  };
+}
+
+/**
+ * Processa múltiplos produtos e consolida todos os intermediários
+ */
+export function processarMapaComIntermediarios(
+  itens: Array<{ produtoId: number; nomeProduto: string; quantidade: number }>,
+  buscaFichaTecnica: BuscaFichaTecnicaFn
+): ResultadoExplosaoCompleta {
+  const insumosGlobal = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }>();
+  const intermediariosGlobal = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>();
+  
+  for (const item of itens) {
+    const intermediariosMap = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; nivel: number; filhos: string[] }>();
+    
+    const mapaInsumos = explodirComIntermediarios(
+      item.produtoId,
+      item.nomeProduto,
+      item.quantidade,
+      buscaFichaTecnica,
+      intermediariosMap
+    );
+    
+    // Merge insumos
+    for (const [id, dados] of Array.from(mapaInsumos.entries())) {
+      const existente = insumosGlobal.get(id);
+      if (existente) {
+        existente.quantidade += dados.quantidade;
+        for (const origem of dados.origens) {
+          if (!existente.origens.includes(origem)) {
+            existente.origens.push(origem);
+          }
+        }
+      } else {
+        insumosGlobal.set(id, { ...dados });
+      }
+    }
+    
+    // Merge intermediários
+    for (const [id, dados] of Array.from(intermediariosMap.entries())) {
+      const existente = intermediariosGlobal.get(id);
+      if (existente) {
+        existente.quantidade += dados.quantidade;
+        for (const filho of dados.filhos) {
+          if (!existente.filhos.includes(filho)) {
+            existente.filhos.push(filho);
+          }
+        }
+      } else {
+        intermediariosGlobal.set(id, { ...dados });
+      }
+    }
+  }
+  
+  return {
+    insumos: consolidarInsumos(insumosGlobal),
+    intermediarios: consolidarIntermediarios(intermediariosGlobal),
+  };
+}

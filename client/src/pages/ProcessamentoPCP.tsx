@@ -52,6 +52,16 @@ interface ItemProcessado {
   erro?: string;
 }
 
+interface IntermediarioConsolidado {
+  produtoId: number;
+  nomeProduto: string;
+  quantidadeTotal: number;
+  quantidadeArredondada: number;
+  unidade: 'kg' | 'un';
+  nivel: number; // 1 = Massa Base, 2 = Sub-bloco
+  produtosFilhos: string[]; // produtos que usam este intermediário
+}
+
 // Função de arredondamento para pesagem (múltiplos de 0.005)
 function arredondarPesagem(valor: number): number {
   return Math.floor(valor * 200) / 200;
@@ -389,6 +399,73 @@ export default function ProcessamentoPCP() {
             {/* Ficha de Produção */}
             <TabsContent value="producao">
               <div className="space-y-4">
+                {/* Seção de Massas Base / Intermediários Consolidados */}
+                {processamentoData?.intermediarios && processamentoData.intermediarios.length > 0 && (
+                  <Card className="border-purple-300 bg-purple-50">
+                    <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
+                      <CardTitle className="text-base flex items-center gap-2 text-purple-800">
+                        <Scale className="w-5 h-5" />
+                        Massas Base a Produzir (Consolidado)
+                      </CardTitle>
+                      <p className="text-sm text-purple-600 mt-1">
+                        Produtos intermediários que devem ser preparados antes dos produtos finais
+                      </p>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <table className="w-full">
+                        <thead className="bg-purple-100">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-purple-800">Massa/Intermediário</th>
+                            <th className="px-4 py-2 text-right text-sm font-semibold text-purple-800">Qtd Total</th>
+                            <th className="px-4 py-2 text-center text-sm font-semibold text-purple-800">Unid.</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-purple-800">Usado em</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {processamentoData.intermediarios.map((inter: IntermediarioConsolidado, idx: number) => (
+                            <tr key={inter.produtoId} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={inter.nivel === 1 ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-indigo-100 text-indigo-700 border-indigo-300'}
+                                  >
+                                    N{inter.nivel}
+                                  </Badge>
+                                  <span className="font-medium text-gray-800">{inter.nomeProduto}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="font-mono font-bold text-lg text-purple-700">
+                                  {formatarNumero(inter.quantidadeArredondada, inter.unidade)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Badge variant="secondary" className="bg-gray-100">{inter.unidade}</Badge>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-1">
+                                  {inter.produtosFilhos.slice(0, 3).map((filho, fIdx) => (
+                                    <Badge key={fIdx} variant="outline" className="text-xs bg-gray-50">
+                                      {filho}
+                                    </Badge>
+                                  ))}
+                                  {inter.produtosFilhos.length > 3 && (
+                                    <Badge variant="outline" className="text-xs bg-gray-100">
+                                      +{inter.produtosFilhos.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Produtos Finais */}
                 {processamentoData?.resultados?.filter(r => !r.erro).map((item, idx) => (
                   <Card key={idx} className="border-orange-200">
                     <CardHeader className="bg-orange-50 border-b border-orange-200 py-3">
