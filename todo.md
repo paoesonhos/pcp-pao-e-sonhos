@@ -430,3 +430,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Atualizar backend para retornar ingredientes de cada intermediário
 - [x] Atualizar frontend para exibir ficha técnica detalhada na seção de intermediários
 - [x] Testar exibição com dados reais
+
+
+## Módulo 4.2: Correção Ficha Técnica Intermediários - Incluir Produtos
+
+- [x] Atualizar consolidarIntermediarios para incluir produtos (tipo_componente='massa_base') além de ingredientes
+- [x] Exibir produtos base (ex: MASSA BASE DOCE) na ficha técnica dos intermediários com ⭐
+- [x] Testar exibição com Massa base amarelinha

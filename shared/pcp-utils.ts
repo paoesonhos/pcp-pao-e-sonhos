@@ -566,40 +566,45 @@ export function consolidarIntermediarios(
       quantidadeArredondada = arredondarUnidades(dados.quantidade);
     }
     
-    // Calcular ingredientes do intermediário
+    // Calcular componentes do intermediário (ingredientes E produtos)
     const ingredientes: IngredienteIntermediario[] = [];
     if (buscaFichaTecnica) {
       const fichaTecnica = buscaFichaTecnica(produtoId);
       if (fichaTecnica) {
         for (const componente of fichaTecnica) {
-          // Só incluir ingredientes (não outros produtos)
-          if (componente.tipoComponente === 'ingrediente') {
-            const quantidadeCalculada = quantidadeArredondada * componente.quantidadeBase;
-            let qtdArredondada: number;
-            if (componente.unidade === 'kg') {
-              qtdArredondada = arredondarPesagem(quantidadeCalculada);
-            } else {
-              qtdArredondada = arredondarUnidades(quantidadeCalculada);
-            }
-            
-            const isFermento = componente.nomeComponente.toUpperCase().includes('FERMENTO');
-            
-            ingredientes.push({
-              componenteId: componente.componenteId,
-              nomeComponente: componente.nomeComponente,
-              quantidadeBase: componente.quantidadeBase,
-              quantidadeCalculada,
-              quantidadeArredondada: qtdArredondada,
-              unidade: componente.unidade,
-              editavel: isFermento,
-            });
+          // Incluir tanto ingredientes quanto produtos (massa base)
+          const quantidadeCalculada = quantidadeArredondada * componente.quantidadeBase;
+          let qtdArredondada: number;
+          if (componente.unidade === 'kg') {
+            qtdArredondada = arredondarPesagem(quantidadeCalculada);
+          } else {
+            qtdArredondada = arredondarUnidades(quantidadeCalculada);
           }
+          
+          const isFermento = componente.nomeComponente.toUpperCase().includes('FERMENTO');
+          const isProduto = componente.tipoComponente === 'massa_base';
+          
+          ingredientes.push({
+            componenteId: componente.componenteId,
+            nomeComponente: isProduto ? `⭐ ${componente.nomeComponente}` : componente.nomeComponente,
+            quantidadeBase: componente.quantidadeBase,
+            quantidadeCalculada,
+            quantidadeArredondada: qtdArredondada,
+            unidade: componente.unidade,
+            editavel: isFermento,
+          });
         }
       }
     }
     
-    // Ordenar ingredientes por nome
-    ingredientes.sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
+    // Ordenar: produtos primeiro (com ⭐), depois ingredientes por nome
+    ingredientes.sort((a, b) => {
+      const aIsProduto = a.nomeComponente.startsWith('⭐');
+      const bIsProduto = b.nomeComponente.startsWith('⭐');
+      if (aIsProduto && !bIsProduto) return -1;
+      if (!aIsProduto && bIsProduto) return 1;
+      return a.nomeComponente.localeCompare(b.nomeComponente);
+    });
     
     resultado.push({
       produtoId,
