@@ -923,7 +923,7 @@ function ExpedicaoTab({ diaSelecionado }: { diaSelecionado: number }) {
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum Produto para Expedição</h3>
           <p className="text-gray-500">
-            Não há produtos com destino "Congelado" ou "Pré-Preparo" cadastrados.
+            Não há produtos com destino "Congelado" cadastrados.
           </p>
           <p className="text-sm text-gray-400 mt-2">
             Cadastre destinos em Destinos e associe aos produtos.

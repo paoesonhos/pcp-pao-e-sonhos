@@ -1254,10 +1254,10 @@ export const appRouter = router({
 
   // ==================== EXPEDIÇÃO ====================
   expedicao: router({
-    // Listar produtos para expedição (Congelado e Pré-Preparo)
+    // Listar produtos para expedição (somente Congelado)
     listarProdutos: protectedProcedure
       .query(async () => {
-        return await db.getProdutosParaExpedicao(['Congelado', 'Pré-Preparo']);
+        return await db.getProdutosParaExpedicao(['Congelado']);
       }),
 
     // Confirmar separação (baixa em lote)

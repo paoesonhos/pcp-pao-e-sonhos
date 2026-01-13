@@ -452,3 +452,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Exibir intermediários N1 e N2 com ficha técnica detalhada
 - [x] Usar cálculo proporcional: (ingrediente/total_receita_base) × Quantidade Total
 - [x] Testar exibição
+
+
+## Módulo 4.5: Filtro Expedição - Somente Congelados
+
+- [x] Identificar campo de destino do produto (destinoId na tabela produtos)
+- [x] Filtrar aba Expedição para mostrar somente destino "Congelado"
+- [x] Testar exibição
