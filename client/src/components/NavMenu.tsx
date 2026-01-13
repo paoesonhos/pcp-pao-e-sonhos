@@ -30,7 +30,17 @@ export default function NavMenu() {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container">
-        <div className="flex items-center h-14 gap-1 overflow-x-auto">
+        <div className="flex items-center h-14 gap-2 overflow-x-auto">
+          {/* Logo */}
+          <Link href="/" className="flex-shrink-0 mr-2">
+            <img 
+              src="/logo.png" 
+              alt="Pão & Sonhos" 
+              className="h-10 w-10 object-contain"
+            />
+          </Link>
+          
+          {/* Menu Items */}
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href || 
