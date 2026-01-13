@@ -455,8 +455,8 @@ interface ProdutoDetalhes {
   nomeProduto: string;
   unidade: string;
   qtdPlanejada: number;
-  blocos: number;
-  pedacos: number;
+  tipoEmbalagem: string;
+  quantidadePorEmbalagem: number;
   status: 'ok' | 'erro';
   erro?: string;
 }
@@ -469,34 +469,34 @@ export async function exportarDetalhesProdutoPDF(
   const doc = new jsPDF();
   
   // Cabeçalho com logo
-  let yPosition = await adicionarCabecalho(doc, 'Detalhes por Produto', diaSelecionado);
+  let yPosition = await adicionarCabecalho(doc, 'Embalagem', diaSelecionado);
 
-  // Tabela de detalhes
+  // Tabela de embalagem
   const dadosTabela = produtos.map(produto => [
     produto.codigoProduto,
     produto.nomeProduto,
     produto.unidade,
     produto.qtdPlanejada.toFixed(3),
-    produto.blocos.toString(),
-    `${produto.pedacos} un`,
+    produto.tipoEmbalagem || '-',
+    produto.quantidadePorEmbalagem > 0 ? produto.quantidadePorEmbalagem.toString() : '-',
     produto.status === 'ok' ? 'OK' : produto.erro || 'Erro'
   ]);
 
   autoTable(doc, {
     startY: yPosition,
-    head: [['Código', 'Produto', 'Unid.', 'Qtd Plan.', 'Blocos', 'Pedaço', 'Status']],
+    head: [['Código', 'Produto', 'Unid.', 'Qtd Plan.', 'Tipo Embalagem', 'Qtde/Emb.', 'Status']],
     body: dadosTabela,
     theme: 'grid',
     headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     styles: { fontSize: 8, cellPadding: 3 },
     columnStyles: {
       0: { cellWidth: 20 },
-      1: { cellWidth: 55 },
+      1: { cellWidth: 45 },
       2: { cellWidth: 15, halign: 'center' },
-      3: { cellWidth: 25, halign: 'right' },
-      4: { cellWidth: 20, halign: 'center' },
-      5: { cellWidth: 20, halign: 'center' },
-      6: { cellWidth: 25, halign: 'center' }
+      3: { cellWidth: 22, halign: 'right' },
+      4: { cellWidth: 40 },
+      5: { cellWidth: 18, halign: 'center' },
+      6: { cellWidth: 22, halign: 'center' }
     },
     margin: { left: 14, right: 14 },
     didParseCell: function(data) {

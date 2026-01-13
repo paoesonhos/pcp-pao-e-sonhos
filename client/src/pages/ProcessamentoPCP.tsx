@@ -72,6 +72,8 @@ interface ItemProcessado {
   qtdPlanejada: number;
   diaProduzir: number;
   pesoUnitario: number;
+  tipoEmbalagem: string;
+  quantidadePorEmbalagem: number;
   passo1: Passo1 | null;
   passo3: Passo3 | null;
   insumos: ComponenteProcessado[];
@@ -321,7 +323,7 @@ export default function ProcessamentoPCP() {
               </TabsTrigger>
               <TabsTrigger value="detalhes" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
                 <ClipboardList className="w-4 h-4 mr-2" />
-                Detalhes por Produto
+                Embalagem
               </TabsTrigger>
               <TabsTrigger value="expedicao" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
                 <Truck className="w-4 h-4 mr-2" />
@@ -912,8 +914,8 @@ export default function ProcessamentoPCP() {
                       nomeProduto: r.nomeProduto,
                       unidade: r.unidade,
                       qtdPlanejada: r.qtdPlanejada,
-                      blocos: r.passo3?.blocos || 0,
-                      pedacos: r.passo3?.pedacos || 0,
+                      tipoEmbalagem: r.tipoEmbalagem || '',
+                      quantidadePorEmbalagem: r.quantidadePorEmbalagem || 0,
                       status: r.erro ? 'erro' as const : 'ok' as const,
                       erro: r.erro
                     })) || [];
@@ -922,12 +924,12 @@ export default function ProcessamentoPCP() {
                   className="border-orange-300 text-orange-700 hover:bg-orange-100"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Exportar Detalhes PDF
+                  Exportar Embalagem PDF
                 </Button>
               </div>
               <Card className="border-orange-200">
                 <CardHeader className="bg-orange-50 border-b border-orange-200">
-                  <CardTitle>Detalhes por Produto - {DIAS_SEMANA[diaSelecionado]}</CardTitle>
+                  <CardTitle>Embalagem - {DIAS_SEMANA[diaSelecionado]}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <table className="w-full">
@@ -937,8 +939,8 @@ export default function ProcessamentoPCP() {
                         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produto</th>
                         <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
                         <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Plan.</th>
-                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Blocos</th>
-                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Pedaço</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tipo Embalagem</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Qtde/Emb.</th>
                         <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
                       </tr>
                     </thead>
@@ -953,15 +955,11 @@ export default function ProcessamentoPCP() {
                           <td className="px-4 py-3 text-right font-mono">
                             {formatarNumero(item.qtdPlanejada, item.unidade)}
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            {item.passo3 ? (
-                              <span className="font-semibold text-green-700">{item.passo3.blocos}</span>
-                            ) : '-'}
+                          <td className="px-4 py-3">
+                            {item.tipoEmbalagem || '-'}
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            {item.passo3 ? (
-                              <span className="text-amber-700">{item.passo3.pedacos} un</span>
-                            ) : '-'}
+                          <td className="px-4 py-3 text-center font-semibold text-blue-700">
+                            {item.quantidadePorEmbalagem > 0 ? item.quantidadePorEmbalagem : '-'}
                           </td>
                           <td className="px-4 py-3 text-center">
                             {item.erro ? (
@@ -1162,8 +1160,14 @@ function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: n
                   <td className={`p-3 text-right font-mono ${emRuptura ? 'text-red-600 font-bold' : ''}`}>
                     {Math.floor(saldo)} un
                   </td>
-                  <td className="p-3 text-right font-mono font-semibold text-blue-700">
-                    {qtdSepararUnidades > 0 ? `${qtdSepararUnidades} un` : '-'}
+                  <td className="p-3 text-right">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={quantidades[produto.id] ?? qtdSepararUnidades}
+                      onChange={(e) => setQuantidades(q => ({ ...q, [produto.id]: parseInt(e.target.value) || 0 }))}
+                      className="w-24 text-right font-mono font-semibold text-blue-700 ml-auto"
+                    />
                   </td>
                   <td className="p-3 text-center">
                     {emRuptura ? (

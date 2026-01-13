@@ -1186,6 +1186,9 @@ export const appRouter = router({
           qtdPlanejada: number;
           diaProduzir: number;
           pesoUnitario: number;
+          // Dados de embalagem
+          tipoEmbalagem: string;
+          quantidadePorEmbalagem: number;
           // Passo 1
           passo1: {
             valorMapa: number;
@@ -1233,6 +1236,8 @@ export const appRouter = router({
               qtdPlanejada: item.qtdPlanejada,
               diaProduzir: item.diaProduzir,
               pesoUnitario: 0,
+              tipoEmbalagem: '',
+              quantidadePorEmbalagem: 0,
               passo1: null,
               passo3: null,
               insumos: [],
@@ -1251,6 +1256,8 @@ export const appRouter = router({
               qtdPlanejada: item.qtdPlanejada,
               diaProduzir: item.diaProduzir,
               pesoUnitario: parseFloat(produto.pesoUnitario),
+              tipoEmbalagem: produto.tipoEmbalagem || '',
+              quantidadePorEmbalagem: produto.quantidadePorEmbalagem || 0,
               passo1: null,
               passo3: null,
               insumos: [],
@@ -1290,6 +1297,8 @@ export const appRouter = router({
             qtdPlanejada: item.qtdPlanejada,
             diaProduzir: item.diaProduzir,
             pesoUnitario,
+            tipoEmbalagem: produto.tipoEmbalagem || '',
+            quantidadePorEmbalagem: produto.quantidadePorEmbalagem || 0,
             passo1,
             passo3,
             insumos: passo2.ingredientes.map(ing => ({

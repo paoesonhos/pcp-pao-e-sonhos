@@ -598,3 +598,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Botão PDF em Detalhes por Produto
 - [x] Botão PDF na Expedição
 - [x] Botão PDF em Molhados Consolidados
+
+## Alterações nas Fichas do PCP
+
+- [x] Ficha Expedição: campo Qtd Separar editável
+- [x] Ficha Detalhes: renomear para Embalagem
+- [x] Ficha Embalagem: adicionar campos Tipo Embalagem e Qtde por Embalagem
+- [x] Ficha Embalagem: remover campos Blocos e Pedaço
