@@ -92,6 +92,14 @@ export default function MapaProducao() {
   const { data: categorias } = trpc.categorias.list.useQuery({ ativo: true });
   const { data: destinos } = trpc.destinos.list.useQuery({ ativo: true });
   
+  // Query para lista de produtos cadastrados (para adicionar ao mapa)
+  const { data: produtosCadastrados } = trpc.produtos.list.useQuery({ ativo: true });
+  
+  // Estado para adicionar produto
+  const [showAdicionarProduto, setShowAdicionarProduto] = useState(false);
+  const [produtoSelecionado, setProdutoSelecionado] = useState<string>("");
+  const [diaAdicionarProduto, setDiaAdicionarProduto] = useState<number>(2);
+  
   // Mutation para cadastro em lote
   const cadastrarProdutoMutation = trpc.produtos.create.useMutation();
 
@@ -537,6 +545,21 @@ export default function MapaProducao() {
               📂 Carregar Mapa Base
             </button>
           )}
+          {/* Botão Adicionar Produto */}
+          <button
+            onClick={() => setShowAdicionarProduto(true)}
+            style={{
+              padding: "10px 16px",
+              fontSize: 14,
+              background: "#27ae60",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            ➕ Adicionar Produto
+          </button>
           {/* Botão Salvar Alterações */}
           {mapa.length > 0 && (
             <button
@@ -1058,6 +1081,123 @@ export default function MapaProducao() {
                   {cadastrandoLote ? 'Cadastrando...' : `📦 Cadastrar Todos (${produtosParaCadastrar.length})`}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Adicionar Produto */}
+      {showAdicionarProduto && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            padding: 24,
+            borderRadius: 8,
+            maxWidth: 500,
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}>
+            <h3 style={{ marginTop: 0, color: '#27ae60' }}>➕ Adicionar Produto ao Mapa</h3>
+            <p style={{ color: '#666', fontSize: 14 }}>
+              Selecione um produto cadastrado para adicionar ao mapa de produção.
+            </p>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Produto *</label>
+              <select
+                value={produtoSelecionado}
+                onChange={(e) => setProdutoSelecionado(e.target.value)}
+                style={{ width: '100%', padding: 10, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                <option value="">Selecione um produto...</option>
+                {produtosCadastrados?.filter(p => !mapa.some(m => m.codigo === p.codigoProduto)).map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.codigoProduto} - {p.nome} ({p.unidade})
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Dia de Produção *</label>
+              <select
+                value={diaAdicionarProduto}
+                onChange={(e) => setDiaAdicionarProduto(parseInt(e.target.value))}
+                style={{ width: '100%', padding: 10, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                {DIAS_SEMANA.map(d => (
+                  <option key={d.num} value={d.num}>Dia {d.num} - {d.nome}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowAdicionarProduto(false);
+                  setProdutoSelecionado('');
+                }}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#95a5a6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!produtoSelecionado) {
+                    alert('Selecione um produto');
+                    return;
+                  }
+                  const produto = produtosCadastrados?.find(p => p.id === parseInt(produtoSelecionado));
+                  if (!produto) return;
+                  
+                  const novoItem: ItemMapa = {
+                    id: Date.now(),
+                    codigo: produto.codigoProduto,
+                    nome: produto.nome,
+                    unidade: produto.unidade,
+                    qtdImportada: 0,
+                    percentualAjuste: 0,
+                    qtdPlanejada: 0,
+                    diaProduzir: diaAdicionarProduto,
+                    equipe: 'Equipe 1',
+                  };
+                  
+                  setMapa(prev => [...prev, novoItem]);
+                  setAlterado(true);
+                  setShowAdicionarProduto(false);
+                  setProdutoSelecionado('');
+                }}
+                disabled={!produtoSelecionado}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: produtoSelecionado ? '#27ae60' : '#bdc3c7',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: produtoSelecionado ? 'pointer' : 'not-allowed',
+                }}
+              >
+                ➕ Adicionar
+              </button>
             </div>
           </div>
         </div>

@@ -518,3 +518,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Adicionar botão de excluir (🗑️) em cada linha da tabela do Mapa de Produção
 - [x] Remover produto do estado local ao clicar (com confirmação)
+
+
+## Módulo 4.14: Incluir Produtos no Mapa
+
+- [x] Buscar lista de produtos cadastrados
+- [x] Adicionar botão "Adicionar Produto" com select de produtos
+- [x] Inserir produto selecionado no mapa com valores padrão (qtd=0, dia selecionado, Equipe 1)
