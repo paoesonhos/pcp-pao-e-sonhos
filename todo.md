@@ -557,3 +557,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Investigar por que o processamento PCP não encontra o mapa de produção salvo
 - [x] Alterar importação V5 para vincular produto pelo nome ao invés do código
+
+## Correção: Cálculo de Massa Base incorreto
+
+- [x] Corrigir lógica de cálculo para converter kg em unidades antes de multiplicar pela quantidadeBase

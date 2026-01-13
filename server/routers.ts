@@ -1214,21 +1214,24 @@ export const appRouter = router({
 
           // Processar divisora
           let divisora = null;
-          let massaParaExplosao = item.qtdPlanejada;
+          let unidadesParaExplosao = item.qtdPlanejada; // Quantidade em UNIDADES para explosão
           const pesoUnitario = parseFloat(produto.pesoUnitario);
 
           if (item.unidade === 'kg' && pesoUnitario > 0) {
             divisora = processarDivisora(item.qtdPlanejada, pesoUnitario);
-            massaParaExplosao = divisora.massaTotal;
+            // CORREÇÃO: Passar número de UNIDADES, não massa em kg
+            // A quantidadeBase na ficha técnica é "quantidade por unidade do produto"
+            unidadesParaExplosao = divisora.quantidadeUnidades;
           } else if (item.unidade === 'un') {
-            massaParaExplosao = arredondarUnidades(item.qtdPlanejada);
+            unidadesParaExplosao = arredondarUnidades(item.qtdPlanejada);
           }
 
           // Explosão recursiva com consolidação
+          // Passa número de UNIDADES para multiplicar pela quantidadeBase (que é por unidade)
           const mapaInsumos = explodirRecursivo(
             produto.id,
             produto.nome,
-            massaParaExplosao,
+            unidadesParaExplosao,
             buscaFichaTecnica
           );
           
@@ -1242,10 +1245,11 @@ export const appRouter = router({
           });
 
           // Adicionar à lista para processamento global de intermediários
+          // Passa número de UNIDADES para multiplicar pela quantidadeBase
           itensParaProcessar.push({
             produtoId: produto.id,
             nomeProduto: produto.nome,
-            quantidade: massaParaExplosao,
+            quantidade: unidadesParaExplosao,
           });
         }
 

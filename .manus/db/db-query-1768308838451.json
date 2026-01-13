@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, codigoProduto, nome, unidade, pesoUnitario FROM produtos WHERE nome LIKE '%cenoura%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, codigoProduto, nome, unidade, pesoUnitario FROM produtos WHERE nome LIKE '%cenoura%';",
+  "rows": [
+    {
+      "id": "180001",
+      "codigoProduto": "1",
+      "nome": "massa base cenoura",
+      "unidade": "kg",
+      "pesoUnitario": "3.00000"
+    },
+    {
+      "id": "180004",
+      "codigoProduto": "2",
+      "nome": "Bolo Cenoura sem lactose",
+      "unidade": "un",
+      "pesoUnitario": "0.30000"
+    },
+    {
+      "id": "180005",
+      "codigoProduto": "3",
+      "nome": "bolo cenoura redono",
+      "unidade": "kg",
+      "pesoUnitario": "0.30000"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoProduto\tnome\tunidade\tpesoUnitario\n180001\t1\tmassa base cenoura\tkg\t3.00000\n180004\t2\tBolo Cenoura sem lactose\tun\t0.30000\n180005\t3\tbolo cenoura redono\tkg\t0.30000\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}
