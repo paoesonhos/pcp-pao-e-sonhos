@@ -1,0 +1,35 @@
+{
+  "query": "SELECT 'CATEGORIAS' as tipo, id, nome FROM categorias UNION ALL SELECT 'DESTINOS', id, nome FROM destinos;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT 'CATEGORIAS' as tipo, id, nome FROM categorias UNION ALL SELECT 'DESTINOS', id, nome FROM destinos;",
+  "rows": [
+    {
+      "tipo": "DESTINOS",
+      "id": "1",
+      "nome": "congelado"
+    },
+    {
+      "tipo": "DESTINOS",
+      "id": "2",
+      "nome": "pre-preparo"
+    },
+    {
+      "tipo": "CATEGORIAS",
+      "id": "1",
+      "nome": "DOCE"
+    },
+    {
+      "tipo": "CATEGORIAS",
+      "id": "30001",
+      "nome": "Pães"
+    },
+    {
+      "tipo": "CATEGORIAS",
+      "id": "2",
+      "nome": "SALGADOS"
+    }
+  ],
+  "messages": [],
+  "stdout": "tipo\tid\tnome\nDESTINOS\t1\tcongelado\nDESTINOS\t2\tpre-preparo\nCATEGORIAS\t1\tDOCE\nCATEGORIAS\t30001\tPães\nCATEGORIAS\t2\tSALGADOS\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

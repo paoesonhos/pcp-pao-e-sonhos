@@ -530,3 +530,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.15: Link Voltar na Página Mapa de Produção
 
 - [x] Adicionar link para voltar à página inicial no Mapa de Produção
+
+
+## Módulo 4.16: Permitir Editar Peso Unitário
+
+- [x] Adicionar campo peso unitário editável no formulário de edição de produto

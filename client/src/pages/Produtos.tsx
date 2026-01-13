@@ -149,7 +149,7 @@ export default function Produtos() {
       data: {
         codigoProduto: formData.get("codigoProduto") as string,
         nome: formData.get("nome") as string,
-        // pesoUnitario NÃO pode ser alterado (IMUTÁVEL)
+        pesoUnitario: formData.get("pesoUnitario") as string,
         percentualPerdaLiquida: formData.get("percentualPerdaLiquida") as string || undefined,
         shelfLife: formData.get("shelfLife") ? parseInt(formData.get("shelfLife") as string) : undefined,
         categoriaId: formData.get("categoriaId") ? parseInt(formData.get("categoriaId") as string) : undefined,
@@ -507,7 +507,7 @@ export default function Produtos() {
             <DialogHeader>
               <DialogTitle>Editar Produto</DialogTitle>
               <DialogDescription>
-                Atualize as informações do produto (peso unitário não pode ser alterado)
+                Atualize as informações do produto
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -558,13 +558,16 @@ export default function Produtos() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>
-                    Peso Unitário (kg) <span className="text-xs text-destructive">(IMUTÁVEL)</span>
+                  <Label htmlFor="edit-pesoUnitario">
+                    Peso Unitário (kg)
                   </Label>
                   <Input
-                    value={editingProduto ? parseFloat(editingProduto.pesoUnitario).toFixed(5) : ""}
-                    disabled
-                    className="bg-muted"
+                    id="edit-pesoUnitario"
+                    name="pesoUnitario"
+                    type="number"
+                    step="0.00001"
+                    defaultValue={editingProduto ? parseFloat(editingProduto.pesoUnitario).toFixed(5) : ""}
+                    required
                   />
                 </div>
               </div>
