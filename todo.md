@@ -539,3 +539,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.17: Link Editar Produto na Ficha Técnica
 
 - [x] Adicionar link para editar produto na página de Ficha Técnica
+
+## Correção: Peso Unitário não salva
+
+- [x] Investigar e corrigir salvamento do peso unitário na edição de produto

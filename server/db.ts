@@ -299,10 +299,7 @@ export async function updateProduto(id: number, data: Partial<InsertProduto>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // IMPORTANTE: pesoUnitario não deve ser atualizado após criação
-  const { pesoUnitario, ...updateData } = data;
-
-  await db.update(produtos).set(updateData).where(eq(produtos.id, id));
+  await db.update(produtos).set(data).where(eq(produtos.id, id));
 }
 
 export async function toggleProduto(id: number) {
