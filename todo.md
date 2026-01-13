@@ -501,3 +501,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Criar nova aba "Molhados Consolidados" ao lado de Expedição
 - [x] Exibir lista de insumos com quantidade total da semana
 - [x] Testar exibição
+
+
+## Módulo 4.11: Botão Salvar Sempre Habilitado
+
+- [x] Remover condição disabled do botão Salvar Alterações no Mapa de Produção

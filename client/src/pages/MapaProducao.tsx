@@ -530,7 +530,7 @@ export default function MapaProducao() {
           {mapa.length > 0 && (
             <button
               onClick={handleSalvarAlteracoes}
-              disabled={salvando || !alterado}
+              disabled={salvando}
               style={{
                 padding: "10px 16px",
                 fontSize: 14,
@@ -538,7 +538,7 @@ export default function MapaProducao() {
                 color: "white",
                 border: "none",
                 borderRadius: 6,
-                cursor: salvando || !alterado ? "not-allowed" : "pointer",
+                cursor: salvando ? "not-allowed" : "pointer",
               }}
             >
               {salvando ? "Salvando..." : "💾 Salvar Alterações"}
