@@ -49,22 +49,6 @@ export default function Produtos() {
   const [location, setLocation] = useLocation();
 
   const utils = trpc.useUtils();
-  
-  // Ler parâmetros da URL ao carregar
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const novo = params.get('novo');
-    const nome = params.get('nome');
-    const codigo = params.get('codigo');
-    
-    if (novo === 'true') {
-      setPrefilledNome(nome || '');
-      setPrefilledCodigo(codigo || '');
-      setIsCreateDialogOpen(true);
-      // Limpar parâmetros da URL
-      setLocation('/produtos', { replace: true });
-    }
-  }, []);
 
   // Queries
   const { data: produtos, isLoading } = trpc.produtos.list.useQuery({
@@ -75,6 +59,31 @@ export default function Produtos() {
 
   const { data: categorias } = trpc.categorias.list.useQuery({ ativo: true });
   const { data: destinos } = trpc.destinos.list.useQuery({ ativo: true });
+  
+  // Ler parâmetros da URL ao carregar
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const novo = params.get('novo');
+    const nome = params.get('nome');
+    const codigo = params.get('codigo');
+    const editId = params.get('edit');
+    
+    if (novo === 'true') {
+      setPrefilledNome(nome || '');
+      setPrefilledCodigo(codigo || '');
+      setIsCreateDialogOpen(true);
+      // Limpar parâmetros da URL
+      setLocation('/produtos', { replace: true });
+    } else if (editId) {
+      // Abrir modal de edição para o produto especificado
+      const produtoParaEditar = produtos?.find(p => p.id === parseInt(editId));
+      if (produtoParaEditar) {
+        setEditingProduto(produtoParaEditar);
+        setIsEditDialogOpen(true);
+        setLocation('/produtos', { replace: true });
+      }
+    }
+  }, [produtos]);
 
   // Mutations
   const createMutation = trpc.produtos.create.useMutation({

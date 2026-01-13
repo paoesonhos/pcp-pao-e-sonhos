@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, ArrowLeft, Package, Layers } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Package, Layers, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -132,7 +132,7 @@ export default function FichaTecnica() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-semibold mb-2">Ficha Técnica</h1>
           {produto && (
             <p className="text-muted-foreground">
@@ -140,6 +140,14 @@ export default function FichaTecnica() {
             </p>
           )}
         </div>
+        {produto && (
+          <Link href={`/produtos?edit=${produto.id}`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar Produto
+            </Button>
+          </Link>
+        )}
       </div>
 
       <Card>

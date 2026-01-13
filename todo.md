@@ -535,3 +535,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.16: Permitir Editar Peso Unitário
 
 - [x] Adicionar campo peso unitário editável no formulário de edição de produto
+
+## Módulo 4.17: Link Editar Produto na Ficha Técnica
+
+- [x] Adicionar link para editar produto na página de Ficha Técnica
