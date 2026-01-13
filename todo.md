@@ -543,3 +543,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Correção: Peso Unitário não salva
 
 - [x] Investigar e corrigir salvamento do peso unitário na edição de produto
+
+## Módulo 4.18: Exibir Peso Unitário na Ficha Técnica
+
+- [x] Exibir peso unitário do produto na página da Ficha Técnica

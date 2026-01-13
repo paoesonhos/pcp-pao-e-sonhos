@@ -135,9 +135,14 @@ export default function FichaTecnica() {
         <div className="flex-1">
           <h1 className="text-3xl font-semibold mb-2">Ficha Técnica</h1>
           {produto && (
-            <p className="text-muted-foreground">
-              <span className="font-mono">{produto.codigoProduto}</span> – {produto.nome}
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-muted-foreground">
+                <span className="font-mono">{produto.codigoProduto}</span> – {produto.nome}
+              </p>
+              <Badge variant="secondary" className="font-mono">
+                Peso Unitário: {parseFloat(produto.pesoUnitario).toFixed(5)} kg
+              </Badge>
+            </div>
           )}
         </div>
         {produto && (
