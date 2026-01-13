@@ -512,3 +512,9 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Usar data createdAt da importação já retornada pelo backend
 - [x] Exibir indicador no topo da página Mapa de Produção (formato: dd/mm/yyyy hh:mm)
+
+
+## Módulo 4.13: Excluir Produtos do Mapa
+
+- [x] Adicionar botão de excluir (🗑️) em cada linha da tabela do Mapa de Produção
+- [x] Remover produto do estado local ao clicar (com confirmação)

@@ -693,6 +693,9 @@ export default function MapaProducao() {
                         <th style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #ddd" }}>
                           Mover para
                         </th>
+                        <th style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #ddd", width: 60 }}>
+                          Ações
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -788,6 +791,28 @@ export default function MapaProducao() {
                                 </option>
                               ))}
                             </select>
+                          </td>
+                          <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #eee" }}>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Excluir "${item.nome}" do mapa?`)) {
+                                  setMapa(prev => prev.filter(m => m.id !== item.id));
+                                  setAlterado(true);
+                                }
+                              }}
+                              style={{
+                                padding: "4px 8px",
+                                background: "#e74c3c",
+                                color: "white",
+                                border: "none",
+                                borderRadius: 4,
+                                cursor: "pointer",
+                                fontSize: 12,
+                              }}
+                              title="Excluir produto do mapa"
+                            >
+                              🗑️
+                            </button>
                           </td>
                         </tr>
                       );
