@@ -525,3 +525,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Buscar lista de produtos cadastrados
 - [x] Adicionar botão "Adicionar Produto" com select de produtos
 - [x] Inserir produto selecionado no mapa com valores padrão (qtd=0, dia selecionado, Equipe 1)
+
+
+## Módulo 4.15: Link Voltar na Página Mapa de Produção
+
+- [x] Adicionar link para voltar à página inicial no Mapa de Produção

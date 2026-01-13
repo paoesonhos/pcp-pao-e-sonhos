@@ -502,6 +502,9 @@ export default function MapaProducao() {
     <div style={{ padding: 20, maxWidth: 1400, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
+          <a href="/" style={{ color: '#666', textDecoration: 'none', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            ← Voltar ao Início
+          </a>
           <h1 style={{ marginBottom: 10 }}>Mapa de Produção</h1>
           {importacao ? (
             <p style={{ color: "#666", margin: 0 }}>
