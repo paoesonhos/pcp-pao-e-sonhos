@@ -565,3 +565,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Correção: Produtos filhos mostram ingredientes explodidos ao invés de componentes diretos
 
 - [x] Corrigir ficha de pré-pesagem para mostrar apenas componentes diretos (massa base) nos produtos filhos
+
+## Módulo 4.20: Edição manual de Qtd Planejada no Mapa de Produção
+
+- [x] Permitir editar Qtd Planejada manualmente na página Mapa de Produção

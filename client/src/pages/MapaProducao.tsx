@@ -165,6 +165,14 @@ export default function MapaProducao() {
     setAlterado(true);
   };
 
+  // Atualizar Qtd Planejada manualmente
+  const handleQtdPlanejadaChange = (id: number, novaQtd: number) => {
+    setMapa((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, qtdPlanejada: novaQtd } : item))
+    );
+    setAlterado(true);
+  };
+
   // Toggle feriado
   const handleFeriadoToggle = (dia: number) => {
     setFeriados((prev) => {
@@ -783,11 +791,24 @@ export default function MapaProducao() {
                               padding: 8,
                               textAlign: "right",
                               borderBottom: "1px solid #eee",
-                              fontWeight: "bold",
-                              color: item.qtdPlanejada === 0 ? "#999" : "#333",
                             }}
                           >
-                            {item.qtdPlanejada.toFixed(2)}
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={item.qtdPlanejada}
+                              onChange={(e) => handleQtdPlanejadaChange(item.id, parseFloat(e.target.value) || 0)}
+                              style={{
+                                width: 80,
+                                padding: 4,
+                                borderRadius: 4,
+                                border: "1px solid #ccc",
+                                textAlign: "right",
+                                fontWeight: "bold",
+                                color: item.qtdPlanejada === 0 ? "#999" : "#333",
+                              }}
+                            />
                           </td>
                           <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #eee" }}>
                             <select
