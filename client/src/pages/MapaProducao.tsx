@@ -68,10 +68,32 @@ export default function MapaProducao() {
   const [produtosNaoCadastrados, setProdutosNaoCadastrados] = useState<string[]>([]);
   const [proximoCodigo, setProximoCodigo] = useState<number>(1);
   
+  // Estado para cadastro em lote
+  interface ProdutoParaCadastrar {
+    nome: string;
+    codigo: string;
+    unidade: 'kg' | 'un';
+    pesoUnitario: string;
+    tipoEmbalagem: string;
+    quantidadePorEmbalagem: number;
+    categoriaId?: number;
+    destinoId?: number;
+    expandido: boolean;
+  }
+  const [produtosParaCadastrar, setProdutosParaCadastrar] = useState<ProdutoParaCadastrar[]>([]);
+  const [cadastrandoLote, setCadastrandoLote] = useState(false);
+  
   // Utils para refetch
   const utils = trpc.useUtils();
 
   const { data, isLoading, error } = trpc.mapaProducao.gerarMapa.useQuery();
+  
+  // Queries para categorias e destinos (para cadastro em lote)
+  const { data: categorias } = trpc.categorias.list.useQuery({ ativo: true });
+  const { data: destinos } = trpc.destinos.list.useQuery({ ativo: true });
+  
+  // Mutation para cadastro em lote
+  const cadastrarProdutoMutation = trpc.produtos.create.useMutation();
 
   useEffect(() => {
     if (data?.success && data.mapa) {
@@ -247,15 +269,102 @@ export default function MapaProducao() {
     setAlterado(true);
   };
 
-  // Abrir página de cadastro com dados pré-preenchidos
-  const handleCadastrarProduto = (nomeProduto: string) => {
-    // Navegar para página de produtos com parâmetros
-    const params = new URLSearchParams({
-      novo: 'true',
-      nome: nomeProduto,
-      codigo: proximoCodigo.toString(),
-    });
-    setLocation(`/produtos?${params.toString()}`);
+  // Expandir formulário inline para cadastro rápido
+  const handleExpandirCadastro = (nomeProduto: string) => {
+    // Verificar se já existe na lista de cadastro
+    const jaExiste = produtosParaCadastrar.find(p => p.nome === nomeProduto);
+    if (jaExiste) {
+      // Toggle expandido
+      setProdutosParaCadastrar(prev => prev.map(p => 
+        p.nome === nomeProduto ? { ...p, expandido: !p.expandido } : p
+      ));
+    } else {
+      // Adicionar novo produto para cadastrar
+      const codigoSugerido = proximoCodigo + produtosParaCadastrar.length;
+      setProdutosParaCadastrar(prev => [...prev, {
+        nome: nomeProduto,
+        codigo: codigoSugerido.toString(),
+        unidade: 'kg',
+        pesoUnitario: '0.05',
+        tipoEmbalagem: 'Saco plástico',
+        quantidadePorEmbalagem: 10,
+        expandido: true,
+      }]);
+    }
+  };
+  
+  // Atualizar campo de produto para cadastrar
+  const handleUpdateProdutoCadastro = (nome: string, campo: string, valor: any) => {
+    setProdutosParaCadastrar(prev => prev.map(p => 
+      p.nome === nome ? { ...p, [campo]: valor } : p
+    ));
+  };
+  
+  // Cadastrar um produto individual
+  const handleCadastrarProdutoIndividual = async (produto: ProdutoParaCadastrar) => {
+    try {
+      await cadastrarProdutoMutation.mutateAsync({
+        codigoProduto: produto.codigo,
+        nome: produto.nome,
+        unidade: produto.unidade,
+        pesoUnitario: produto.pesoUnitario,
+        tipoEmbalagem: produto.tipoEmbalagem,
+        quantidadePorEmbalagem: produto.quantidadePorEmbalagem,
+        categoriaId: produto.categoriaId,
+        destinoId: produto.destinoId,
+        saldoEstoque: '0',
+        estoqueMinimoDias: 4,
+        ativo: true,
+      });
+      
+      // Remover da lista de não cadastrados e da lista de cadastro
+      setProdutosNaoCadastrados(prev => prev.filter(n => n !== produto.nome));
+      setProdutosParaCadastrar(prev => prev.filter(p => p.nome !== produto.nome));
+      utils.produtos.list.invalidate();
+      
+      // Se não há mais produtos para cadastrar, fechar modal e continuar
+      if (produtosNaoCadastrados.length === 1) {
+        setShowModalCadastro(false);
+        await continuarSalvamento();
+      }
+    } catch (err: any) {
+      alert('Erro ao cadastrar: ' + err.message);
+    }
+  };
+  
+  // Cadastrar todos os produtos em lote
+  const handleCadastrarTodosEmLote = async () => {
+    setCadastrandoLote(true);
+    try {
+      for (const produto of produtosParaCadastrar) {
+        await cadastrarProdutoMutation.mutateAsync({
+          codigoProduto: produto.codigo,
+          nome: produto.nome,
+          unidade: produto.unidade,
+          pesoUnitario: produto.pesoUnitario,
+          tipoEmbalagem: produto.tipoEmbalagem,
+          quantidadePorEmbalagem: produto.quantidadePorEmbalagem,
+          categoriaId: produto.categoriaId,
+          destinoId: produto.destinoId,
+          saldoEstoque: '0',
+          estoqueMinimoDias: 4,
+          ativo: true,
+        });
+      }
+      
+      // Limpar listas e fechar modal
+      setProdutosNaoCadastrados([]);
+      setProdutosParaCadastrar([]);
+      setShowModalCadastro(false);
+      utils.produtos.list.invalidate();
+      
+      // Continuar salvamento
+      await continuarSalvamento();
+    } catch (err: any) {
+      alert('Erro ao cadastrar em lote: ' + err.message);
+    } finally {
+      setCadastrandoLote(false);
+    }
   };
 
   // Salvar alterações (rascunho) - com validação de cadastro
@@ -687,7 +796,7 @@ export default function MapaProducao() {
         !erro && <p style={{ color: "#666" }}>Nenhum dado disponível. Faça uma importação primeiro.</p>
       )}
 
-      {/* Modal de Produtos Não Cadastrados */}
+      {/* Modal de Produtos Não Cadastrados - Com Formulário Inline */}
       {showModalCadastro && produtosNaoCadastrados.length > 0 && (
         <div style={{
           position: 'fixed',
@@ -705,69 +814,185 @@ export default function MapaProducao() {
             backgroundColor: '#fff',
             borderRadius: 12,
             padding: 24,
-            maxWidth: 600,
-            width: '90%',
-            maxHeight: '80vh',
+            maxWidth: 900,
+            width: '95%',
+            maxHeight: '90vh',
             overflow: 'auto',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
           }}>
             <h2 style={{ margin: '0 0 8px 0', color: '#c0392b', display: 'flex', alignItems: 'center', gap: 8 }}>
-              ⚠️ Produtos Não Cadastrados
+              ⚠️ Produtos Não Cadastrados ({produtosNaoCadastrados.length})
             </h2>
             <p style={{ color: '#666', marginBottom: 16 }}>
-              Os seguintes produtos do mapa não estão cadastrados no sistema.
-              Cadastre-os ou exclua do mapa para continuar.
+              Clique em "Cadastrar" para expandir o formulário e preencher os dados.
+              Após preencher todos, clique em "Cadastrar Todos" para salvar em lote.
             </p>
             
             <div style={{ marginBottom: 16 }}>
-              {produtosNaoCadastrados.map((nome, idx) => (
-                <div key={idx} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  backgroundColor: idx % 2 === 0 ? '#fff3cd' : '#ffeeba',
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}>
-                  <span style={{ fontWeight: 500, color: '#856404' }}>{nome}</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => handleCadastrarProduto(nome)}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#27ae60',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        fontSize: 13,
-                      }}
-                    >
-                      Cadastrar
-                    </button>
-                    <button
-                      onClick={() => handleExcluirDoMapa(nome)}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#e74c3c',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        fontSize: 13,
-                      }}
-                    >
-                      Excluir do Mapa
-                    </button>
+              {produtosNaoCadastrados.map((nome, idx) => {
+                const produtoCadastro = produtosParaCadastrar.find(p => p.nome === nome);
+                return (
+                  <div key={idx} style={{
+                    backgroundColor: idx % 2 === 0 ? '#fff3cd' : '#ffeeba',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    overflow: 'hidden',
+                  }}>
+                    {/* Linha principal */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                    }}>
+                      <span style={{ fontWeight: 500, color: '#856404' }}>{nome}</span>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => handleExpandirCadastro(nome)}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: produtoCadastro?.expandido ? '#2980b9' : '#27ae60',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontSize: 13,
+                          }}
+                        >
+                          {produtoCadastro?.expandido ? '▲ Recolher' : '▼ Cadastrar'}
+                        </button>
+                        <button
+                          onClick={() => handleExcluirDoMapa(nome)}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#e74c3c',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontSize: 13,
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Formulário expandido */}
+                    {produtoCadastro?.expandido && (
+                      <div style={{
+                        padding: '16px',
+                        backgroundColor: '#fff',
+                        borderTop: '1px solid #ddd',
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Código *</label>
+                            <input
+                              type="text"
+                              value={produtoCadastro.codigo}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'codigo', e.target.value)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Unidade *</label>
+                            <select
+                              value={produtoCadastro.unidade}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'unidade', e.target.value)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            >
+                              <option value="kg">kg</option>
+                              <option value="un">un</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Peso Unitário (kg) *</label>
+                            <input
+                              type="number"
+                              step="0.00001"
+                              value={produtoCadastro.pesoUnitario}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'pesoUnitario', e.target.value)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Tipo Embalagem *</label>
+                            <input
+                              type="text"
+                              value={produtoCadastro.tipoEmbalagem}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'tipoEmbalagem', e.target.value)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Qtd/Embalagem *</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={produtoCadastro.quantidadePorEmbalagem}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'quantidadePorEmbalagem', parseInt(e.target.value) || 1)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Categoria</label>
+                            <select
+                              value={produtoCadastro.categoriaId || ''}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'categoriaId', e.target.value ? parseInt(e.target.value) : undefined)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            >
+                              <option value="">Selecione</option>
+                              {categorias?.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Destino</label>
+                            <select
+                              value={produtoCadastro.destinoId || ''}
+                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'destinoId', e.target.value ? parseInt(e.target.value) : undefined)}
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                            >
+                              <option value="">Selecione</option>
+                              {destinos?.map(dest => (
+                                <option key={dest.id} value={dest.id}>{dest.nome}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                            <button
+                              onClick={() => handleCadastrarProdutoIndividual(produtoCadastro)}
+                              disabled={cadastrarProdutoMutation.isPending}
+                              style={{
+                                width: '100%',
+                                padding: '8px 16px',
+                                backgroundColor: '#27ae60',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 4,
+                                cursor: 'pointer',
+                                fontWeight: 500,
+                              }}
+                            >
+                              {cadastrarProdutoMutation.isPending ? 'Salvando...' : '✓ Salvar'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: '1px solid #eee', paddingTop: 16 }}>
               <button
-                onClick={() => setShowModalCadastro(false)}
+                onClick={() => {
+                  setShowModalCadastro(false);
+                  setProdutosParaCadastrar([]);
+                }}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#95a5a6',
@@ -779,6 +1004,24 @@ export default function MapaProducao() {
               >
                 Fechar
               </button>
+              
+              {produtosParaCadastrar.length > 0 && (
+                <button
+                  onClick={handleCadastrarTodosEmLote}
+                  disabled={cadastrandoLote}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#2980b9',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                  }}
+                >
+                  {cadastrandoLote ? 'Cadastrando...' : `📦 Cadastrar Todos (${produtosParaCadastrar.length})`}
+                </button>
+              )}
             </div>
           </div>
         </div>

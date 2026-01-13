@@ -483,3 +483,12 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Ajustar parser para aceitar formato: nome_produto;unidade_medida;2;3;4;5;6;7
 - [x] Remover necessidade de coluna código (usar nome como identificador)
 - [x] Testar importação com arquivo real - 6 produtos importados com sucesso!
+
+
+## Módulo 4.9: Cadastro em Lote de Produtos no Mapa
+
+- [x] Criar formulário inline expansível no modal de produtos não cadastrados
+- [x] Campos: Código (sugerido), Nome (pré-preenchido), Unidade, Peso Unitário, Categoria, Destino
+- [x] Usar mutation existente produtos.create para cadastro
+- [x] Botão "Salvar" individual e "Cadastrar Todos" em lote
+- [x] Testar cadastro sequencial sem sair da página
