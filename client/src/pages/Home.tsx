@@ -103,7 +103,7 @@ export default function Home() {
       <header className="border-b bg-card">
         <div className="container py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Sistema PCP Pão e Sonhos</h1>
+            <h1 className="text-2xl font-semibold">Sistema de Planejamento e Controle da Produção</h1>
             <p className="text-sm text-muted-foreground">Bem-vindo, {user?.name}</p>
           </div>
           <Button variant="outline" onClick={() => logout()}>Sair</Button>
