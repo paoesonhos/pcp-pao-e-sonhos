@@ -1,0 +1,18 @@
+{
+  "query": "SELECT * FROM categorias WHERE nome LIKE '%padaria%' OR nome LIKE '%Padaria%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT * FROM categorias WHERE nome LIKE '%padaria%' OR nome LIKE '%Padaria%';",
+  "rows": [
+    {
+      "id": "90001",
+      "nome": "Padaria",
+      "descricao": "NULL",
+      "ativo": "1",
+      "createdAt": "2026-01-13 15:36:38",
+      "updatedAt": "2026-01-13 15:36:38"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\tdescricao\tativo\tcreatedAt\tupdatedAt\n90001\tPadaria\tNULL\t1\t2026-01-13 15:36:38\t2026-01-13 15:36:38\n",
+  "stderr": "",
+  "execution_time_ms": 206
+}
