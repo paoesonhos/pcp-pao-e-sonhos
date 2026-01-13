@@ -17,8 +17,10 @@ import {
   Scale,
   Boxes,
   Truck,
-  Package
+  Package,
+  Download
 } from "lucide-react";
+import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF } from "@/lib/pdfExport";
 
 // Tipos
 interface InsumoConsolidado {
@@ -438,10 +440,47 @@ export default function ProcessamentoPCP() {
                 {/* Produtos Finais - Pré-Pesagem */}
                 <Card className="border-orange-200">
                   <CardHeader className="bg-orange-50 border-b border-orange-200">
-                    <CardTitle className="flex items-center gap-2">
-                      <Scale className="w-5 h-5 text-orange-600" />
-                      Ficha de Pré-Pesagem - {DIAS_SEMANA[diaSelecionado]}
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Scale className="w-5 h-5 text-orange-600" />
+                        Ficha de Pré-Pesagem - {DIAS_SEMANA[diaSelecionado]}
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const produtos = processamentoData?.resultados
+                            ?.filter(r => !r.erro && r.insumos.length > 0)
+                            .map(r => ({
+                              codigoProduto: r.codigoProduto,
+                              nomeProduto: r.nomeProduto,
+                              qtdPlanejada: r.qtdPlanejada,
+                              unidade: r.unidade,
+                              insumos: r.insumos.map(i => ({
+                                nomeComponente: i.nomeComponente,
+                                quantidadeArredondada: i.quantidadeArredondada,
+                                unidade: i.unidade
+                              }))
+                            })) || [];
+                          const intermediarios = processamentoData?.intermediarios?.map(i => ({
+                            nomeProduto: i.nomeProduto,
+                            quantidadeArredondada: i.quantidadeArredondada,
+                            unidade: i.unidade,
+                            produtosFilhos: i.produtosFilhos,
+                            ingredientes: i.ingredientes?.map(ing => ({
+                              nomeComponente: ing.nomeComponente,
+                              quantidadeArredondada: ing.quantidadeArredondada,
+                              unidade: ing.unidade
+                            })) || []
+                          })) || [];
+                          exportarFichaPrePesagemPDF(diaSelecionado, produtos, intermediarios);
+                        }}
+                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Exportar PDF
+                      </Button>
+                    </div>
                     <p className="text-sm text-gray-600">
                       Checklist de ingredientes abertos por produto. Apenas Fermento é editável.
                     </p>
@@ -947,10 +986,29 @@ function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: n
   return (
     <Card className="border-orange-200">
       <CardHeader className="bg-blue-50 border-b border-blue-200">
-        <CardTitle className="flex items-center gap-2">
-          <Truck className="w-5 h-5 text-blue-600" />
-          Checklist de Expedição - {DIAS_SEMANA[diaSelecionado]}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-blue-600" />
+            Checklist de Expedição - {DIAS_SEMANA[diaSelecionado]}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const produtos = produtosExpedicao?.map(p => ({
+                codigoProduto: p.codigoProduto,
+                nome: p.nome,
+                saldoEstoque: p.saldoEstoque || '0',
+                unidade: 'un'
+              })) || [];
+              exportarListaExpedicaoPDF(diaSelecionado, produtos);
+            }}
+            className="border-blue-300 text-blue-700 hover:bg-blue-100"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar PDF
+          </Button>
+        </div>
         <p className="text-sm text-gray-600">
           Marque os produtos conforme retira do estoque de congelados
         </p>

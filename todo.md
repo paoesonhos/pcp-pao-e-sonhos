@@ -574,3 +574,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Implementar agrupamento de demanda por shelf life ao salvar Mapa de Produção
 - [x] Corrigir bug no agrupamento por shelf life que não está funcionando
+
+## Módulo 4.22: Exportação PDF
+
+- [x] Adicionar botão para exportar Ficha de Pré-Pesagem em PDF
+- [x] Adicionar botão para exportar Lista de Expedição em PDF
