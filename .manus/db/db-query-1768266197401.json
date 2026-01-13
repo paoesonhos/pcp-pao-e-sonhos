@@ -1,0 +1,70 @@
+{
+  "query": "SELECT codigoInsumo, nome FROM insumos ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT codigoInsumo, nome FROM insumos ORDER BY id;",
+  "rows": [
+    {
+      "codigoInsumo": "INS001",
+      "nome": "Farinha Teste"
+    },
+    {
+      "codigoInsumo": "01",
+      "nome": "FARINHA PURA"
+    },
+    {
+      "codigoInsumo": "02",
+      "nome": "FARINHA MIX FRANCES"
+    },
+    {
+      "codigoInsumo": "10",
+      "nome": "farinha mix"
+    },
+    {
+      "codigoInsumo": "11",
+      "nome": "açúcar"
+    },
+    {
+      "codigoInsumo": "12",
+      "nome": "coco"
+    },
+    {
+      "codigoInsumo": "13",
+      "nome": "água"
+    },
+    {
+      "codigoInsumo": "14",
+      "nome": "margarina"
+    },
+    {
+      "codigoInsumo": "15",
+      "nome": "gelo"
+    },
+    {
+      "codigoInsumo": "16",
+      "nome": "manteiga"
+    },
+    {
+      "codigoInsumo": "17",
+      "nome": "fermento seco"
+    },
+    {
+      "codigoInsumo": "18",
+      "nome": "massa base reforma"
+    },
+    {
+      "codigoInsumo": "19",
+      "nome": "corante amarelo gema"
+    },
+    {
+      "codigoInsumo": "20",
+      "nome": "massa base reforma"
+    },
+    {
+      "codigoInsumo": "21",
+      "nome": "MASSA BASE DOCE"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoInsumo\tnome\nINS001\tFarinha Teste\n01\tFARINHA PURA\n02\tFARINHA MIX FRANCES\n10\tfarinha mix\n11\taçúcar\n12\tcoco\n13\tágua\n14\tmargarina\n15\tgelo\n16\tmanteiga\n17\tfermento seco\n18\tmassa base reforma\n19\tcorante amarelo gema\n20\tmassa base reforma\n21\tMASSA BASE DOCE\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

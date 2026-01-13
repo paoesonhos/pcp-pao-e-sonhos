@@ -438,6 +438,12 @@ export const appRouter = router({
         const primeiraLinha = linhas[0];
         const separador = primeiraLinha.includes(";") ? ";" : ",";
 
+        // Detectar formato do cabeçalho
+        // Formato 1: codigo;nome;unidade;dia2;dia3;dia4;dia5;dia6;dia7 (9 colunas)
+        // Formato 2: nome_produto;unidade_medida;2;3;4;5;6;7 (8 colunas)
+        const headerCols = primeiraLinha.split(separador);
+        const temCodigo = headerCols.length >= 9;
+
         // Pular cabeçalho, processar dados
         const dados = [];
         for (let i = 1; i < linhas.length; i++) {
@@ -445,8 +451,7 @@ export const appRouter = router({
           if (!linha) continue;
 
           const cols = linha.split(separador);
-          if (cols.length < 9) continue;
-
+          
           // Converter vírgula decimal para ponto
           const converterNumero = (val: string) => {
             const limpo = val.trim().replace(",", ".");
@@ -454,17 +459,35 @@ export const appRouter = router({
             return isNaN(num) ? 0 : num;
           };
 
-          dados.push({
-            codigo_produto: cols[0].trim(),
-            nome_produto: cols[1].trim(),
-            unidade_medida: cols[2].trim(),
-            dia2: converterNumero(cols[3]),
-            dia3: converterNumero(cols[4]),
-            dia4: converterNumero(cols[5]),
-            dia5: converterNumero(cols[6]),
-            dia6: converterNumero(cols[7]),
-            dia7: converterNumero(cols[8]),
-          });
+          if (temCodigo) {
+            // Formato com código (9 colunas)
+            if (cols.length < 9) continue;
+            dados.push({
+              codigo_produto: cols[0].trim(),
+              nome_produto: cols[1].trim(),
+              unidade_medida: cols[2].trim(),
+              dia2: converterNumero(cols[3]),
+              dia3: converterNumero(cols[4]),
+              dia4: converterNumero(cols[5]),
+              dia5: converterNumero(cols[6]),
+              dia6: converterNumero(cols[7]),
+              dia7: converterNumero(cols[8]),
+            });
+          } else {
+            // Formato sem código (8 colunas): nome_produto;unidade_medida;2;3;4;5;6;7
+            if (cols.length < 8) continue;
+            dados.push({
+              codigo_produto: "", // Sem código
+              nome_produto: cols[0].trim(),
+              unidade_medida: cols[1].trim(),
+              dia2: converterNumero(cols[2]),
+              dia3: converterNumero(cols[3]),
+              dia4: converterNumero(cols[4]),
+              dia5: converterNumero(cols[5]),
+              dia6: converterNumero(cols[6]),
+              dia7: converterNumero(cols[7]),
+            });
+          }
         }
 
         if (dados.length === 0) {

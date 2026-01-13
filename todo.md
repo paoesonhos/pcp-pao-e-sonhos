@@ -476,3 +476,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Adicionar botões "Cadastrar" e "Excluir do Mapa" para cada produto
 - [x] Atualizar página de produtos para receber nome pré-preenchido e código sugerido
 - [x] Fluxo: validar cadastro → validar estoque congelados → processar
+
+
+## Módulo 4.8: Ajuste ImportaV5 - Novo Formato CSV
+
+- [x] Ajustar parser para aceitar formato: nome_produto;unidade_medida;2;3;4;5;6;7
+- [x] Remover necessidade de coluna código (usar nome como identificador)
+- [x] Testar importação com arquivo real - 6 produtos importados com sucesso!
