@@ -492,3 +492,12 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Usar mutation existente produtos.create para cadastro
 - [x] Botão "Salvar" individual e "Cadastrar Todos" em lote
 - [x] Testar cadastro sequencial sem sair da página
+
+
+## Módulo 4.10: Aba Molhados Consolidados
+
+- [x] Processar todos os dias da semana para consolidar insumos
+- [x] Filtrar apenas insumos tipo "molhado" do banco de dados
+- [x] Criar nova aba "Molhados Consolidados" ao lado de Expedição
+- [x] Exibir lista de insumos com quantidade total da semana
+- [x] Testar exibição

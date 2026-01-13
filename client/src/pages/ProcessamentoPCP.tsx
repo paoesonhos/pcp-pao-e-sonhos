@@ -303,6 +303,10 @@ export default function ProcessamentoPCP() {
                 <Truck className="w-4 h-4 mr-2" />
                 Expedição
               </TabsTrigger>
+              <TabsTrigger value="molhados" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                <Package className="w-4 h-4 mr-2" />
+                Molhados Consolidados
+              </TabsTrigger>
             </TabsList>
 
             {/* Ficha de Pré-Pesagem */}
@@ -846,6 +850,11 @@ export default function ProcessamentoPCP() {
             <TabsContent value="expedicao">
               <ExpedicaoTab diaSelecionado={diaSelecionado} processamentoData={processamentoData} />
             </TabsContent>
+
+            {/* Molhados Consolidados */}
+            <TabsContent value="molhados">
+              <MolhadosConsolidadosTab mapaData={mapaData} />
+            </TabsContent>
           </Tabs>
         )}
       </div>
@@ -1032,6 +1041,143 @@ function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: n
             {confirmarMutation.isPending ? 'Processando...' : 'Confirmar Separação'}
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+// Componente da aba Molhados Consolidados
+function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ codigo: string; nome: string; unidade: string; qtdPlanejada: number; diaProduzir: number }> } }) {
+  // Preparar input para processamento de toda a semana
+  const inputSemana = useMemo(() => {
+    if (!mapaData?.mapa) return [];
+    return mapaData.mapa.map(item => ({
+      codigoProduto: item.codigo,
+      nomeProduto: item.nome,
+      unidade: item.unidade as 'kg' | 'un',
+      qtdPlanejada: item.qtdPlanejada,
+      diaProduzir: item.diaProduzir,
+    }));
+  }, [mapaData?.mapa]);
+
+  // Processar todos os itens da semana
+  const { data: processamentoSemana, isLoading } = trpc.pcp.processarMapa.useQuery(
+    inputSemana,
+    { enabled: inputSemana.length > 0 }
+  );
+
+  // Buscar insumos para saber quais são molhados
+  const { data: insumosDb } = trpc.insumos.list.useQuery({ ativo: true });
+
+  // Consolidar insumos molhados de toda a semana
+  const molhadosConsolidados = useMemo(() => {
+    if (!processamentoSemana?.resultados || !insumosDb) return [];
+
+    // Criar mapa de insumos molhados
+    const insumosMolhados = new Set(
+      insumosDb.filter(i => i.tipo === 'molhado').map(i => i.id)
+    );
+
+    // Agregar todos os insumos de todos os produtos de todos os dias
+    const agregado = new Map<number, {
+      componenteId: number;
+      nomeComponente: string;
+      quantidadeTotal: number;
+      unidade: string;
+    }>();
+
+    for (const resultado of processamentoSemana.resultados) {
+      for (const insumo of resultado.insumos) {
+        // Verificar se é molhado
+        if (!insumosMolhados.has(insumo.componenteId)) continue;
+
+        const existente = agregado.get(insumo.componenteId);
+        if (existente) {
+          existente.quantidadeTotal += insumo.quantidadeTotal;
+        } else {
+          agregado.set(insumo.componenteId, {
+            componenteId: insumo.componenteId,
+            nomeComponente: insumo.nomeComponente,
+            quantidadeTotal: insumo.quantidadeTotal,
+            unidade: insumo.unidade,
+          });
+        }
+      }
+    }
+
+    // Converter para array e ordenar por nome
+    return Array.from(agregado.values())
+      .sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
+  }, [processamentoSemana?.resultados, insumosDb]);
+
+  if (isLoading) {
+    return (
+      <Card className="border-blue-200">
+        <CardContent className="p-8 text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">Processando insumos da semana...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (molhadosConsolidados.length === 0) {
+    return (
+      <Card className="border-blue-200">
+        <CardContent className="p-8 text-center">
+          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">Nenhum insumo molhado encontrado na semana</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Calcular total geral
+  const totalGeral = molhadosConsolidados.reduce((acc, item) => acc + item.quantidadeTotal, 0);
+
+  return (
+    <Card className="border-blue-200">
+      <CardHeader className="bg-blue-50 border-b border-blue-200">
+        <CardTitle className="flex items-center gap-2">
+          <Package className="w-5 h-5 text-blue-600" />
+          Insumos Molhados - Consolidado da Semana
+        </CardTitle>
+        <p className="text-sm text-gray-600">
+          Lista de insumos do tipo "molhado" com quantidade total de todos os dias da semana
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        <table className="w-full">
+          <thead className="bg-blue-100">
+            <tr>
+              <th className="p-3 text-left">Insumo</th>
+              <th className="p-3 text-right">Quantidade Total</th>
+              <th className="p-3 text-center">Unidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {molhadosConsolidados.map((insumo, idx) => (
+              <tr 
+                key={insumo.componenteId} 
+                className={`border-b hover:bg-blue-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+              >
+                <td className="p-3 font-medium">{insumo.nomeComponente}</td>
+                <td className="p-3 text-right font-bold text-blue-700">
+                  {insumo.quantidadeTotal.toFixed(3)}
+                </td>
+                <td className="p-3 text-center text-gray-600">{insumo.unidade}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-blue-100 font-bold">
+            <tr>
+              <td className="p-3">Total ({molhadosConsolidados.length} insumos)</td>
+              <td className="p-3 text-right text-blue-800">{totalGeral.toFixed(3)}</td>
+              <td className="p-3 text-center">kg</td>
+            </tr>
+          </tfoot>
+        </table>
       </CardContent>
     </Card>
   );
