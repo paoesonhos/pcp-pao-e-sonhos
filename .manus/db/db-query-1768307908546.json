@@ -1,0 +1,114 @@
+{
+  "query": "DESCRIBE mapa_rascunho;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute DESCRIBE mapa_rascunho;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "importacaoId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "produtoId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "codigoProduto",
+      "Type": "varchar(50)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "nomeProduto",
+      "Type": "varchar(200)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "unidade",
+      "Type": "varchar(20)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "qtdImportada",
+      "Type": "decimal(10,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "percentualAjuste",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "qtdPlanejada",
+      "Type": "decimal(10,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "diaProduzir",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "equipe",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "Equipe 1",
+      "Extra": ""
+    },
+    {
+      "Field": "isReposicao",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nimportacaoId\tint(11)\tYES\t\tNULL\t\nprodutoId\tint(11)\tYES\t\tNULL\t\ncodigoProduto\tvarchar(50)\tNO\t\tNULL\t\nnomeProduto\tvarchar(200)\tNO\t\tNULL\t\nunidade\tvarchar(20)\tNO\t\tNULL\t\nqtdImportada\tdecimal(10,2)\tNO\t\tNULL\t\npercentualAjuste\tint(11)\tNO\t\t0\t\nqtdPlanejada\tdecimal(10,2)\tNO\t\tNULL\t\ndiaProduzir\tint(11)\tNO\t\tNULL\t\nequipe\tvarchar(50)\tYES\t\tEquipe 1\t\nisReposicao\ttinyint(1)\tYES\t\t0\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}

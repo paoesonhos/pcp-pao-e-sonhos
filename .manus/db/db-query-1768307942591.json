@@ -1,0 +1,50 @@
+{
+  "query": "SELECT mr.id, mr.produtoId, mr.codigoProduto, mr.nomeProduto, mr.qtdPlanejada, mr.diaProduzir FROM mapa_rascunho mr LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT mr.id, mr.produtoId, mr.codigoProduto, mr.nomeProduto, mr.qtdPlanejada, mr.diaProduzir FROM mapa_rascunho mr LIMIT 5;",
+  "rows": [
+    {
+      "id": "120085",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose",
+      "qtdPlanejada": "1.00",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "120086",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose",
+      "qtdPlanejada": "2.00",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "120087",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "120088",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose",
+      "qtdPlanejada": "4.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "120089",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose",
+      "qtdPlanejada": "5.00",
+      "diaProduzir": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprodutoId\tcodigoProduto\tnomeProduto\tqtdPlanejada\tdiaProduzir\n120085\tNULL\t\tBolo Cenoura sem lactose\t1.00\t2\n120086\tNULL\t\tBolo Cenoura sem lactose\t2.00\t3\n120087\tNULL\t\tBolo Cenoura sem lactose\t3.00\t4\n120088\tNULL\t\tBolo Cenoura sem lactose\t4.00\t5\n120089\tNULL\t\tBolo Cenoura sem lactose\t5.00\t6\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

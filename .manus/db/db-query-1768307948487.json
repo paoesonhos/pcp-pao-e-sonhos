@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, produtoId, codigoProduto, nomeProduto FROM mapa_rascunho WHERE produtoId IS NULL LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, produtoId, codigoProduto, nomeProduto FROM mapa_rascunho WHERE produtoId IS NULL LIMIT 10;",
+  "rows": [
+    {
+      "id": "120085",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120086",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120087",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120088",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120089",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120090",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "Bolo Cenoura sem lactose"
+    },
+    {
+      "id": "120091",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "bolo cenoura redono"
+    },
+    {
+      "id": "120092",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "bolo cenoura redono"
+    },
+    {
+      "id": "120093",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "bolo cenoura redono"
+    },
+    {
+      "id": "120094",
+      "produtoId": "NULL",
+      "codigoProduto": "",
+      "nomeProduto": "bolo cenoura redono"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprodutoId\tcodigoProduto\tnomeProduto\n120085\tNULL\t\tBolo Cenoura sem lactose\n120086\tNULL\t\tBolo Cenoura sem lactose\n120087\tNULL\t\tBolo Cenoura sem lactose\n120088\tNULL\t\tBolo Cenoura sem lactose\n120089\tNULL\t\tBolo Cenoura sem lactose\n120090\tNULL\t\tBolo Cenoura sem lactose\n120091\tNULL\t\tbolo cenoura redono\n120092\tNULL\t\tbolo cenoura redono\n120093\tNULL\t\tbolo cenoura redono\n120094\tNULL\t\tbolo cenoura redono\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

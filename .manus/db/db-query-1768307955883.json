@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total, SUM(CASE WHEN produtoId IS NULL THEN 1 ELSE 0 END) as null_count FROM mapa_rascunho;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT COUNT(*) as total, SUM(CASE WHEN produtoId IS NULL THEN 1 ELSE 0 END) as null_count FROM mapa_rascunho;",
+  "rows": [
+    {
+      "total": "12",
+      "null_count": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tnull_count\n12\t12\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

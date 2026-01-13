@@ -552,3 +552,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Criar componente de menu de navegação com links para todos os módulos
 - [x] Aplicar menu em todas as páginas do sistema
+
+## Correção: Processamento PCP não encontra Mapa Salvo
+
+- [x] Investigar por que o processamento PCP não encontra o mapa de produção salvo
+- [x] Alterar importação V5 para vincular produto pelo nome ao invés do código

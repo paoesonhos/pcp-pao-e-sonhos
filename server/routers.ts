@@ -594,10 +594,10 @@ export const appRouter = router({
         .from(vendasV5)
         .where(eq(vendasV5.importacaoId, ultimaImportacao.id));
 
-      // Buscar todos os produtos para vincular pelo código
+      // Buscar todos os produtos para vincular pelo nome
       const { produtos } = await import("../drizzle/schema");
       const todosProdutos = await database.select().from(produtos);
-      const produtosPorCodigo = new Map(todosProdutos.map(p => [p.codigoProduto, p]));
+      const produtosPorNome = new Map(todosProdutos.map(p => [p.nome.toLowerCase().trim(), p]));
 
       // Gerar mapa de produção expandido (uma linha por produto por dia)
       const mapa: Array<{
@@ -627,7 +627,7 @@ export const appRouter = router({
 
         for (const d of dias) {
           if (d.qtd > 0) {
-            const produtoCadastrado = produtosPorCodigo.get(venda.codigoProduto);
+            const produtoCadastrado = produtosPorNome.get(venda.nomeProduto.toLowerCase().trim());
             mapa.push({
               id: idCounter++,
               codigo: venda.codigoProduto,
