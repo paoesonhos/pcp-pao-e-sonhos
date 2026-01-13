@@ -444,3 +444,11 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Corrigir cálculo para usar quantidade total consolidada
 - [x] Ingrediente = (ingrediente/total_receita_base) × Quantidade Total Consolidada
 - [x] Testar com MASSA BASE DOCE (87.495 kg) - Total ingredientes: 87.485 kg ✅
+
+
+## Módulo 4.4: Massas Base na Ficha de Pré-Pesagem
+
+- [x] Adicionar seção "Massas Base a Produzir" no topo da Ficha de Pré-Pesagem
+- [x] Exibir intermediários N1 e N2 com ficha técnica detalhada
+- [x] Usar cálculo proporcional: (ingrediente/total_receita_base) × Quantidade Total
+- [x] Testar exibição
