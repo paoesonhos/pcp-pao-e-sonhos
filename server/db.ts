@@ -613,12 +613,99 @@ export async function salvarMapaRascunho(importacaoId: number | null, itens: { p
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Buscar shelf life dos produtos para aplicar otimização
+  const produtosComShelfLife = await db.select({
+    id: produtos.id,
+    nome: produtos.nome,
+    shelfLife: produtos.shelfLife,
+  }).from(produtos);
+  
+  const shelfLifeMap = new Map<string, number>();
+  produtosComShelfLife.forEach(p => {
+    if (p.shelfLife && p.shelfLife > 1) {
+      shelfLifeMap.set(p.nome.toLowerCase(), p.shelfLife);
+    }
+  });
+
+  // Aplicar otimização de shelf life
+  // Agrupar itens por produto
+  const itensPorProduto = new Map<string, typeof itens>();
+  itens.forEach(item => {
+    const key = item.nomeProduto.toLowerCase();
+    if (!itensPorProduto.has(key)) {
+      itensPorProduto.set(key, []);
+    }
+    itensPorProduto.get(key)!.push(item);
+  });
+
+  // Processar cada produto
+  const itensOtimizados: typeof itens = [];
+  
+  for (const [nomeProduto, itensDoProduct] of Array.from(itensPorProduto)) {
+    const shelfLife = shelfLifeMap.get(nomeProduto);
+    
+    if (!shelfLife || shelfLife <= 1) {
+      // Sem otimização - manter como está
+      itensOtimizados.push(...itensDoProduct);
+    } else {
+      // Aplicar otimização por shelf life
+      // Ordenar por dia de produção
+      const itensOrdenados = [...itensDoProduct].sort((a, b) => a.diaProduzir - b.diaProduzir);
+      
+      // Dias da semana disponíveis (2=Seg, 3=Ter, 4=Qua, 5=Qui, 6=Sex, 7=Sáb)
+      const diasDisponiveis = [2, 3, 4, 5, 6, 7];
+      
+      // Criar mapa de quantidade por dia
+      const qtdPorDia = new Map<number, { item: typeof itensDoProduct[0]; qtd: number }>();
+      itensOrdenados.forEach(item => {
+        qtdPorDia.set(item.diaProduzir, { item, qtd: parseFloat(item.qtdPlanejada) });
+      });
+      
+      // Aplicar agrupamento em ciclos de shelf life
+      let diaAtual = 0;
+      while (diaAtual < diasDisponiveis.length) {
+        const diaCicloInicio = diasDisponiveis[diaAtual];
+        const dadosDiaInicio = qtdPorDia.get(diaCicloInicio);
+        
+        if (dadosDiaInicio) {
+          let somaQtd = dadosDiaInicio.qtd;
+          
+          // Somar dias subsequentes dentro do ciclo de shelf life
+          for (let i = 1; i < shelfLife && (diaAtual + i) < diasDisponiveis.length; i++) {
+            const diaSubsequente = diasDisponiveis[diaAtual + i];
+            const dadosDiaSubsequente = qtdPorDia.get(diaSubsequente);
+            
+            if (dadosDiaSubsequente) {
+              somaQtd += dadosDiaSubsequente.qtd;
+              // Zerar dia subsequente
+              qtdPorDia.set(diaSubsequente, { ...dadosDiaSubsequente, qtd: 0 });
+            }
+          }
+          
+          // Atualizar dia de início com soma
+          qtdPorDia.set(diaCicloInicio, { ...dadosDiaInicio, qtd: somaQtd });
+        }
+        
+        // Avançar para próximo ciclo
+        diaAtual += shelfLife;
+      }
+      
+      // Converter de volta para array de itens
+      for (const [dia, dados] of Array.from(qtdPorDia)) {
+        itensOtimizados.push({
+          ...dados.item,
+          qtdPlanejada: dados.qtd.toFixed(2),
+        });
+      }
+    }
+  }
+
   // Limpar rascunho anterior
   await db.delete(mapaRascunho);
 
-  // Inserir novos itens
-  if (itens.length > 0) {
-    await db.insert(mapaRascunho).values(itens.map(item => ({
+  // Inserir itens otimizados
+  if (itensOtimizados.length > 0) {
+    await db.insert(mapaRascunho).values(itensOtimizados.map(item => ({
       importacaoId: importacaoId,
       produtoId: item.produtoId || null,
       codigoProduto: item.codigoProduto,
