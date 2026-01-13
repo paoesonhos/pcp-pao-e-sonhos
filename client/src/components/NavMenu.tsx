@@ -37,18 +37,18 @@ export default function NavMenu() {
               (item.href !== "/" && location.startsWith(item.href));
             
             return (
-              <Link key={item.href} href={item.href}>
-                <a
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
-                    isActive
-                      ? "bg-amber-100 text-amber-900"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </a>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                  isActive
+                    ? "bg-amber-100 text-amber-900"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
               </Link>
             );
           })}
