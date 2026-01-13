@@ -447,3 +447,173 @@ export async function exportarFichaProducaoPDF(
   // Salvar
   doc.save(`ficha-producao-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
 }
+
+
+// Interface para Detalhes por Produto
+interface ProdutoDetalhes {
+  codigoProduto: string;
+  nomeProduto: string;
+  unidade: string;
+  qtdPlanejada: number;
+  blocos: number;
+  pedacos: number;
+  status: 'ok' | 'erro';
+  erro?: string;
+}
+
+// Exportar Detalhes por Produto em PDF
+export async function exportarDetalhesProdutoPDF(
+  diaSelecionado: number,
+  produtos: ProdutoDetalhes[]
+) {
+  const doc = new jsPDF();
+  
+  // Cabeçalho com logo
+  let yPosition = await adicionarCabecalho(doc, 'Detalhes por Produto', diaSelecionado);
+
+  // Tabela de detalhes
+  const dadosTabela = produtos.map(produto => [
+    produto.codigoProduto,
+    produto.nomeProduto,
+    produto.unidade,
+    produto.qtdPlanejada.toFixed(3),
+    produto.blocos.toString(),
+    `${produto.pedacos} un`,
+    produto.status === 'ok' ? 'OK' : produto.erro || 'Erro'
+  ]);
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Código', 'Produto', 'Unid.', 'Qtd Plan.', 'Blocos', 'Pedaço', 'Status']],
+    body: dadosTabela,
+    theme: 'grid',
+    headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    columnStyles: {
+      0: { cellWidth: 20 },
+      1: { cellWidth: 55 },
+      2: { cellWidth: 15, halign: 'center' },
+      3: { cellWidth: 25, halign: 'right' },
+      4: { cellWidth: 20, halign: 'center' },
+      5: { cellWidth: 20, halign: 'center' },
+      6: { cellWidth: 25, halign: 'center' }
+    },
+    margin: { left: 14, right: 14 },
+    didParseCell: function(data) {
+      // Colorir status
+      if (data.column.index === 6 && data.section === 'body') {
+        if (data.cell.raw === 'OK') {
+          data.cell.styles.textColor = [22, 163, 74]; // Verde
+          data.cell.styles.fontStyle = 'bold';
+        } else {
+          data.cell.styles.textColor = [220, 38, 38]; // Vermelho
+        }
+      }
+    }
+  });
+
+  // Resumo
+  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  const totalProdutos = produtos.length;
+  const produtosOk = produtos.filter(p => p.status === 'ok').length;
+  const produtosErro = produtos.filter(p => p.status === 'erro').length;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumo:', 14, yPosition);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total de Produtos: ${totalProdutos}`, 14, yPosition + 6);
+  doc.text(`Produtos OK: ${produtosOk}`, 14, yPosition + 12);
+  doc.text(`Produtos com Erro: ${produtosErro}`, 14, yPosition + 18);
+
+  // Rodapé
+  adicionarRodape(doc);
+
+  // Salvar
+  doc.save(`detalhes-produto-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
+}
+
+// Interface para Molhados Consolidados
+interface InsumoMolhado {
+  nomeComponente: string;
+  quantidadeTotal: number;
+  unidade: string;
+}
+
+// Exportar Molhados Consolidados em PDF
+export async function exportarMolhadosConsolidadosPDF(
+  molhados: InsumoMolhado[]
+) {
+  const doc = new jsPDF();
+  
+  // Cabeçalho manual (sem dia específico)
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+  const logo = await carregarLogo();
+  
+  let yPosition = 15;
+  
+  if (logo) {
+    try {
+      doc.addImage(logo, 'PNG', 14, 10, 25, 25);
+      yPosition = 18;
+    } catch (e) {
+      console.warn('Erro ao adicionar logo:', e);
+    }
+  }
+
+  // Título
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(37, 99, 235); // Azul
+  doc.text('Insumos Molhados - Consolidado da Semana', logo ? 45 : 14, yPosition);
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(`Gerado em: ${dataAtual}`, logo ? 45 : 14, yPosition + 7);
+  doc.setTextColor(0);
+  
+  yPosition = logo ? 45 : 35;
+
+  // Tabela de molhados
+  const dadosTabela = molhados.map(insumo => [
+    insumo.nomeComponente,
+    insumo.quantidadeTotal.toFixed(3),
+    insumo.unidade
+  ]);
+
+  // Calcular total
+  const totalGeral = molhados.reduce((acc, item) => acc + item.quantidadeTotal, 0);
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Insumo', 'Quantidade Total', 'Unidade']],
+    body: dadosTabela,
+    foot: [[`Total (${molhados.length} insumos)`, totalGeral.toFixed(3), 'kg']],
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+    footStyles: { fillColor: [219, 234, 254], textColor: [30, 64, 175], fontStyle: 'bold', fontSize: 10 },
+    styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { cellWidth: 45, halign: 'right', fontStyle: 'bold' },
+      2: { cellWidth: 30, halign: 'center' }
+    },
+    margin: { left: 14, right: 14 },
+    alternateRowStyles: { fillColor: [248, 250, 252] }
+  });
+
+  // Área de assinatura
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
+  
+  doc.setFontSize(10);
+  doc.text('Responsável pelo Pedido: _______________________________', 14, yPosition);
+  doc.text('Data: _______________', 14, yPosition + 10);
+  doc.text('Assinatura: _______________________________', 14, yPosition + 20);
+
+  // Rodapé
+  adicionarRodape(doc);
+
+  // Salvar
+  doc.save(`molhados-consolidados-semana.pdf`);
+}

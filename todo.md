@@ -590,3 +590,11 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Passo 1: Conversão Assado→Cru + Ajuste Unidades Inteiras
 - [x] Passo 2: Explosão Proporcional + Regra Paridade (0.002kg)
 - [x] Passo 3: Regra da Divisora (Blocos e Pedaços)
+
+## Botões PDF nas Fichas do PCP
+
+- [x] Botão PDF na Ficha de Pré-Pesagem
+- [x] Botão PDF na Ficha de Produção (já existe)
+- [x] Botão PDF em Detalhes por Produto
+- [x] Botão PDF na Expedição
+- [x] Botão PDF em Molhados Consolidados

@@ -20,7 +20,7 @@ import {
   Package,
   Download
 } from "lucide-react";
-import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF } from "@/lib/pdfExport";
+import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF, exportarDetalhesProdutoPDF, exportarMolhadosConsolidadosPDF } from "@/lib/pdfExport";
 
 // Tipos - Motor de Cálculo v3.0
 interface InsumoConsolidado {
@@ -902,6 +902,29 @@ export default function ProcessamentoPCP() {
 
             {/* Detalhes por Produto */}
             <TabsContent value="detalhes">
+              {/* Botão Exportar PDF */}
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const produtos = processamentoData?.resultados?.map(r => ({
+                      codigoProduto: r.codigoProduto,
+                      nomeProduto: r.nomeProduto,
+                      unidade: r.unidade,
+                      qtdPlanejada: r.qtdPlanejada,
+                      blocos: r.passo3?.blocos || 0,
+                      pedacos: r.passo3?.pedacos || 0,
+                      status: r.erro ? 'erro' as const : 'ok' as const,
+                      erro: r.erro
+                    })) || [];
+                    exportarDetalhesProdutoPDF(diaSelecionado, produtos);
+                  }}
+                  className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar Detalhes PDF
+                </Button>
+              </div>
               <Card className="border-orange-200">
                 <CardHeader className="bg-orange-50 border-b border-orange-200">
                   <CardTitle>Detalhes por Produto - {DIAS_SEMANA[diaSelecionado]}</CardTitle>
@@ -1271,16 +1294,30 @@ function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ cod
   const totalGeral = molhadosConsolidados.reduce((acc, item) => acc + item.quantidadeTotal, 0);
 
   return (
-    <Card className="border-blue-200">
-      <CardHeader className="bg-blue-50 border-b border-blue-200">
-        <CardTitle className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-blue-600" />
-          Insumos Molhados - Consolidado da Semana
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Lista de insumos do tipo "molhado" com quantidade total de todos os dias da semana
-        </p>
-      </CardHeader>
+    <div className="space-y-4">
+      {/* Botão Exportar PDF */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          onClick={() => {
+            exportarMolhadosConsolidadosPDF(molhadosConsolidados);
+          }}
+          className="border-blue-300 text-blue-700 hover:bg-blue-100"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar Molhados PDF
+        </Button>
+      </div>
+      <Card className="border-blue-200">
+        <CardHeader className="bg-blue-50 border-b border-blue-200">
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-blue-600" />
+            Insumos Molhados - Consolidado da Semana
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Lista de insumos do tipo "molhado" com quantidade total de todos os dias da semana
+          </p>
+        </CardHeader>
       <CardContent className="p-0">
         <table className="w-full">
           <thead className="bg-blue-100">
@@ -1313,6 +1350,7 @@ function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ cod
           </tfoot>
         </table>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
