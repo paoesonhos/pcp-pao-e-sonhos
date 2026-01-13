@@ -281,14 +281,6 @@ export const appRouter = router({
           }
         }
 
-        // IMPORTANTE: pesoUnitario não pode ser alterado após criação
-        if (input.data.pesoUnitario) {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: "Peso unitário não pode ser alterado após a criação do produto" 
-          });
-        }
-
         await db.updateProduto(input.id, input.data);
         return { success: true };
       }),
