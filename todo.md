@@ -506,3 +506,9 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.11: Botão Salvar Sempre Habilitado
 
 - [x] Remover condição disabled do botão Salvar Alterações no Mapa de Produção
+
+
+## Módulo 4.12: Indicador de Última Importação
+
+- [x] Usar data createdAt da importação já retornada pelo backend
+- [x] Exibir indicador no topo da página Mapa de Produção (formato: dd/mm/yyyy hh:mm)
