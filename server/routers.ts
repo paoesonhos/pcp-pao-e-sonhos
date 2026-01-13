@@ -1088,7 +1088,7 @@ export const appRouter = router({
         };
       }),
 
-    // Processa múltiplos itens do mapa de produção com explosão recursiva
+    // Processa múltiplos itens do mapa de produção com Motor de Cálculo v3.0
     processarMapa: protectedProcedure
       .input(z.array(z.object({
         codigoProduto: z.string(),
@@ -1100,17 +1100,20 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const database = await db.getDb();
         if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        const { produtos, fichaTecnica, insumos } = await import("../drizzle/schema");
+        const { produtos, fichaTecnica, insumos, blocos } = await import("../drizzle/schema");
         const { 
-          arredondarUnidades, 
-          processarDivisora, 
-          processarMapaComIntermediarios,
-          explodirNivel1,
-          consolidarComponentesNivel1
-        } = await import("@shared/pcp-utils");
+          passo1ConversaoAssadoCru,
+          passo2ExplosaoParidade,
+          passo3BlocosPedacos,
+          calcularRendimentoFicha,
+          aplicarParidade,
+          explodirRecursivoV3,
+          consolidarInsumosV3,
+          consolidarMassasBaseV3,
+        } = await import("@shared/motor-calculo-v3");
         
-        // Tipo definido inline para evitar problemas de import
-        type FichaTecnicaComponente = {
+        // Tipo para componente da ficha técnica
+        type ComponenteFicha = {
           componenteId: number;
           nomeComponente: string;
           tipoComponente: 'ingrediente' | 'massa_base';
@@ -1126,6 +1129,10 @@ export const appRouter = router({
         const insumosDb = await database.select().from(insumos);
         const insumosMap = new Map(insumosDb.map(i => [i.id, i]));
 
+        // Buscar todos os blocos
+        const blocosDb = await database.select().from(blocos);
+        const blocosMap = new Map(blocosDb.map(b => [b.produtoId, b]));
+
         // Buscar todas as fichas técnicas
         const fichasDb = await database.select().from(fichaTecnica);
         const fichasMap = new Map<number, typeof fichasDb>();
@@ -1136,13 +1143,12 @@ export const appRouter = router({
           fichasMap.get(ficha.produtoId)!.push(ficha);
         }
 
-        // Função para buscar ficha técnica (usada na explosão recursiva)
-        const buscaFichaTecnica = (produtoId: number): FichaTecnicaComponente[] | null => {
+        // Função para buscar ficha técnica
+        const buscaFichaTecnica = (produtoId: number): ComponenteFicha[] | null => {
           const fichaItens = fichasMap.get(produtoId);
           if (!fichaItens || fichaItens.length === 0) return null;
           
           return fichaItens.map(ft => {
-            // Determinar nome do componente
             let nomeComponente = '';
             if (ft.tipoComponente === 'ingrediente') {
               const insumo = insumosMap.get(ft.componenteId);
@@ -1162,6 +1168,17 @@ export const appRouter = router({
           });
         };
 
+        // Função para buscar dados de blocos
+        const buscaBlocos = (produtoId: number) => {
+          const bloco = blocosMap.get(produtoId);
+          if (!bloco) return null;
+          return {
+            divisora: bloco.unidadesPorBloco,
+            pesoBloco: parseFloat(bloco.pesoBloco),
+          };
+        };
+
+        // Estrutura de resultados
         const resultados: Array<{
           codigoProduto: string;
           nomeProduto: string;
@@ -1169,30 +1186,55 @@ export const appRouter = router({
           qtdPlanejada: number;
           diaProduzir: number;
           pesoUnitario: number;
-          divisora: ReturnType<typeof processarDivisora> | null;
+          // Passo 1
+          passo1: {
+            valorMapa: number;
+            massaCruaTeorica: number;
+            qtdInteira: number;
+            massaTotalFinal: number;
+          } | null;
+          // Passo 3
+          passo3: {
+            qtdInteira: number;
+            divisora: number;
+            blocos: number;
+            pedacos: number;
+            pesoBloco: number;
+            pesoUnitarioReal: number;
+            pesoPedaco: number;
+            instrucaoBlocos: string;
+            instrucaoPedaco: string;
+          } | null;
+          // Componentes diretos (Passo 2 individual)
           insumos: Array<{
             componenteId: number;
             nomeComponente: string;
-            quantidadeTotal: number;
-            quantidadeArredondada: number;
+            tipoComponente: string;
+            quantidadeCalculada: number;
+            quantidadeAjustada: number;
             unidade: string;
             editavel: boolean;
-            origens: string[];
           }>;
           erro?: string;
         }> = [];
 
-        // Preparar itens para processamento global de intermediários
-        const itensParaProcessar: Array<{ produtoId: number; nomeProduto: string; quantidade: number }> = [];
+        // Maps para consolidação global
+        const massasBaseMap = new Map<number, { produtoId: number; nomeProduto: string; quantidadeTotal: number; produtosFilhos: string[] }>();
+        const insumosGlobalMap = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[] }>();
 
         for (const item of input) {
           const produto = produtosMap.get(item.codigoProduto);
 
           if (!produto) {
             resultados.push({
-              ...item,
+              codigoProduto: item.codigoProduto,
+              nomeProduto: item.nomeProduto,
+              unidade: item.unidade,
+              qtdPlanejada: item.qtdPlanejada,
+              diaProduzir: item.diaProduzir,
               pesoUnitario: 0,
-              divisora: null,
+              passo1: null,
+              passo3: null,
               insumos: [],
               erro: `Produto não cadastrado`,
             });
@@ -1203,68 +1245,116 @@ export const appRouter = router({
 
           if (fichaItens.length === 0) {
             resultados.push({
-              ...item,
+              codigoProduto: item.codigoProduto,
+              nomeProduto: item.nomeProduto,
+              unidade: item.unidade,
+              qtdPlanejada: item.qtdPlanejada,
+              diaProduzir: item.diaProduzir,
               pesoUnitario: parseFloat(produto.pesoUnitario),
-              divisora: null,
+              passo1: null,
+              passo3: null,
               insumos: [],
               erro: `Sem ficha técnica`,
             });
             continue;
           }
 
-          // Processar divisora
-          let divisora = null;
-          let unidadesParaExplosao = item.qtdPlanejada; // Quantidade em UNIDADES para explosão
           const pesoUnitario = parseFloat(produto.pesoUnitario);
+          const percentualPerdaLiquida = produto.percentualPerdaLiquida 
+            ? parseFloat(produto.percentualPerdaLiquida) / 100 
+            : 0;
 
-          if (item.unidade === 'kg' && pesoUnitario > 0) {
-            divisora = processarDivisora(item.qtdPlanejada, pesoUnitario);
-            // CORREÇÃO: Passar número de UNIDADES, não massa em kg
-            // A quantidadeBase na ficha técnica é "quantidade por unidade do produto"
-            unidadesParaExplosao = divisora.quantidadeUnidades;
-          } else if (item.unidade === 'un') {
-            unidadesParaExplosao = arredondarUnidades(item.qtdPlanejada);
-          }
-
-          // Explosão NÍVEL 1 apenas (sem recursão)
-          // Mostra componentes diretos: ingredientes E massas base (sem explodir a massa base)
-          // Passa número de UNIDADES para multiplicar pela quantidadeBase (que é por unidade)
-          const mapaComponentes = explodirNivel1(
-            produto.id,
-            produto.nome,
-            unidadesParaExplosao,
-            buscaFichaTecnica
+          // ========== PASSO 1: Conversão Assado → Cru ==========
+          const passo1 = passo1ConversaoAssadoCru(
+            item.qtdPlanejada,
+            pesoUnitario,
+            percentualPerdaLiquida
           );
-          
-          const insumosConsolidados = consolidarComponentesNivel1(mapaComponentes);
+
+          // ========== PASSO 2: Explosão com Paridade ==========
+          const fichaTecnicaComponentes = buscaFichaTecnica(produto.id);
+          const passo2 = fichaTecnicaComponentes 
+            ? passo2ExplosaoParidade(passo1.massaTotalFinal, fichaTecnicaComponentes)
+            : { rendimentoFicha: 0, ingredientes: [] };
+
+          // ========== PASSO 3: Blocos e Pedaços ==========
+          const dadosBlocos = buscaBlocos(produto.id);
+          const passo3 = dadosBlocos 
+            ? passo3BlocosPedacos(passo1.qtdInteira, dadosBlocos)
+            : null;
 
           resultados.push({
-            ...item,
+            codigoProduto: item.codigoProduto,
+            nomeProduto: item.nomeProduto,
+            unidade: item.unidade,
+            qtdPlanejada: item.qtdPlanejada,
+            diaProduzir: item.diaProduzir,
             pesoUnitario,
-            divisora,
-            insumos: insumosConsolidados,
+            passo1,
+            passo3,
+            insumos: passo2.ingredientes.map(ing => ({
+              componenteId: ing.componenteId,
+              nomeComponente: ing.nomeComponente,
+              tipoComponente: ing.tipoComponente,
+              quantidadeCalculada: ing.quantidadeCalculada,
+              quantidadeAjustada: ing.quantidadeAjustada,
+              unidade: ing.unidade,
+              editavel: ing.editavel,
+            })),
           });
 
-          // Adicionar à lista para processamento global de intermediários
-          // Passa número de UNIDADES para multiplicar pela quantidadeBase
-          itensParaProcessar.push({
-            produtoId: produto.id,
-            nomeProduto: produto.nome,
-            quantidade: unidadesParaExplosao,
-          });
+          // Explosão recursiva para consolidação global
+          if (fichaTecnicaComponentes) {
+            explodirRecursivoV3(
+              produto.id,
+              produto.nome,
+              passo1.massaTotalFinal,
+              buscaFichaTecnica,
+              massasBaseMap,
+              insumosGlobalMap
+            );
+          }
         }
 
-        // Processar todos os itens para consolidar intermediários globalmente
-        const resultadoGlobal = processarMapaComIntermediarios(
-          itensParaProcessar,
-          buscaFichaTecnica
-        );
+        // Consolidar massas base e insumos globais
+        const massasBaseConsolidadas = consolidarMassasBaseV3(massasBaseMap, buscaFichaTecnica);
+        const insumosConsolidados = consolidarInsumosV3(insumosGlobalMap);
+
+        // Converter para formato compatível com frontend existente
+        const intermediarios = massasBaseConsolidadas.map(mb => ({
+          produtoId: mb.produtoId,
+          nomeProduto: mb.nomeProduto,
+          quantidadeTotal: mb.quantidadeTotal,
+          quantidadeArredondada: mb.quantidadeArredondada,
+          unidade: 'kg' as const,
+          nivel: 1,
+          produtosFilhos: mb.produtosFilhos,
+          ingredientes: mb.ingredientes.map(ing => ({
+            componenteId: ing.componenteId,
+            nomeComponente: ing.nomeComponente,
+            quantidadeBase: 0, // não usado no frontend
+            quantidadeCalculada: ing.quantidadeCalculada,
+            quantidadeArredondada: ing.quantidadeAjustada,
+            unidade: ing.unidade,
+            editavel: ing.editavel,
+          })),
+        }));
+
+        const insumosGlobais = insumosConsolidados.map(ins => ({
+          componenteId: ins.componenteId,
+          nomeComponente: ins.nomeComponente,
+          quantidadeTotal: ins.quantidadeTotal,
+          quantidadeArredondada: ins.quantidadeArredondada,
+          unidade: ins.unidade,
+          editavel: ins.editavel,
+          origens: ins.origens,
+        }));
 
         return {
           success: true,
           resultados,
-          intermediarios: resultadoGlobal.intermediarios,
-          insumosGlobais: resultadoGlobal.insumos,
+          intermediarios,
+          insumosGlobais,
         };
       }),
   }),

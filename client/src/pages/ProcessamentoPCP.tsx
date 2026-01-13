@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF } from "@/lib/pdfExport";
 
-// Tipos
+// Tipos - Motor de Cálculo v3.0
 interface InsumoConsolidado {
   componenteId: number;
   nomeComponente: string;
@@ -30,16 +30,39 @@ interface InsumoConsolidado {
   quantidadeArredondada: number;
   unidade: 'kg' | 'un';
   editavel: boolean;
-  origens: string[]; // lista de produtos de onde veio o insumo
+  origens: string[];
 }
 
-interface ResultadoDivisora {
-  quantidadeUnidades: number;
-  blocosInteiros: number;
+// Passo 1: Conversão Assado → Cru
+interface Passo1 {
+  valorMapa: number;
+  massaCruaTeorica: number;
+  qtdInteira: number;
+  massaTotalFinal: number;
+}
+
+// Passo 3: Blocos e Pedaços
+interface Passo3 {
+  qtdInteira: number;
+  divisora: number;
+  blocos: number;
+  pedacos: number;
   pesoBloco: number;
-  unidadesRestantes: number;
+  pesoUnitarioReal: number;
   pesoPedaco: number;
-  massaTotal: number;
+  instrucaoBlocos: string;
+  instrucaoPedaco: string;
+}
+
+// Componente individual (Passo 2)
+interface ComponenteProcessado {
+  componenteId: number;
+  nomeComponente: string;
+  tipoComponente: string;
+  quantidadeCalculada: number;
+  quantidadeAjustada: number;
+  unidade: string;
+  editavel: boolean;
 }
 
 interface ItemProcessado {
@@ -49,8 +72,9 @@ interface ItemProcessado {
   qtdPlanejada: number;
   diaProduzir: number;
   pesoUnitario: number;
-  divisora: ResultadoDivisora | null;
-  insumos: InsumoConsolidado[];
+  passo1: Passo1 | null;
+  passo3: Passo3 | null;
+  insumos: ComponenteProcessado[];
   erro?: string;
 }
 
@@ -156,21 +180,19 @@ export default function ProcessamentoPCP() {
       for (const insumo of item.insumos) {
         const existing = agregado.get(insumo.componenteId);
         if (existing) {
-          existing.quantidadeTotal += insumo.quantidadeArredondada;
+          existing.quantidadeTotal += insumo.quantidadeAjustada;
           // Merge origens sem duplicatas
-          for (const origem of insumo.origens || [item.nomeProduto]) {
-            if (!existing.origens.includes(origem)) {
-              existing.origens.push(origem);
-            }
+          if (!existing.origens.includes(item.nomeProduto)) {
+            existing.origens.push(item.nomeProduto);
           }
         } else {
           agregado.set(insumo.componenteId, {
             componenteId: insumo.componenteId,
             nomeComponente: insumo.nomeComponente,
-            quantidadeTotal: insumo.quantidadeArredondada,
-            unidade: insumo.unidade,
+            quantidadeTotal: insumo.quantidadeAjustada,
+            unidade: insumo.unidade as 'kg' | 'un',
             editavel: insumo.editavel,
-            origens: insumo.origens || [item.nomeProduto],
+            origens: [item.nomeProduto],
           });
         }
       }
@@ -458,7 +480,7 @@ export default function ProcessamentoPCP() {
                               unidade: r.unidade,
                               insumos: r.insumos.map(i => ({
                                 nomeComponente: i.nomeComponente,
-                                quantidadeArredondada: i.quantidadeArredondada,
+                                quantidadeArredondada: i.quantidadeAjustada,
                                 unidade: i.unidade
                               }))
                             })) || [];
@@ -520,7 +542,7 @@ export default function ProcessamentoPCP() {
                                 const checkKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
                                 const fermentoKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
                                 const isChecked = checksPesagem[checkKey] || false;
-                                const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeArredondada;
+                                const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeAjustada;
 
                                 return (
                                   <tr 
@@ -554,7 +576,7 @@ export default function ProcessamentoPCP() {
                                         />
                                       ) : (
                                         <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
-                                          {formatarNumero(insumo.quantidadeArredondada, insumo.unidade)}
+                                          {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
                                         </span>
                                       )}
                                     </td>
@@ -586,14 +608,14 @@ export default function ProcessamentoPCP() {
                     size="sm"
                     onClick={() => {
                       const produtos = processamentoData?.resultados
-                        ?.filter(r => !r.erro && r.divisora)
+                        ?.filter(r => !r.erro && r.passo3)
                         .map(r => ({
                           codigoProduto: r.codigoProduto,
                           nomeProduto: r.nomeProduto,
                           qtdPlanejada: r.qtdPlanejada,
                           unidade: r.unidade,
                           pesoUnitario: r.pesoUnitario,
-                          divisora: r.divisora
+                          passo3: r.passo3
                         })) || [];
                       exportarFichaProducaoPDF(diaSelecionado, produtos);
                     }}
@@ -744,51 +766,81 @@ export default function ProcessamentoPCP() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
-                      {/* Divisora - apenas para produtos em kg */}
-                      {item.divisora && (
+                      {/* Motor v3.0 - Passo 1: Conversão Assado → Cru */}
+                      {item.passo1 && (
+                        <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                          <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                            <Scale className="w-4 h-4" />
+                            Passo 1: Conversão Assado → Cru
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-3 rounded border border-purple-100">
+                              <p className="text-xs text-gray-500 uppercase">Valor Mapa</p>
+                              <p className="text-xl font-bold text-purple-700">{item.passo1.valorMapa.toFixed(3)} kg</p>
+                            </div>
+                            <div className="bg-white p-3 rounded border border-purple-100">
+                              <p className="text-xs text-gray-500 uppercase">Massa Crua Teórica</p>
+                              <p className="text-xl font-bold text-purple-700">{item.passo1.massaCruaTeorica.toFixed(3)} kg</p>
+                            </div>
+                            <div className="bg-white p-3 rounded border border-purple-100">
+                              <p className="text-xs text-gray-500 uppercase">Unidades Inteiras</p>
+                              <p className="text-xl font-bold text-blue-700">{item.passo1.qtdInteira}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded border border-purple-100">
+                              <p className="text-xs text-gray-500 uppercase">Massa Total Final</p>
+                              <p className="text-xl font-bold text-green-700">{item.passo1.massaTotalFinal.toFixed(3)} kg</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Motor v3.0 - Passo 3: Blocos e Pedaços */}
+                      {item.passo3 && (
                         <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                           <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
                             <Factory className="w-4 h-4" />
-                            Processamento da Divisora
+                            Passo 3: Blocos e Pedaços (Divisora: {item.passo3.divisora} un/bloco)
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white p-3 rounded border border-blue-100">
                               <p className="text-xs text-gray-500 uppercase">Unidades Totais</p>
-                              <p className="text-xl font-bold text-blue-700">{item.divisora.quantidadeUnidades}</p>
+                              <p className="text-xl font-bold text-blue-700">{item.passo3.qtdInteira}</p>
                             </div>
                             <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Blocos (30 un)</p>
-                              <p className="text-xl font-bold text-green-700">{item.divisora.blocosInteiros}</p>
-                              <p className="text-xs text-gray-500">{item.divisora.pesoBloco.toFixed(3)} kg cada</p>
+                              <p className="text-xs text-gray-500 uppercase">Blocos</p>
+                              <p className="text-xl font-bold text-green-700">{item.passo3.blocos}</p>
+                              <p className="text-xs text-gray-500">{item.passo3.pesoBloco.toFixed(3)} kg cada</p>
                             </div>
                             <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Pedaço (Manual)</p>
-                              <p className="text-xl font-bold text-amber-700">{item.divisora.unidadesRestantes} un</p>
-                              <p className="text-xs text-gray-500">{item.divisora.pesoPedaco.toFixed(3)} kg</p>
+                              <p className="text-xs text-gray-500 uppercase">Pedaços (Manual)</p>
+                              <p className="text-xl font-bold text-amber-700">{item.passo3.pedacos} un</p>
+                              <p className="text-xs text-gray-500">{item.passo3.pesoPedaco.toFixed(3)} kg</p>
                             </div>
                             <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Massa Total</p>
-                              <p className="text-xl font-bold text-gray-800">{item.divisora.massaTotal.toFixed(3)} kg</p>
+                              <p className="text-xs text-gray-500 uppercase">Peso Unitário Real</p>
+                              <p className="text-xl font-bold text-gray-800">{item.passo3.pesoUnitarioReal.toFixed(5)} kg</p>
                             </div>
                           </div>
 
                           {/* Instruções visuais */}
                           <div className="mt-4 grid grid-cols-2 gap-4">
-                            <div className="bg-green-100 p-3 rounded border border-green-300">
-                              <h5 className="font-semibold text-green-800 text-sm mb-1">
-                                🔄 DIVISORA ({item.divisora.blocosInteiros} blocos)
-                              </h5>
-                              <p className="text-sm text-green-700">
-                                Passar {item.divisora.blocosInteiros}x na divisora com {item.divisora.pesoBloco.toFixed(3)} kg cada
-                              </p>
-                            </div>
-                            {item.divisora.unidadesRestantes > 0 && (
+                            {item.passo3.blocos > 0 && (
+                              <div className="bg-green-100 p-3 rounded border border-green-300">
+                                <h5 className="font-semibold text-green-800 text-sm mb-1">
+                                  🔄 DIVISORA ({item.passo3.blocos} blocos)
+                                </h5>
+                                <p className="text-sm text-green-700">
+                                  {item.passo3.instrucaoBlocos}
+                                </p>
+                              </div>
+                            )}
+                            {item.passo3.pedacos > 0 && (
                               <div className="bg-amber-100 p-3 rounded border border-amber-300">
                                 <h5 className="font-semibold text-amber-800 text-sm mb-1">
-                                  ✋ MANUAL ({item.divisora.unidadesRestantes} un)
+                                  ✋ MANUAL ({item.passo3.pedacos} un)
                                 </h5>
                                 <p className="text-sm text-amber-700">
-                                  Modelar {item.divisora.unidadesRestantes} unidades manualmente ({item.divisora.pesoPedaco.toFixed(3)} kg)
+                                  {item.passo3.instrucaoPedaco}
                                 </p>
                               </div>
                             )}
@@ -819,7 +871,7 @@ export default function ProcessamentoPCP() {
                                   )}
                                 </td>
                                 <td className="px-3 py-2 text-right font-mono">
-                                  {formatarNumero(insumo.quantidadeArredondada, insumo.unidade)}
+                                  {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
                                 </td>
                                 <td className="px-3 py-2 text-center">
                                   <Badge variant="secondary" className="text-xs">{insumo.unidade}</Badge>
@@ -879,13 +931,13 @@ export default function ProcessamentoPCP() {
                             {formatarNumero(item.qtdPlanejada, item.unidade)}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {item.divisora ? (
-                              <span className="font-semibold text-green-700">{item.divisora.blocosInteiros}</span>
+                            {item.passo3 ? (
+                              <span className="font-semibold text-green-700">{item.passo3.blocos}</span>
                             ) : '-'}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {item.divisora ? (
-                              <span className="text-amber-700">{item.divisora.unidadesRestantes} un</span>
+                            {item.passo3 ? (
+                              <span className="text-amber-700">{item.passo3.pedacos} un</span>
                             ) : '-'}
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -1176,12 +1228,12 @@ function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ cod
 
         const existente = agregado.get(insumo.componenteId);
         if (existente) {
-          existente.quantidadeTotal += insumo.quantidadeTotal;
+          existente.quantidadeTotal += insumo.quantidadeAjustada;
         } else {
           agregado.set(insumo.componenteId, {
             componenteId: insumo.componenteId,
             nomeComponente: insumo.nomeComponente,
-            quantidadeTotal: insumo.quantidadeTotal,
+            quantidadeTotal: insumo.quantidadeAjustada,
             unidade: insumo.unidade,
           });
         }

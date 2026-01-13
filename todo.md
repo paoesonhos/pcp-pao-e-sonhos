@@ -584,3 +584,9 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Adicionar botão para exportar Ficha de Produção em PDF
 - [x] Incluir logo da Pão & Sonhos em todos os documentos PDF
+
+## Motor de Cálculo v3.0
+
+- [x] Passo 1: Conversão Assado→Cru + Ajuste Unidades Inteiras
+- [x] Passo 2: Explosão Proporcional + Regra Paridade (0.002kg)
+- [x] Passo 3: Regra da Divisora (Blocos e Pedaços)

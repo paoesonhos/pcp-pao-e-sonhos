@@ -124,13 +124,17 @@ interface ProdutoExpedicao {
   unidade: string;
 }
 
-interface ResultadoDivisora {
-  quantidadeUnidades: number;
-  blocosInteiros: number;
+// Motor v3.0 - Passo 3: Blocos e Pedaços
+interface Passo3 {
+  qtdInteira: number;
+  divisora: number;
+  blocos: number;
+  pedacos: number;
   pesoBloco: number;
-  unidadesRestantes: number;
+  pesoUnitarioReal: number;
   pesoPedaco: number;
-  massaTotal: number;
+  instrucaoBlocos: string;
+  instrucaoPedaco: string;
 }
 
 interface ProdutoProducao {
@@ -139,7 +143,7 @@ interface ProdutoProducao {
   qtdPlanejada: number;
   unidade: string;
   pesoUnitario: number;
-  divisora: ResultadoDivisora | null;
+  passo3: Passo3 | null;
 }
 
 export async function exportarFichaPrePesagemPDF(
@@ -335,31 +339,32 @@ export async function exportarFichaProducaoPDF(
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(22, 163, 74); // Cor verde
-  doc.text('Instruções de Produção - Divisora', 14, yPosition);
+  doc.text('Instruções de Produção - Divisora (Motor v3.0)', 14, yPosition);
   doc.setTextColor(0);
   yPosition += 10;
 
   // Tabela principal de produção
   const dadosTabela = produtos
-    .filter(p => p.divisora)
+    .filter(p => p.passo3)
     .map(produto => {
-      const d = produto.divisora!;
+      const p3 = produto.passo3!;
+      const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
       return [
         produto.codigoProduto,
         produto.nomeProduto,
         `${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
-        d.blocosInteiros.toString(),
-        d.pesoBloco.toFixed(3),
-        d.unidadesRestantes.toString(),
-        d.pesoPedaco.toFixed(3),
-        d.massaTotal.toFixed(3)
+        p3.blocos.toString(),
+        p3.pesoBloco.toFixed(3),
+        p3.pedacos.toString(),
+        p3.pesoPedaco.toFixed(3),
+        massaTotal.toFixed(3)
       ];
     });
 
   if (dadosTabela.length > 0) {
     autoTable(doc, {
       startY: yPosition,
-      head: [['Código', 'Produto', 'Qtd Plan.', 'Blocos', 'Peso Bloco', 'Resto', 'Peso Pedaço', 'Massa Total']],
+      head: [['Código', 'Produto', 'Qtd Plan.', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço', 'Massa Total']],
       body: dadosTabela,
       theme: 'grid',
       headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
@@ -385,14 +390,15 @@ export async function exportarFichaProducaoPDF(
   doc.text('Detalhes por Produto', 14, yPosition);
   yPosition += 8;
 
-  produtos.filter(p => p.divisora).forEach((produto) => {
+  produtos.filter(p => p.passo3).forEach((produto) => {
     // Verificar se precisa de nova página
     if (yPosition > 240) {
       doc.addPage();
       yPosition = 20;
     }
 
-    const d = produto.divisora!;
+    const p3 = produto.passo3!;
+    const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
     
     // Cabeçalho do produto
     doc.setFontSize(10);
@@ -405,13 +411,13 @@ export async function exportarFichaProducaoPDF(
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     
-    // Informações da divisora
+    // Informações da divisora (Motor v3.0)
     const info = [
       `Quantidade Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
-      `Unidades a Produzir: ${d.quantidadeUnidades}`,
-      `Blocos de 30 unidades: ${d.blocosInteiros} blocos × ${d.pesoBloco.toFixed(3)} kg = ${(d.blocosInteiros * d.pesoBloco).toFixed(3)} kg`,
-      d.unidadesRestantes > 0 ? `Pedaço restante: ${d.unidadesRestantes} unidades × ${d.pesoPedaco.toFixed(3)} kg` : null,
-      `Massa Total: ${d.massaTotal.toFixed(3)} kg`
+      `Unidades a Produzir: ${p3.qtdInteira} (Divisora: ${p3.divisora} un/bloco)`,
+      p3.blocos > 0 ? `${p3.instrucaoBlocos}` : null,
+      p3.pedacos > 0 ? `${p3.instrucaoPedaco}` : null,
+      `Massa Total: ${massaTotal.toFixed(3)} kg`
     ].filter(Boolean);
 
     info.forEach(linha => {
