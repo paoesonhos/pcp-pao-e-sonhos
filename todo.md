@@ -459,3 +459,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Identificar campo de destino do produto (destinoId na tabela produtos)
 - [x] Filtrar aba Expedição para mostrar somente destino "Congelado"
 - [x] Testar exibição
+
+
+## Módulo 4.6: Qtd. Separar = Quantidade do Mapa de Produção
+
+- [x] Buscar quantidade do mapa de produção do dia selecionado
+- [x] Converter quantidade para unidades (un.) usando pesoUnitario
+- [x] Exibir no campo "Qtd. Separar" na aba Expedição

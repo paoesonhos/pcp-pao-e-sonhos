@@ -844,7 +844,7 @@ export default function ProcessamentoPCP() {
 
             {/* Expedição */}
             <TabsContent value="expedicao">
-              <ExpedicaoTab diaSelecionado={diaSelecionado} />
+              <ExpedicaoTab diaSelecionado={diaSelecionado} processamentoData={processamentoData} />
             </TabsContent>
           </Tabs>
         )}
@@ -854,7 +854,7 @@ export default function ProcessamentoPCP() {
 }
 
 // Componente da aba Expedição
-function ExpedicaoTab({ diaSelecionado }: { diaSelecionado: number }) {
+function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: number; processamentoData?: { resultados?: Array<{ codigoProduto: string; nomeProduto: string; unidade: string; qtdPlanejada: number; pesoUnitario: number; }> } }) {
   const [checksExpedicao, setChecksExpedicao] = useState<Record<number, boolean>>({});
   const [quantidades, setQuantidades] = useState<Record<number, number>>({});
 
@@ -964,6 +964,21 @@ function ExpedicaoTab({ diaSelecionado }: { diaSelecionado: number }) {
               const estoqueMinimo = produto.estoqueMinimoDias * 10; // Simplificado: 10 un/dia
               const emRuptura = saldo < estoqueMinimo;
               const isChecked = checksExpedicao[produto.id] || false;
+              
+              // Buscar quantidade do mapa de produção para este produto
+              const itemMapa = processamentoData?.resultados?.find(
+                r => r.codigoProduto === produto.codigoProduto
+              );
+              // Converter para unidades: qtdPlanejada / pesoUnitario (se unidade for kg)
+              let qtdSepararUnidades = 0;
+              if (itemMapa) {
+                if (itemMapa.unidade === 'kg' && itemMapa.pesoUnitario > 0) {
+                  qtdSepararUnidades = Math.round(itemMapa.qtdPlanejada / itemMapa.pesoUnitario);
+                } else {
+                  // Já está em unidades
+                  qtdSepararUnidades = Math.round(itemMapa.qtdPlanejada);
+                }
+              }
 
               return (
                 <tr 
@@ -981,20 +996,8 @@ function ExpedicaoTab({ diaSelecionado }: { diaSelecionado: number }) {
                   <td className={`p-3 text-right font-mono ${emRuptura ? 'text-red-600 font-bold' : ''}`}>
                     {Math.floor(saldo)} un
                   </td>
-                  <td className="p-3">
-                    {isChecked && (
-                      <Input
-                        type="number"
-                        min="0"
-                        max={Math.floor(saldo)}
-                        value={quantidades[produto.id] || ''}
-                        onChange={(e) => setQuantidades(q => ({ 
-                          ...q, 
-                          [produto.id]: parseInt(e.target.value) || 0 
-                        }))}
-                        className="w-24 text-right ml-auto"
-                      />
-                    )}
+                  <td className="p-3 text-right font-mono font-semibold text-blue-700">
+                    {qtdSepararUnidades > 0 ? `${qtdSepararUnidades} un` : '-'}
                   </td>
                   <td className="p-3 text-center">
                     {emRuptura ? (
