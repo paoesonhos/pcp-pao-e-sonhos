@@ -352,6 +352,89 @@ export function explodirRecursivo(
 }
 
 /**
+ * Explode apenas o primeiro nível da ficha técnica (sem recursão)
+ * Retorna componentes diretos: ingredientes E massas base (sem explodir a massa base)
+ * Usado para Ficha de Pré-Pesagem individual de cada produto
+ */
+export function explodirNivel1(
+  produtoId: number,
+  nomeProduto: string,
+  quantidade: number,
+  buscaFichaTecnica: BuscaFichaTecnicaFn
+): Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[]; tipoComponente: 'ingrediente' | 'massa_base' }> {
+  const resultado = new Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[]; tipoComponente: 'ingrediente' | 'massa_base' }>();
+  
+  // Busca ficha técnica do produto
+  const fichaTecnica = buscaFichaTecnica(produtoId);
+  
+  if (!fichaTecnica || fichaTecnica.length === 0) {
+    return resultado;
+  }
+  
+  for (const componente of fichaTecnica) {
+    // Calcula quantidade proporcional
+    const qtdComponente = quantidade * componente.quantidadeBase;
+    
+    // Adiciona ao resultado (tanto ingrediente quanto massa_base)
+    const existente = resultado.get(componente.componenteId);
+    if (existente) {
+      existente.quantidade += qtdComponente;
+      if (!existente.origens.includes(nomeProduto)) {
+        existente.origens.push(nomeProduto);
+      }
+    } else {
+      resultado.set(componente.componenteId, {
+        quantidade: qtdComponente,
+        nome: componente.nomeComponente,
+        unidade: componente.unidade,
+        origens: [nomeProduto],
+        tipoComponente: componente.tipoComponente,
+      });
+    }
+  }
+  
+  return resultado;
+}
+
+/**
+ * Consolida componentes do nível 1 e aplica arredondamento
+ */
+export function consolidarComponentesNivel1(
+  mapaComponentes: Map<number, { quantidade: number; nome: string; unidade: 'kg' | 'un'; origens: string[]; tipoComponente: 'ingrediente' | 'massa_base' }>,
+  nomeFermento: string = 'FERMENTO'
+): InsumoConsolidado[] {
+  const resultado: InsumoConsolidado[] = [];
+  
+  for (const [componenteId, dados] of Array.from(mapaComponentes.entries())) {
+    // Aplica arredondamento no total final
+    let quantidadeArredondada: number;
+    if (dados.unidade === 'kg') {
+      quantidadeArredondada = arredondarPesagem(dados.quantidade);
+    } else {
+      quantidadeArredondada = arredondarUnidades(dados.quantidade);
+    }
+    
+    // Verifica se é fermento (editável)
+    const isFermento = dados.nome.toUpperCase().includes(nomeFermento);
+    
+    resultado.push({
+      componenteId,
+      nomeComponente: dados.nome,
+      quantidadeTotal: dados.quantidade,
+      quantidadeArredondada,
+      unidade: dados.unidade,
+      editavel: isFermento,
+      origens: dados.origens,
+    });
+  }
+  
+  // Ordena: massas base primeiro, depois ingredientes por nome
+  resultado.sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
+  
+  return resultado;
+}
+
+/**
  * Consolida insumos e aplica arredondamento final
  * Regra: arredondamento 0,005 kg apenas no total final consolidado
  */

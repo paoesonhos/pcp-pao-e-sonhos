@@ -561,3 +561,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Correção: Cálculo de Massa Base incorreto
 
 - [x] Corrigir lógica de cálculo para converter kg em unidades antes de multiplicar pela quantidadeBase
+
+## Correção: Produtos filhos mostram ingredientes explodidos ao invés de componentes diretos
+
+- [x] Corrigir ficha de pré-pesagem para mostrar apenas componentes diretos (massa base) nos produtos filhos

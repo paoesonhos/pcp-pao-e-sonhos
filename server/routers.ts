@@ -1105,8 +1105,8 @@ export const appRouter = router({
           arredondarUnidades, 
           processarDivisora, 
           processarMapaComIntermediarios,
-          explodirRecursivo,
-          consolidarInsumos
+          explodirNivel1,
+          consolidarComponentesNivel1
         } = await import("@shared/pcp-utils");
         
         // Tipo definido inline para evitar problemas de import
@@ -1226,16 +1226,17 @@ export const appRouter = router({
             unidadesParaExplosao = arredondarUnidades(item.qtdPlanejada);
           }
 
-          // Explosão recursiva com consolidação
+          // Explosão NÍVEL 1 apenas (sem recursão)
+          // Mostra componentes diretos: ingredientes E massas base (sem explodir a massa base)
           // Passa número de UNIDADES para multiplicar pela quantidadeBase (que é por unidade)
-          const mapaInsumos = explodirRecursivo(
+          const mapaComponentes = explodirNivel1(
             produto.id,
             produto.nome,
             unidadesParaExplosao,
             buscaFichaTecnica
           );
           
-          const insumosConsolidados = consolidarInsumos(mapaInsumos);
+          const insumosConsolidados = consolidarComponentesNivel1(mapaComponentes);
 
           resultados.push({
             ...item,
