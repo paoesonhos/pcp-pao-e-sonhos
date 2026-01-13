@@ -579,3 +579,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Adicionar botão para exportar Ficha de Pré-Pesagem em PDF
 - [x] Adicionar botão para exportar Lista de Expedição em PDF
+
+## Módulo 4.23: Exportação PDF - Melhorias
+
+- [x] Adicionar botão para exportar Ficha de Produção em PDF
+- [x] Incluir logo da Pão & Sonhos em todos os documentos PDF

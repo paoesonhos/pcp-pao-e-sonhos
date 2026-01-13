@@ -20,7 +20,7 @@ import {
   Package,
   Download
 } from "lucide-react";
-import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF } from "@/lib/pdfExport";
+import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF } from "@/lib/pdfExport";
 
 // Tipos
 interface InsumoConsolidado {
@@ -579,6 +579,30 @@ export default function ProcessamentoPCP() {
             {/* Ficha de Produção */}
             <TabsContent value="producao">
               <div className="space-y-4">
+                {/* Botão Exportar PDF */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const produtos = processamentoData?.resultados
+                        ?.filter(r => !r.erro && r.divisora)
+                        .map(r => ({
+                          codigoProduto: r.codigoProduto,
+                          nomeProduto: r.nomeProduto,
+                          qtdPlanejada: r.qtdPlanejada,
+                          unidade: r.unidade,
+                          pesoUnitario: r.pesoUnitario,
+                          divisora: r.divisora
+                        })) || [];
+                      exportarFichaProducaoPDF(diaSelecionado, produtos);
+                    }}
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar Ficha de Produção PDF
+                  </Button>
+                </div>
                 {/* Seção de Massas Base / Intermediários Consolidados */}
                 {processamentoData?.intermediarios && processamentoData.intermediarios.length > 0 && (
                   <Card className="border-purple-300 bg-purple-50">
