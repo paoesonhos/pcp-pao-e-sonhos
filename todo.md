@@ -573,3 +573,4 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.21: Otimização de Produção por Shelf Life
 
 - [x] Implementar agrupamento de demanda por shelf life ao salvar Mapa de Produção
+- [x] Corrigir bug no agrupamento por shelf life que não está funcionando

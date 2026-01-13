@@ -627,7 +627,6 @@ export async function salvarMapaRascunho(importacaoId: number | null, itens: { p
     }
   });
 
-  // Aplicar otimização de shelf life
   // Agrupar itens por produto
   const itensPorProduto = new Map<string, typeof itens>();
   itens.forEach(item => {
@@ -643,7 +642,7 @@ export async function salvarMapaRascunho(importacaoId: number | null, itens: { p
   
   for (const [nomeProduto, itensDoProduct] of Array.from(itensPorProduto)) {
     const shelfLife = shelfLifeMap.get(nomeProduto);
-    
+      
     if (!shelfLife || shelfLife <= 1) {
       // Sem otimização - manter como está
       itensOtimizados.push(...itensDoProduct);

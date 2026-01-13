@@ -235,6 +235,12 @@ export default function MapaProducao() {
         itens: itensParaSalvar,
       });
 
+      // Recarregar o mapa para obter os dados otimizados por shelf life
+      const novoRascunhoOtimizado = await utils.mapaProducao.carregarRascunho.fetch();
+      if (novoRascunhoOtimizado?.mapa) {
+        setMapa(novoRascunhoOtimizado.mapa);
+      }
+
       setAlterado(false);
       
       // Executar validação de ruptura após salvar

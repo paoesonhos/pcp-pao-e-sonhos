@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, nome, shelfLife FROM produtos ORDER BY nome LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, nome, shelfLife FROM produtos ORDER BY nome LIMIT 20;",
+  "rows": [
+    {
+      "id": "180005",
+      "nome": "bolo cenoura redono",
+      "shelfLife": "2"
+    },
+    {
+      "id": "180004",
+      "nome": "Bolo Cenoura sem lactose",
+      "shelfLife": "3"
+    },
+    {
+      "id": "180001",
+      "nome": "massa base cenoura",
+      "shelfLife": "0"
+    },
+    {
+      "id": "180003",
+      "nome": "Produto em KG",
+      "shelfLife": "NULL"
+    },
+    {
+      "id": "180002",
+      "nome": "Produto Teste",
+      "shelfLife": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\tshelfLife\n180005\tbolo cenoura redono\t2\n180004\tBolo Cenoura sem lactose\t3\n180001\tmassa base cenoura\t0\n180003\tProduto em KG\tNULL\n180002\tProduto Teste\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
