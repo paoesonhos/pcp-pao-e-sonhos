@@ -857,10 +857,19 @@ export const appRouter = router({
         }
         
         // Buscar próximo código sequencial
-        const [maxCodigo] = await database
-          .select({ max: sql<number>`MAX(CAST(codigo_produto AS UNSIGNED))` })
+        // Usar COALESCE para tratar valores não-numéricos e converter apenas os numéricos
+        const todosCodigosProdutos = await database
+          .select({ codigo: produtos.codigoProduto })
           .from(produtos);
-        const proximoCodigo = (maxCodigo?.max || 0) + 1;
+        
+        let maxCodigo = 0;
+        for (const p of todosCodigosProdutos) {
+          const num = parseInt(p.codigo, 10);
+          if (!isNaN(num) && num > maxCodigo) {
+            maxCodigo = num;
+          }
+        }
+        const proximoCodigo = maxCodigo + 1;
         
         return {
           success: true,
