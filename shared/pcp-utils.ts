@@ -567,13 +567,21 @@ export function consolidarIntermediarios(
     }
     
     // Calcular componentes do intermediário (ingredientes E produtos)
+    // IMPORTANTE: Os ingredientes na ficha técnica estão em kg absolutos (quantidade da receita base)
+    // Precisamos calcular a proporção de cada ingrediente em relação ao total da receita base
     const ingredientes: IngredienteIntermediario[] = [];
     if (buscaFichaTecnica) {
       const fichaTecnica = buscaFichaTecnica(produtoId);
-      if (fichaTecnica) {
+      if (fichaTecnica && fichaTecnica.length > 0) {
+        // 1. Calcular o total da receita base (soma de todos os ingredientes)
+        const totalReceitaBase = fichaTecnica.reduce((sum, comp) => sum + comp.quantidadeBase, 0);
+        
         for (const componente of fichaTecnica) {
-          // Incluir tanto ingredientes quanto produtos (massa base)
-          const quantidadeCalculada = quantidadeArredondada * componente.quantidadeBase;
+          // 2. Calcular a proporção do ingrediente em relação ao total da receita base
+          const proporcao = totalReceitaBase > 0 ? componente.quantidadeBase / totalReceitaBase : 0;
+          
+          // 3. Aplicar a proporção à quantidade total consolidada
+          const quantidadeCalculada = dados.quantidade * proporcao;
           let qtdArredondada: number;
           if (componente.unidade === 'kg') {
             qtdArredondada = arredondarPesagem(quantidadeCalculada);
@@ -587,7 +595,7 @@ export function consolidarIntermediarios(
           ingredientes.push({
             componenteId: componente.componenteId,
             nomeComponente: isProduto ? `⭐ ${componente.nomeComponente}` : componente.nomeComponente,
-            quantidadeBase: componente.quantidadeBase,
+            quantidadeBase: proporcao, // Agora armazena a proporção calculada (0.xx)
             quantidadeCalculada,
             quantidadeArredondada: qtdArredondada,
             unidade: componente.unidade,

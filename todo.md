@@ -437,3 +437,10 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Atualizar consolidarIntermediarios para incluir produtos (tipo_componente='massa_base') além de ingredientes
 - [x] Exibir produtos base (ex: MASSA BASE DOCE) na ficha técnica dos intermediários com ⭐
 - [x] Testar exibição com Massa base amarelinha
+
+
+## Módulo 4.3: Correção Cálculo Ingredientes Intermediários
+
+- [x] Corrigir cálculo para usar quantidade total consolidada
+- [x] Ingrediente = (ingrediente/total_receita_base) × Quantidade Total Consolidada
+- [x] Testar com MASSA BASE DOCE (87.495 kg) - Total ingredientes: 87.485 kg ✅
