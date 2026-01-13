@@ -55,12 +55,18 @@ export default function MapaProducao() {
   // Mutations para salvar
   const salvarRascunhoMutation = trpc.mapaProducao.salvarRascunho.useMutation();
   const salvarMapaBaseMutation = trpc.mapaProducao.salvarMapaBase.useMutation();
+  const validarCadastroMutation = trpc.mapaProducao.validarCadastroProdutos.useMutation();
   const { data: hasMapaBase } = trpc.mapaProducao.hasMapaBase.useQuery();
   const { data: mapaBaseData, refetch: refetchMapaBase } = trpc.mapaProducao.carregarMapaBase.useQuery(undefined, { enabled: false });
   const { refetch: validarRuptura } = trpc.mapaProducao.validarRupturaEstoque.useQuery(undefined, { enabled: false });
   
   // Estado para produtos em ruptura
   const [produtosEmRuptura, setProdutosEmRuptura] = useState<string[]>([]);
+  
+  // Estado para modal de produtos não cadastrados
+  const [showModalCadastro, setShowModalCadastro] = useState(false);
+  const [produtosNaoCadastrados, setProdutosNaoCadastrados] = useState<string[]>([]);
+  const [proximoCodigo, setProximoCodigo] = useState<number>(1);
   
   // Utils para refetch
   const utils = trpc.useUtils();
@@ -169,14 +175,8 @@ export default function MapaProducao() {
 
   const gruposPorDia = agruparPorDia();
 
-  // Salvar alterações (rascunho)
-  const handleSalvarAlteracoes = async () => {
-    if (mapa.length === 0) {
-      alert("Não há itens para salvar.");
-      return;
-    }
-
-    setSalvando(true);
+  // Função para continuar salvamento após validação de cadastro
+  const continuarSalvamento = async () => {
     try {
       // Preparar itens para salvar
       const itensParaSalvar = mapa.map(item => ({
@@ -236,6 +236,54 @@ export default function MapaProducao() {
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
     } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Excluir produto do mapa
+  const handleExcluirDoMapa = (nomeProduto: string) => {
+    setMapa(prev => prev.filter(item => item.nome !== nomeProduto));
+    setProdutosNaoCadastrados(prev => prev.filter(nome => nome !== nomeProduto));
+    setAlterado(true);
+  };
+
+  // Abrir página de cadastro com dados pré-preenchidos
+  const handleCadastrarProduto = (nomeProduto: string) => {
+    // Navegar para página de produtos com parâmetros
+    const params = new URLSearchParams({
+      novo: 'true',
+      nome: nomeProduto,
+      codigo: proximoCodigo.toString(),
+    });
+    setLocation(`/produtos?${params.toString()}`);
+  };
+
+  // Salvar alterações (rascunho) - com validação de cadastro
+  const handleSalvarAlteracoes = async () => {
+    if (mapa.length === 0) {
+      alert("Não há itens para salvar.");
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      // 1. Validar cadastro dos produtos
+      const nomesProdutos = Array.from(new Set(mapa.map(item => item.nome)));
+      const validacao = await validarCadastroMutation.mutateAsync({ nomesProdutos });
+      
+      if (validacao.totalNaoCadastrados > 0) {
+        // Mostrar modal com produtos não cadastrados
+        setProdutosNaoCadastrados(validacao.produtosNaoCadastrados);
+        setProximoCodigo(validacao.proximoCodigo);
+        setShowModalCadastro(true);
+        setSalvando(false);
+        return;
+      }
+      
+      // 2. Se todos cadastrados, continuar salvamento
+      await continuarSalvamento();
+    } catch (err: any) {
+      alert("Erro ao validar: " + err.message);
       setSalvando(false);
     }
   };
@@ -637,6 +685,103 @@ export default function MapaProducao() {
         </div>
       ) : (
         !erro && <p style={{ color: "#666" }}>Nenhum dado disponível. Faça uma importação primeiro.</p>
+      )}
+
+      {/* Modal de Produtos Não Cadastrados */}
+      {showModalCadastro && produtosNaoCadastrados.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 24,
+            maxWidth: 600,
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          }}>
+            <h2 style={{ margin: '0 0 8px 0', color: '#c0392b', display: 'flex', alignItems: 'center', gap: 8 }}>
+              ⚠️ Produtos Não Cadastrados
+            </h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+              Os seguintes produtos do mapa não estão cadastrados no sistema.
+              Cadastre-os ou exclua do mapa para continuar.
+            </p>
+            
+            <div style={{ marginBottom: 16 }}>
+              {produtosNaoCadastrados.map((nome, idx) => (
+                <div key={idx} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  backgroundColor: idx % 2 === 0 ? '#fff3cd' : '#ffeeba',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}>
+                  <span style={{ fontWeight: 500, color: '#856404' }}>{nome}</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleCadastrarProduto(nome)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#27ae60',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                      }}
+                    >
+                      Cadastrar
+                    </button>
+                    <button
+                      onClick={() => handleExcluirDoMapa(nome)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#e74c3c',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                      }}
+                    >
+                      Excluir do Mapa
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                onClick={() => setShowModalCadastro(false)}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#95a5a6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -466,3 +466,13 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Buscar quantidade do mapa de produção do dia selecionado
 - [x] Converter quantidade para unidades (un.) usando pesoUnitario
 - [x] Exibir no campo "Qtd. Separar" na aba Expedição
+
+
+## Módulo 4.7: Validação de Cadastro ao Salvar Mapa
+
+- [x] Criar endpoint para validar produtos do mapa (verificar se estão cadastrados)
+- [x] Criar endpoint para buscar próximo código sequencial
+- [x] Implementar modal de validação com lista de produtos não cadastrados
+- [x] Adicionar botões "Cadastrar" e "Excluir do Mapa" para cada produto
+- [x] Atualizar página de produtos para receber nome pré-preenchido e código sugerido
+- [x] Fluxo: validar cadastro → validar estoque congelados → processar

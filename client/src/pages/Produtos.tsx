@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +42,29 @@ export default function Produtos() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<any>(null);
+  
+  // Estado para pré-preenchimento vindo do Mapa de Produção
+  const [prefilledNome, setPrefilledNome] = useState("");
+  const [prefilledCodigo, setPrefilledCodigo] = useState("");
+  const [location, setLocation] = useLocation();
 
   const utils = trpc.useUtils();
+  
+  // Ler parâmetros da URL ao carregar
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const novo = params.get('novo');
+    const nome = params.get('nome');
+    const codigo = params.get('codigo');
+    
+    if (novo === 'true') {
+      setPrefilledNome(nome || '');
+      setPrefilledCodigo(codigo || '');
+      setIsCreateDialogOpen(true);
+      // Limpar parâmetros da URL
+      setLocation('/produtos', { replace: true });
+    }
+  }, []);
 
   // Queries
   const { data: produtos, isLoading } = trpc.produtos.list.useQuery({
@@ -174,7 +196,13 @@ export default function Produtos() {
                 Produtos exibidos no formato: Código – Nome
               </CardDescription>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) {
+                  setPrefilledNome('');
+                  setPrefilledCodigo('');
+                }
+              }}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -199,6 +227,7 @@ export default function Produtos() {
                           placeholder="Ex: PROD001"
                           required
                           maxLength={50}
+                          defaultValue={prefilledCodigo}
                         />
                       </div>
                       <div className="grid gap-2">
@@ -225,6 +254,7 @@ export default function Produtos() {
                         placeholder="Ex: Pão Francês"
                         required
                         maxLength={200}
+                        defaultValue={prefilledNome}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">

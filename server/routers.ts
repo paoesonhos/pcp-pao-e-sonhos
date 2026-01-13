@@ -805,6 +805,48 @@ export const appRouter = router({
       return await db.hasMapaBase();
     }),
 
+    // Validar cadastro de produtos do mapa (verificar se estão cadastrados)
+    validarCadastroProdutos: protectedProcedure
+      .input(z.object({
+        nomesProdutos: z.array(z.string()),
+      }))
+      .mutation(async ({ input }) => {
+        const database = await db.getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const { produtos } = await import("../drizzle/schema");
+        const { sql } = await import("drizzle-orm");
+        
+        // Buscar todos os produtos cadastrados
+        const produtosCadastrados = await database.select().from(produtos);
+        const nomesCadastrados = new Set(produtosCadastrados.map(p => p.nome.toUpperCase().trim()));
+        
+        // Verificar quais produtos do mapa não estão cadastrados
+        const produtosNaoCadastrados: string[] = [];
+        for (const nome of input.nomesProdutos) {
+          const nomeNormalizado = nome.toUpperCase().trim();
+          if (!nomesCadastrados.has(nomeNormalizado)) {
+            // Evitar duplicatas na lista
+            if (!produtosNaoCadastrados.includes(nome)) {
+              produtosNaoCadastrados.push(nome);
+            }
+          }
+        }
+        
+        // Buscar próximo código sequencial
+        const [maxCodigo] = await database
+          .select({ max: sql<number>`MAX(CAST(codigo_produto AS UNSIGNED))` })
+          .from(produtos);
+        const proximoCodigo = (maxCodigo?.max || 0) + 1;
+        
+        return {
+          success: true,
+          produtosNaoCadastrados,
+          proximoCodigo,
+          totalNaoCadastrados: produtosNaoCadastrados.length,
+        };
+      }),
+
     // Validar ruptura de estoque após salvar
     validarRupturaEstoque: protectedProcedure.query(async () => {
       const database = await db.getDb();
