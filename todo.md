@@ -547,3 +547,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Módulo 4.18: Exibir Peso Unitário na Ficha Técnica
 
 - [x] Exibir peso unitário do produto na página da Ficha Técnica
+
+## Módulo 4.19: Menu de Navegação Global
+
+- [x] Criar componente de menu de navegação com links para todos os módulos
+- [x] Aplicar menu em todas as páginas do sistema

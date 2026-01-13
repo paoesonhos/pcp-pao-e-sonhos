@@ -14,6 +14,7 @@ import FichasTecnicas from "./pages/FichasTecnicas";
 import MapaProducao from "./pages/MapaProducao";
 import ProcessamentoPCP from "./pages/ProcessamentoPCP";
 import Destinos from "./pages/Destinos";
+import NavMenu from "./components/NavMenu";
 
 
 
@@ -54,6 +55,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
+          <NavMenu />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
