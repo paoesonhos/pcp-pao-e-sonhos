@@ -1152,7 +1152,7 @@ export default function MapaProducao() {
                 style={{ width: '100%', padding: 10, borderRadius: 4, border: '1px solid #ccc' }}
               >
                 <option value="">Selecione um produto...</option>
-                {produtosCadastrados?.filter(p => !mapa.some(m => m.codigo === p.codigoProduto)).map(p => (
+                {produtosCadastrados?.filter(p => !mapa.some(m => m.codigo === p.codigoProduto && m.diaProduzir === diaAdicionarProduto)).map(p => (
                   <option key={p.id} value={p.id}>
                     {p.codigoProduto} - {p.nome} ({p.unidade})
                   </option>

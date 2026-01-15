@@ -621,3 +621,8 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Adicionar seção Modo de Preparo na página Ficha Técnica
 - [x] Exibir Modo de Preparo na Ficha de Produção (Massas Base)
 - [x] Soma total dos tempos na última linha
+
+
+## Bug - Adicionar Produto em Múltiplos Dias
+
+- [x] Corrigir: produto adicionado não aparece na lista para adicionar em outros dias
