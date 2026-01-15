@@ -626,3 +626,7 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Bug - Adicionar Produto em Múltiplos Dias
 
 - [x] Corrigir: produto adicionado não aparece na lista para adicionar em outros dias
+
+## Modo de Preparo no PDF
+
+- [x] Incluir Modo de Preparo no PDF da Ficha de Produção

@@ -115,6 +115,11 @@ interface IntermediarioItem {
     quantidadeArredondada: number;
     unidade: string;
   }[];
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
 }
 
 interface ProdutoExpedicao {
@@ -144,6 +149,11 @@ interface ProdutoProducao {
   unidade: string;
   pesoUnitario: number;
   passo3: Passo3 | null;
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
 }
 
 export async function exportarFichaPrePesagemPDF(
@@ -198,6 +208,48 @@ export async function exportarFichaPrePesagemPDF(
             3: { cellWidth: 20, halign: 'center' }
           },
           margin: { left: 14, right: 14 }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Modo de Preparo do intermediário
+      if (inter.modoPreparo && inter.modoPreparo.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(139, 69, 19); // Marrom
+        doc.text('Modo de Preparo:', 14, yPosition);
+        doc.setTextColor(0);
+        yPosition += 5;
+
+        const tempoTotal = inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [139, 69, 19], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 120 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [245, 245, 220];
+            }
+          }
         });
         yPosition = (doc as any).lastAutoTable.finalY + 8;
       }
@@ -326,9 +378,27 @@ export async function exportarListaExpedicaoPDF(
   doc.save(`lista-expedicao-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
 }
 
+interface IntermediarioProducao {
+  nomeProduto: string;
+  quantidadeArredondada: number;
+  unidade: string;
+  produtosFilhos: string[];
+  ingredientes: Array<{
+    nomeComponente: string;
+    quantidadeArredondada: number;
+    unidade: string;
+  }>;
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
+}
+
 export async function exportarFichaProducaoPDF(
   diaSelecionado: number,
-  produtos: ProdutoProducao[]
+  produtos: ProdutoProducao[],
+  intermediarios?: IntermediarioProducao[]
 ) {
   const doc = new jsPDF();
   
@@ -427,6 +497,78 @@ export async function exportarFichaProducaoPDF(
     
     yPosition += 5;
   });
+
+  // Seção de Massas Base com Modo de Preparo
+  if (intermediarios && intermediarios.length > 0) {
+    // Verificar se precisa de nova página
+    if (yPosition > 200) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(180, 83, 9); // Cor âmbar
+    doc.text('Massas Base - Modo de Preparo', 14, yPosition);
+    doc.setTextColor(0);
+    yPosition += 10;
+
+    intermediarios.forEach((inter) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Nome do intermediário
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(255, 247, 237); // Laranja claro
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.text(`${inter.nomeProduto} - ${inter.quantidadeArredondada.toFixed(3)} ${inter.unidade}`, 16, yPosition);
+      yPosition += 8;
+
+      // Modo de Preparo
+      if (inter.modoPreparo && inter.modoPreparo.length > 0) {
+        const tempoTotal = inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 130 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Modo de preparo não cadastrado', 16, yPosition);
+        yPosition += 8;
+      }
+    });
+  }
 
   // Área de assinatura
   if (yPosition > 240) {

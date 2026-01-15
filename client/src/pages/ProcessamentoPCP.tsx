@@ -509,6 +509,11 @@ export default function ProcessamentoPCP() {
                               nomeComponente: ing.nomeComponente,
                               quantidadeArredondada: ing.quantidadeArredondada,
                               unidade: ing.unidade
+                            })) || [],
+                            modoPreparo: i.modoPreparo?.map(mp => ({
+                              ordem: mp.ordem,
+                              descricao: mp.descricao,
+                              tempoMinutos: mp.tempoMinutos
                             })) || []
                           })) || [];
                           exportarFichaPrePesagemPDF(diaSelecionado, produtos, intermediarios);
@@ -652,9 +657,18 @@ export default function ProcessamentoPCP() {
                           qtdPlanejada: r.qtdPlanejada,
                           unidade: r.unidade,
                           pesoUnitario: r.pesoUnitario,
-                          passo3: r.passo3
+                          passo3: r.passo3,
+                          modoPreparo: r.modoPreparo
                         })) || [];
-                      exportarFichaProducaoPDF(diaSelecionado, produtos);
+                      const intermediarios = processamentoData?.intermediarios?.map(i => ({
+                        nomeProduto: i.nomeProduto,
+                        quantidadeArredondada: i.quantidadeArredondada,
+                        unidade: i.unidade,
+                        produtosFilhos: i.produtosFilhos,
+                        ingredientes: i.ingredientes || [],
+                        modoPreparo: i.modoPreparo || []
+                      })) || [];
+                      exportarFichaProducaoPDF(diaSelecionado, produtos, intermediarios);
                     }}
                     className="border-green-300 text-green-700 hover:bg-green-100"
                   >
