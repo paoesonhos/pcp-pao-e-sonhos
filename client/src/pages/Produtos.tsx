@@ -281,7 +281,7 @@ export default function Produtos() {
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="pesoUnitario">
-                          Peso Unitário (kg) * <span className="text-xs text-muted-foreground">(IMUTÁVEL)</span>
+                          Peso Unitário Massa Crua (kg) *
                         </Label>
                         <Input
                           id="pesoUnitario"

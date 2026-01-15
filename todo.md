@@ -630,3 +630,4 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 ## Modo de Preparo no PDF
 
 - [x] Incluir Modo de Preparo no PDF da Ficha de Produção
+- [x] Alterar rótulo 'Peso Unitário' para 'Peso Unitário Massa Crua' (apenas na página Criar Novo Produto)
