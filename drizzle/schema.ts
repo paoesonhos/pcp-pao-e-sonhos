@@ -106,6 +106,24 @@ export type FichaTecnica = typeof fichaTecnica.$inferSelect;
 export type InsertFichaTecnica = typeof fichaTecnica.$inferInsert;
 
 /**
+ * Modo de Preparo - Passos da receita com tempo
+ */
+export const modoPreparo = mysqlTable("modo_preparo", {
+  id: int("id").autoincrement().primaryKey(),
+  produtoId: int("produtoId").notNull().references(() => produtos.id, { onDelete: "cascade" }),
+  ordem: int("ordem").notNull().default(1),
+  descricao: text("descricao").notNull(),
+  tempoMinutos: int("tempoMinutos").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  produtoIdx: index("modo_preparo_produto_idx").on(table.produtoId),
+}));
+
+export type ModoPreparo = typeof modoPreparo.$inferSelect;
+export type InsertModoPreparo = typeof modoPreparo.$inferInsert;
+
+/**
  * Blocos da divisora (30 unidades por bloco)
  */
 export const blocos = mysqlTable("blocos", {

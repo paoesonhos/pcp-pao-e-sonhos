@@ -1,0 +1,22 @@
+{
+  "query": "SELECT * FROM mapa_base WHERE codigoProduto = '148' OR nomeProduto LIKE '%BOLO SEM LACTOSE%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT * FROM mapa_base WHERE codigoProduto = '148' OR nomeProduto LIKE '%BOLO SEM LACTOSE%';",
+  "rows": [
+    {
+      "id": "150073",
+      "produtoId": "NULL",
+      "codigoProduto": "148",
+      "nomeProduto": "BOLO SEM LACTOSE CENOURA",
+      "unidade": "un",
+      "quantidade": "5.00",
+      "percentualAjuste": "0",
+      "diaProduzir": "2",
+      "equipe": "Equipe 1",
+      "updatedAt": "2026-01-13 22:38:42"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprodutoId\tcodigoProduto\tnomeProduto\tunidade\tquantidade\tpercentualAjuste\tdiaProduzir\tequipe\tupdatedAt\n150073\tNULL\t148\tBOLO SEM LACTOSE CENOURA\tun\t5.00\t0\t2\tEquipe 1\t2026-01-13 22:38:42\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

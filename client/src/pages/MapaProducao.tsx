@@ -1209,6 +1209,7 @@ export default function MapaProducao() {
                     qtdPlanejada: 0,
                     diaProduzir: diaAdicionarProduto,
                     equipe: 'Equipe 1',
+                    produtoId: produto.id,
                   };
                   
                   setMapa(prev => [...prev, novoItem]);

@@ -1,0 +1,610 @@
+{
+  "query": "SELECT id, codigoProduto, nomeProduto, unidade, qtdPlanejada, diaProduzir FROM mapa_rascunho ORDER BY diaProduzir, nomeProduto;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, codigoProduto, nomeProduto, unidade, qtdPlanejada, diaProduzir FROM mapa_rascunho ORDER BY diaProduzir, nomeProduto;",
+  "rows": [
+    {
+      "id": "180298",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "1.00",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180304",
+      "codigoProduto": "148",
+      "nomeProduto": "BOLO SEM LACTOSE CENOURA",
+      "unidade": "un",
+      "qtdPlanejada": "5.00",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180305",
+      "codigoProduto": "636",
+      "nomeProduto": "FOLHADO CHOCOLATE",
+      "unidade": "kg",
+      "qtdPlanejada": "3.50",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180372",
+      "codigoProduto": "636",
+      "nomeProduto": "FOLHADO CHOCOLATE [REPOSIÇÃO]",
+      "unidade": "kg",
+      "qtdPlanejada": "10.50",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180306",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180312",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180318",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180324",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180330",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180336",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180342",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180348",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180354",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180360",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180366",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "2"
+    },
+    {
+      "id": "180299",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "2.00",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180307",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180313",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "1.20",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180319",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180325",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180331",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "1.20",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180337",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180343",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180349",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "1.20",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180355",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180361",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "1.20",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180367",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "3"
+    },
+    {
+      "id": "180300",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "1.50",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180308",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "2.10",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180314",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "4.20",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180320",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "6.30",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180326",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "2.10",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180332",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "4.20",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180338",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "6.30",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180344",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "2.10",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180350",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "4.20",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180356",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "2.10",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180362",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "4.20",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180368",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "6.30",
+      "diaProduzir": "4"
+    },
+    {
+      "id": "180301",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180309",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180315",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "6.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180321",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "9.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180327",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180333",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "6.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180339",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "9.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180345",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180351",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "6.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180357",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "3.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180363",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "6.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180369",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "9.00",
+      "diaProduzir": "5"
+    },
+    {
+      "id": "180302",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "2.00",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180310",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "3.30",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180316",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "6.60",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180322",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "9.90",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180328",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "3.30",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180334",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "6.60",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180340",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "9.90",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180346",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "3.30",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180352",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "6.60",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180358",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "3.30",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180364",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "6.60",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180370",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "9.90",
+      "diaProduzir": "6"
+    },
+    {
+      "id": "180303",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "0.50",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180311",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180317",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180323",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "2.70",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180329",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180335",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180341",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "2.70",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180347",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180353",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180359",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180365",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "1.80",
+      "diaProduzir": "7"
+    },
+    {
+      "id": "180371",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "2.70",
+      "diaProduzir": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoProduto\tnomeProduto\tunidade\tqtdPlanejada\tdiaProduzir\n180298\t\tbolo de cenoura\tkg\t1.00\t2\n180304\t148\tBOLO SEM LACTOSE CENOURA\tun\t5.00\t2\n180305\t636\tFOLHADO CHOCOLATE\tkg\t3.50\t2\n180372\t636\tFOLHADO CHOCOLATE [REPOSIÇÃO]\tkg\t10.50\t2\n180306\t\tMARGARIDA GOIABA\tkg\t0.30\t2\n180312\t\tPAO CACHORRO QUENTE\tkg\t0.60\t2\n180318\t\tPAO CACHORRO QUENTE MINI\tkg\t0.90\t2\n180324\t\tPAO DE LEITE\tkg\t0.30\t2\n180330\t\tPAO DE SANDUICHE\tkg\t0.60\t2\n180336\t\tPAO DOCE\tkg\t0.90\t2\n180342\t\tPAO FIBRAS\tkg\t0.30\t2\n180348\t\tPAO FRANCES\tkg\t0.60\t2\n180354\t\tPAO HAMBURGUER\tkg\t0.30\t2\n180360\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t0.60\t2\n180366\t\tPAO MINUTO\tkg\t0.90\t2\n180299\t\tbolo de cenoura\tkg\t2.00\t3\n180307\t\tMARGARIDA GOIABA\tkg\t0.60\t3\n180313\t\tPAO CACHORRO QUENTE\tkg\t1.20\t3\n180319\t\tPAO CACHORRO QUENTE MINI\tkg\t1.80\t3\n180325\t\tPAO DE LEITE\tkg\t0.60\t3\n180331\t\tPAO DE SANDUICHE\tkg\t1.20\t3\n180337\t\tPAO DOCE\tkg\t1.80\t3\n180343\t\tPAO FIBRAS\tkg\t0.60\t3\n180349\t\tPAO FRANCES\tkg\t1.20\t3\n180355\t\tPAO HAMBURGUER\tkg\t0.60\t3\n180361\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t1.20\t3\n180367\t\tPAO MINUTO\tkg\t1.80\t3\n180300\t\tbolo de cenoura\tkg\t1.50\t4\n180308\t\tMARGARIDA GOIABA\tkg\t2.10\t4\n180314\t\tPAO CACHORRO QUENTE\tkg\t4.20\t4\n180320\t\tPAO CACHORRO QUENTE MINI\tkg\t6.30\t4\n180326\t\tPAO DE LEITE\tkg\t2.10\t4\n180332\t\tPAO DE SANDUICHE\tkg\t4.20\t4\n180338\t\tPAO DOCE\tkg\t6.30\t4\n180344\t\tPAO FIBRAS\tkg\t2.10\t4\n180350\t\tPAO FRANCES\tkg\t4.20\t4\n180356\t\tPAO HAMBURGUER\tkg\t2.10\t4\n180362\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t4.20\t4\n180368\t\tPAO MINUTO\tkg\t6.30\t4\n180301\t\tbolo de cenoura\tkg\t3.00\t5\n180309\t\tMARGARIDA GOIABA\tkg\t3.00\t5\n180315\t\tPAO CACHORRO QUENTE\tkg\t6.00\t5\n180321\t\tPAO CACHORRO QUENTE MINI\tkg\t9.00\t5\n180327\t\tPAO DE LEITE\tkg\t3.00\t5\n180333\t\tPAO DE SANDUICHE\tkg\t6.00\t5\n180339\t\tPAO DOCE\tkg\t9.00\t5\n180345\t\tPAO FIBRAS\tkg\t3.00\t5\n180351\t\tPAO FRANCES\tkg\t6.00\t5\n180357\t\tPAO HAMBURGUER\tkg\t3.00\t5\n180363\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t6.00\t5\n180369\t\tPAO MINUTO\tkg\t9.00\t5\n180302\t\tbolo de cenoura\tkg\t2.00\t6\n180310\t\tMARGARIDA GOIABA\tkg\t3.30\t6\n180316\t\tPAO CACHORRO QUENTE\tkg\t6.60\t6\n180322\t\tPAO CACHORRO QUENTE MINI\tkg\t9.90\t6\n180328\t\tPAO DE LEITE\tkg\t3.30\t6\n180334\t\tPAO DE SANDUICHE\tkg\t6.60\t6\n180340\t\tPAO DOCE\tkg\t9.90\t6\n180346\t\tPAO FIBRAS\tkg\t3.30\t6\n180352\t\tPAO FRANCES\tkg\t6.60\t6\n180358\t\tPAO HAMBURGUER\tkg\t3.30\t6\n180364\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t6.60\t6\n180370\t\tPAO MINUTO\tkg\t9.90\t6\n180303\t\tbolo de cenoura\tkg\t0.50\t7\n180311\t\tMARGARIDA GOIABA\tkg\t0.90\t7\n180317\t\tPAO CACHORRO QUENTE\tkg\t1.80\t7\n180323\t\tPAO CACHORRO QUENTE MINI\tkg\t2.70\t7\n180329\t\tPAO DE LEITE\tkg\t0.90\t7\n180335\t\tPAO DE SANDUICHE\tkg\t1.80\t7\n180341\t\tPAO DOCE\tkg\t2.70\t7\n180347\t\tPAO FIBRAS\tkg\t0.90\t7\n180353\t\tPAO FRANCES\tkg\t1.80\t7\n180359\t\tPAO HAMBURGUER\tkg\t0.90\t7\n180365\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t1.80\t7\n180371\t\tPAO MINUTO\tkg\t2.70\t7\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

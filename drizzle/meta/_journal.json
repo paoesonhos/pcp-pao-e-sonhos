@@ -43,6 +43,13 @@
       "when": 1768170004455,
       "tag": "0005_orange_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1768428330250,
+      "tag": "0006_tan_cerise",
+      "breakpoints": true
     }
   ]
 }

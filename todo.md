@@ -605,3 +605,19 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Ficha Detalhes: renomear para Embalagem
 - [x] Ficha Embalagem: adicionar campos Tipo Embalagem e Qtde por Embalagem
 - [x] Ficha Embalagem: remover campos Blocos e Pedaço
+
+## Bug - Mapa de Produção
+
+- [x] Investigar: item 148 BOLO SEM LACTOSE CENOURA desaparece ao salvar mapa
+- [x] Corrigir: produtoId null no botão Adicionar Produto
+- [x] Corrigir: gerarMapa verificar rascunho existente
+- [x] Corrigir: Ficha Pré-Pesagem mostrar produtos com pendências
+
+
+## Modo de Preparo na Ficha Técnica
+
+- [x] Criar tabela modo_preparo no banco de dados
+- [x] Adicionar CRUD no backend para modo de preparo
+- [x] Adicionar seção Modo de Preparo na página Ficha Técnica
+- [x] Exibir Modo de Preparo na Ficha de Produção (Massas Base)
+- [x] Soma total dos tempos na última linha

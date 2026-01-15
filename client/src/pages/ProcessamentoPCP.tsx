@@ -18,7 +18,8 @@ import {
   Boxes,
   Truck,
   Package,
-  Download
+  Download,
+  Clock
 } from "lucide-react";
 import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF, exportarDetalhesProdutoPDF, exportarMolhadosConsolidadosPDF } from "@/lib/pdfExport";
 
@@ -65,6 +66,13 @@ interface ComponenteProcessado {
   editavel: boolean;
 }
 
+// Modo de Preparo
+interface PassoModoPreparo {
+  ordem: number;
+  descricao: string;
+  tempoMinutos: number;
+}
+
 interface ItemProcessado {
   codigoProduto: string;
   nomeProduto: string;
@@ -77,6 +85,7 @@ interface ItemProcessado {
   passo1: Passo1 | null;
   passo3: Passo3 | null;
   insumos: ComponenteProcessado[];
+  modoPreparo?: PassoModoPreparo[];
   erro?: string;
 }
 
@@ -99,6 +108,11 @@ interface IntermediarioConsolidado {
   nivel: number; // 1 = Massa Base, 2 = Sub-bloco
   produtosFilhos: string[]; // produtos que usam este intermediário
   ingredientes: IngredienteIntermediario[]; // ficha técnica do intermediário
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
 }
 
 // Função de arredondamento para pesagem (múltiplos de 0.005)
@@ -597,6 +611,27 @@ export default function ProcessamentoPCP() {
                   )}
                   </CardContent>
                 </Card>
+
+                {/* Produtos com erro - Pré-Pesagem */}
+                {processamentoData?.resultados && processamentoData.resultados.filter(r => r.erro).length > 0 && (
+                  <Card className="border-red-200 bg-red-50">
+                    <CardHeader className="bg-red-100 border-b border-red-200 py-3">
+                      <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                        <AlertCircle className="w-5 h-5" />
+                        Produtos com Pendências
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-2">
+                      {processamentoData.resultados.filter(r => r.erro).map((item, idx) => (
+                        <div key={`erro-pre-${idx}`} className="flex items-center gap-2 text-red-700">
+                          <AlertCircle className="w-4 h-4" />
+                          <span className="font-medium">{item.codigoProduto} - {item.nomeProduto}</span>
+                          <span className="text-sm">({item.erro})</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
@@ -744,6 +779,44 @@ export default function ProcessamentoPCP() {
                               Ficha técnica não disponível para este intermediário
                             </div>
                           )}
+
+                          {/* Modo de Preparo */}
+                          {inter.modoPreparo && inter.modoPreparo.length > 0 && (
+                            <div className="p-4 bg-blue-50 border-t border-purple-200">
+                              <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-600" />
+                                Modo de Preparo
+                              </h4>
+                              <table className="w-full text-sm">
+                                <thead className="bg-blue-100">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-blue-700 w-12">#</th>
+                                    <th className="px-3 py-2 text-left text-blue-700">Descrição</th>
+                                    <th className="px-3 py-2 text-right text-blue-700 w-32">Tempo (min)</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {inter.modoPreparo.map((passo, pIdx) => (
+                                    <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
+                                      <td className="px-3 py-2 font-mono text-blue-600">{passo.ordem}</td>
+                                      <td className="px-3 py-2 text-gray-800">{passo.descricao}</td>
+                                      <td className="px-3 py-2 text-right font-mono text-blue-700">{passo.tempoMinutos}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                                <tfoot className="bg-blue-100 border-t border-blue-200">
+                                  <tr>
+                                    <td colSpan={2} className="px-3 py-2 text-right font-semibold text-blue-800">
+                                      Tempo Total:
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-mono font-bold text-blue-700">
+                                      {inter.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
+                                    </td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </CardContent>
@@ -883,6 +956,38 @@ export default function ProcessamentoPCP() {
                           </tbody>
                         </table>
                       </div>
+
+                      {/* Modo de Preparo */}
+                      {item.modoPreparo && item.modoPreparo.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-gray-700 mb-2">Modo de Preparo</h4>
+                          <table className="w-full text-sm">
+                            <thead className="bg-blue-50">
+                              <tr>
+                                <th className="px-3 py-2 text-center w-12">#</th>
+                                <th className="px-3 py-2 text-left">Descrição</th>
+                                <th className="px-3 py-2 text-right w-24">Tempo</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.modoPreparo.map((passo, pIdx) => (
+                                <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-3 py-2 text-center text-muted-foreground">{passo.ordem}</td>
+                                  <td className="px-3 py-2">{passo.descricao}</td>
+                                  <td className="px-3 py-2 text-right font-mono">{passo.tempoMinutos} min</td>
+                                </tr>
+                              ))}
+                              <tr className="bg-blue-50 font-medium">
+                                <td className="px-3 py-2"></td>
+                                <td className="px-3 py-2 text-right">Tempo Total:</td>
+                                <td className="px-3 py-2 text-right font-mono text-blue-700">
+                                  {item.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

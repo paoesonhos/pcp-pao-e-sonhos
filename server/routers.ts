@@ -5,7 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, asc } from "drizzle-orm";
+import { modoPreparo } from "../drizzle/schema";
 
 
 
@@ -68,6 +69,13 @@ const blocoSchema = z.object({
     return !isNaN(num) && num > 0;
   }, "Peso do bloco deve ser um número positivo"),
   ativo: z.boolean().default(true),
+});
+
+const modoPreparoSchema = z.object({
+  produtoId: z.number().int(),
+  ordem: z.number().int().default(1),
+  descricao: z.string().min(1),
+  tempoMinutos: z.number().int().min(0).default(0),
 });
 export const appRouter = router({
   system: systemRouter,
@@ -405,6 +413,39 @@ export const appRouter = router({
       }),
   }),
 
+  // ==================== MODO DE PREPARO ====================
+  modoPreparo: router({
+    getByProduto: protectedProcedure
+      .input(z.number().int())
+      .query(async ({ input }) => {
+        return await db.getModoPreparoByProduto(input);
+      }),
+
+    create: protectedProcedure
+      .input(modoPreparoSchema)
+      .mutation(async ({ input }) => {
+        await db.createModoPreparo(input);
+        return { success: true };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number().int(),
+        data: modoPreparoSchema.partial(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateModoPreparo(input.id, input.data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.number().int())
+      .mutation(async ({ input }) => {
+        await db.deleteModoPreparo(input);
+        return { success: true };
+      }),
+  }),
+
   // ImportaV5 - Com persistência no banco de dados
   importaV5: router({
     importar: protectedProcedure
@@ -576,6 +617,29 @@ export const appRouter = router({
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
       const { importacoesV5, vendasV5 } = await import("../drizzle/schema");
       const { desc, eq } = await import("drizzle-orm");
+
+      // PRIMEIRO: Verificar se existe rascunho salvo
+      const rascunhoExistente = await db.getMapaRascunho();
+      if (rascunhoExistente && rascunhoExistente.length > 0) {
+        // Retornar dados do rascunho em vez de gerar novamente
+        return {
+          success: true,
+          importacao: null,
+          mapa: rascunhoExistente.map((item, idx) => ({
+            id: idx + 1,
+            codigo: item.codigoProduto,
+            nome: item.nomeProduto,
+            unidade: item.unidade,
+            qtdImportada: parseFloat(item.qtdImportada),
+            percentualAjuste: item.percentualAjuste,
+            qtdPlanejada: parseFloat(item.qtdPlanejada),
+            equipe: item.equipe || "Equipe 1",
+            diaProduzir: item.diaProduzir,
+            produtoId: item.produtoId || 0,
+            isReposicao: item.isReposicao,
+          })),
+        };
+      }
 
       // Buscar última importação
       const [ultimaImportacao] = await database
@@ -1143,6 +1207,16 @@ export const appRouter = router({
           fichasMap.get(ficha.produtoId)!.push(ficha);
         }
 
+        // Buscar todos os modos de preparo
+        const modoPreparoDb = await database.select().from(modoPreparo).orderBy(asc(modoPreparo.ordem));
+        const modoPreparoMap = new Map<number, typeof modoPreparoDb>();
+        for (const mp of modoPreparoDb) {
+          if (!modoPreparoMap.has(mp.produtoId)) {
+            modoPreparoMap.set(mp.produtoId, []);
+          }
+          modoPreparoMap.get(mp.produtoId)!.push(mp);
+        }
+
         // Função para buscar ficha técnica
         const buscaFichaTecnica = (produtoId: number): ComponenteFicha[] | null => {
           const fichaItens = fichasMap.get(produtoId);
@@ -1218,6 +1292,12 @@ export const appRouter = router({
             unidade: string;
             editavel: boolean;
           }>;
+          // Modo de Preparo
+          modoPreparo: Array<{
+            ordem: number;
+            descricao: string;
+            tempoMinutos: number;
+          }>;
           erro?: string;
         }> = [];
 
@@ -1241,6 +1321,7 @@ export const appRouter = router({
               passo1: null,
               passo3: null,
               insumos: [],
+              modoPreparo: [],
               erro: `Produto não cadastrado`,
             });
             continue;
@@ -1261,6 +1342,11 @@ export const appRouter = router({
               passo1: null,
               passo3: null,
               insumos: [],
+              modoPreparo: modoPreparoMap.get(produto.id)?.map(mp => ({
+                ordem: mp.ordem,
+                descricao: mp.descricao,
+                tempoMinutos: mp.tempoMinutos,
+              })) || [],
               erro: `Sem ficha técnica`,
             });
             continue;
@@ -1310,6 +1396,11 @@ export const appRouter = router({
               unidade: ing.unidade,
               editavel: ing.editavel,
             })),
+            modoPreparo: modoPreparoMap.get(produto.id)?.map(mp => ({
+              ordem: mp.ordem,
+              descricao: mp.descricao,
+              tempoMinutos: mp.tempoMinutos,
+            })) || [],
           });
 
           // Explosão recursiva para consolidação global
@@ -1347,6 +1438,11 @@ export const appRouter = router({
             unidade: ing.unidade,
             editavel: ing.editavel,
           })),
+          modoPreparo: modoPreparoMap.get(mb.produtoId)?.map(mp => ({
+            ordem: mp.ordem,
+            descricao: mp.descricao,
+            tempoMinutos: mp.tempoMinutos,
+          })) || [],
         }));
 
         const insumosGlobais = insumosConsolidados.map(ins => ({

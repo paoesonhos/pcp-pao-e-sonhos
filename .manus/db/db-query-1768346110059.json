@@ -1,0 +1,115 @@
+{
+  "query": "SELECT id, codigoProduto, nomeProduto, unidade, qtdPlanejada FROM mapa_rascunho WHERE diaProduzir = 2 ORDER BY nomeProduto;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT id, codigoProduto, nomeProduto, unidade, qtdPlanejada FROM mapa_rascunho WHERE diaProduzir = 2 ORDER BY nomeProduto;",
+  "rows": [
+    {
+      "id": "180298",
+      "codigoProduto": "",
+      "nomeProduto": "bolo de cenoura",
+      "unidade": "kg",
+      "qtdPlanejada": "1.00"
+    },
+    {
+      "id": "180304",
+      "codigoProduto": "148",
+      "nomeProduto": "BOLO SEM LACTOSE CENOURA",
+      "unidade": "un",
+      "qtdPlanejada": "5.00"
+    },
+    {
+      "id": "180305",
+      "codigoProduto": "636",
+      "nomeProduto": "FOLHADO CHOCOLATE",
+      "unidade": "kg",
+      "qtdPlanejada": "3.50"
+    },
+    {
+      "id": "180372",
+      "codigoProduto": "636",
+      "nomeProduto": "FOLHADO CHOCOLATE [REPOSIÇÃO]",
+      "unidade": "kg",
+      "qtdPlanejada": "10.50"
+    },
+    {
+      "id": "180306",
+      "codigoProduto": "",
+      "nomeProduto": "MARGARIDA GOIABA",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30"
+    },
+    {
+      "id": "180312",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60"
+    },
+    {
+      "id": "180318",
+      "codigoProduto": "",
+      "nomeProduto": "PAO CACHORRO QUENTE MINI",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90"
+    },
+    {
+      "id": "180324",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE LEITE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30"
+    },
+    {
+      "id": "180330",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60"
+    },
+    {
+      "id": "180336",
+      "codigoProduto": "",
+      "nomeProduto": "PAO DOCE",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90"
+    },
+    {
+      "id": "180342",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FIBRAS",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30"
+    },
+    {
+      "id": "180348",
+      "codigoProduto": "",
+      "nomeProduto": "PAO FRANCES",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60"
+    },
+    {
+      "id": "180354",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER",
+      "unidade": "kg",
+      "qtdPlanejada": "0.30"
+    },
+    {
+      "id": "180360",
+      "codigoProduto": "",
+      "nomeProduto": "PAO HAMBURGUER BRIOCHE GOURMET",
+      "unidade": "kg",
+      "qtdPlanejada": "0.60"
+    },
+    {
+      "id": "180366",
+      "codigoProduto": "",
+      "nomeProduto": "PAO MINUTO",
+      "unidade": "kg",
+      "qtdPlanejada": "0.90"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoProduto\tnomeProduto\tunidade\tqtdPlanejada\n180298\t\tbolo de cenoura\tkg\t1.00\n180304\t148\tBOLO SEM LACTOSE CENOURA\tun\t5.00\n180305\t636\tFOLHADO CHOCOLATE\tkg\t3.50\n180372\t636\tFOLHADO CHOCOLATE [REPOSIÇÃO]\tkg\t10.50\n180306\t\tMARGARIDA GOIABA\tkg\t0.30\n180312\t\tPAO CACHORRO QUENTE\tkg\t0.60\n180318\t\tPAO CACHORRO QUENTE MINI\tkg\t0.90\n180324\t\tPAO DE LEITE\tkg\t0.30\n180330\t\tPAO DE SANDUICHE\tkg\t0.60\n180336\t\tPAO DOCE\tkg\t0.90\n180342\t\tPAO FIBRAS\tkg\t0.30\n180348\t\tPAO FRANCES\tkg\t0.60\n180354\t\tPAO HAMBURGUER\tkg\t0.30\n180360\t\tPAO HAMBURGUER BRIOCHE GOURMET\tkg\t0.60\n180366\t\tPAO MINUTO\tkg\t0.90\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

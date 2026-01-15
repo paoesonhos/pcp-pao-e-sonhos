@@ -348,6 +348,21 @@ export default function FichaTecnica() {
         </CardContent>
       </Card>
 
+      {/* Modo de Preparo */}
+      {produto && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Modo de Preparo</CardTitle>
+            <CardDescription>
+              Adicione os passos de preparo com tempo estimado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ModoPreparoConfig produtoId={produtoId} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Configuração de Blocos (Divisora) */}
       {produto && (
         <Card className="mt-6">
@@ -559,5 +574,149 @@ function BlocoConfig({ produtoId, produto, pesoTotalComponentes }: { produtoId: 
         )}
       </div>
     </form>
+  );
+}
+
+// Componente para configuração de Modo de Preparo
+function ModoPreparoConfig({ produtoId }: { produtoId: number }) {
+  const [novaDescricao, setNovaDescricao] = useState("");
+  const [novoTempo, setNovoTempo] = useState<number>(0);
+  const utils = trpc.useUtils();
+
+  const { data: passos, isLoading } = trpc.modoPreparo.getByProduto.useQuery(produtoId);
+
+  const createMutation = trpc.modoPreparo.create.useMutation({
+    onSuccess: () => {
+      toast.success("Passo adicionado com sucesso");
+      utils.modoPreparo.getByProduto.invalidate();
+      setNovaDescricao("");
+      setNovoTempo(0);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao adicionar passo");
+    },
+  });
+
+  const updateMutation = trpc.modoPreparo.update.useMutation({
+    onSuccess: () => {
+      toast.success("Passo atualizado com sucesso");
+      utils.modoPreparo.getByProduto.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao atualizar passo");
+    },
+  });
+
+  const deleteMutation = trpc.modoPreparo.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Passo removido com sucesso");
+      utils.modoPreparo.getByProduto.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao remover passo");
+    },
+  });
+
+  const handleAdd = () => {
+    if (!novaDescricao.trim()) {
+      toast.error("Informe a descrição do passo");
+      return;
+    }
+    const proximaOrdem = (passos?.length || 0) + 1;
+    createMutation.mutate({
+      produtoId,
+      ordem: proximaOrdem,
+      descricao: novaDescricao.trim(),
+      tempoMinutos: novoTempo,
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Tem certeza que deseja remover este passo?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const tempoTotal = passos?.reduce((sum, p) => sum + p.tempoMinutos, 0) || 0;
+
+  if (isLoading) {
+    return <div className="text-muted-foreground">Carregando...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Lista de passos */}
+      {passos && passos.length > 0 ? (
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-2 text-left text-sm font-medium w-12">#</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">Descrição</th>
+                <th className="px-4 py-2 text-right text-sm font-medium w-32">Tempo (min)</th>
+                <th className="px-4 py-2 text-center text-sm font-medium w-16">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {passos.map((passo, idx) => (
+                <tr key={passo.id} className="border-t">
+                  <td className="px-4 py-2 text-muted-foreground">{idx + 1}</td>
+                  <td className="px-4 py-2">{passo.descricao}</td>
+                  <td className="px-4 py-2 text-right font-mono">{passo.tempoMinutos}</td>
+                  <td className="px-4 py-2 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(passo.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {/* Linha de total */}
+              <tr className="border-t bg-muted/30 font-medium">
+                <td className="px-4 py-2"></td>
+                <td className="px-4 py-2 text-right">Tempo Total:</td>
+                <td className="px-4 py-2 text-right font-mono text-primary">{tempoTotal} min</td>
+                <td className="px-4 py-2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground py-4 border rounded-lg">
+          Nenhum passo cadastrado
+        </div>
+      )}
+
+      {/* Formulário para adicionar novo passo */}
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <Label htmlFor="novaDescricao">Descrição do Passo</Label>
+          <Input
+            id="novaDescricao"
+            value={novaDescricao}
+            onChange={(e) => setNovaDescricao(e.target.value)}
+            placeholder="Ex: Misturar ingredientes secos"
+          />
+        </div>
+        <div className="w-32">
+          <Label htmlFor="novoTempo">Tempo (min)</Label>
+          <Input
+            id="novoTempo"
+            type="number"
+            min="0"
+            value={novoTempo}
+            onChange={(e) => setNovoTempo(parseInt(e.target.value) || 0)}
+          />
+        </div>
+        <Button onClick={handleAdd} disabled={createMutation.isPending}>
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar
+        </Button>
+      </div>
+    </div>
   );
 }

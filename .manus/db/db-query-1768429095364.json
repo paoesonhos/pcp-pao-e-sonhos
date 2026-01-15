@@ -1,0 +1,28 @@
+{
+  "query": "SELECT * FROM modo_preparo ORDER BY produtoId, ordem;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT * FROM modo_preparo ORDER BY produtoId, ordem;",
+  "rows": [
+    {
+      "id": "1",
+      "produtoId": "210024",
+      "ordem": "1",
+      "descricao": "misturar os ingredientes na masseira",
+      "tempoMinutos": "27",
+      "createdAt": "2026-01-14 22:16:03",
+      "updatedAt": "2026-01-14 22:16:03"
+    },
+    {
+      "id": "3",
+      "produtoId": "210024",
+      "ordem": "2",
+      "descricao": "modelar na mesa",
+      "tempoMinutos": "42",
+      "createdAt": "2026-01-14 22:16:31",
+      "updatedAt": "2026-01-14 22:16:31"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprodutoId\tordem\tdescricao\ttempoMinutos\tcreatedAt\tupdatedAt\n1\t210024\t1\tmisturar os ingredientes na masseira\t27\t2026-01-14 22:16:03\t2026-01-14 22:16:03\n3\t210024\t2\tmodelar na mesa\t42\t2026-01-14 22:16:31\t2026-01-14 22:16:31\n",
+  "stderr": "",
+  "execution_time_ms": 773
+}

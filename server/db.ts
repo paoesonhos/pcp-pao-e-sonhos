@@ -1,6 +1,6 @@
 import { eq, and, like, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, destinos, movimentacoesEstoque, mapaBase, mapaRascunho, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco, Destino, InsertDestino, MovimentacaoEstoque, InsertMovimentacaoEstoque, MapaBase, InsertMapaBase, MapaRascunho, InsertMapaRascunho } from "../drizzle/schema";
+import { InsertUser, users, categorias, insumos, produtos, fichaTecnica, blocos, destinos, movimentacoesEstoque, mapaBase, mapaRascunho, modoPreparo, Categoria, InsertCategoria, Insumo, InsertInsumo, Produto, InsertProduto, FichaTecnica, InsertFichaTecnica, Bloco, InsertBloco, Destino, InsertDestino, MovimentacaoEstoque, InsertMovimentacaoEstoque, MapaBase, InsertMapaBase, MapaRascunho, InsertMapaRascunho, ModoPreparo, InsertModoPreparo } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -387,6 +387,42 @@ export async function deleteBloco(produtoId: number) {
   if (!db) throw new Error("Database not available");
 
   await db.delete(blocos).where(eq(blocos.produtoId, produtoId));
+}
+
+// ==================== MODO DE PREPARO ====================
+
+export async function getModoPreparoByProduto(produtoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(modoPreparo)
+    .where(eq(modoPreparo.produtoId, produtoId))
+    .orderBy(asc(modoPreparo.ordem));
+  return result;
+}
+
+export async function createModoPreparo(data: InsertModoPreparo) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(modoPreparo).values(data);
+  return result;
+}
+
+export async function updateModoPreparo(id: number, data: Partial<InsertModoPreparo>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(modoPreparo).set(data).where(eq(modoPreparo.id, id));
+}
+
+export async function deleteModoPreparo(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(modoPreparo).where(eq(modoPreparo.id, id));
 }
 
 // ==================== DESTINOS ====================
