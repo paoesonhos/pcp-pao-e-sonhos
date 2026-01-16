@@ -1,0 +1,46 @@
+{
+  "query": "SELECT * FROM produtos WHERE nome LIKE '%SANDUICHE%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UMh4pbAi2dcF9M.1fe5d3f795b3 --database jnrPNLAHwjYsP9Vc7Kxuqn --execute SELECT * FROM produtos WHERE nome LIKE '%SANDUICHE%';",
+  "rows": [
+    {
+      "id": "210005",
+      "codigoProduto": "252",
+      "nome": "PAO DE SANDUICHE",
+      "unidade": "kg",
+      "pesoUnitario": "0.65000",
+      "percentualPerdaLiquida": "NULL",
+      "shelfLife": "NULL",
+      "categoriaId": "90001",
+      "tipoEmbalagem": "saco",
+      "quantidadePorEmbalagem": "1",
+      "ativo": "1",
+      "createdAt": "2026-01-13 15:44:03",
+      "updatedAt": "2026-01-13 15:44:03",
+      "destinoId": "2",
+      "saldoEstoque": "0.00000",
+      "estoqueMinimoDias": "4"
+    },
+    {
+      "id": "390001",
+      "codigoProduto": "253",
+      "nome": "PAO DE SANDUICHE INTEGRAL",
+      "unidade": "kg",
+      "pesoUnitario": "0.65000",
+      "percentualPerdaLiquida": "NULL",
+      "shelfLife": "5",
+      "categoriaId": "90001",
+      "tipoEmbalagem": "Saco plástico",
+      "quantidadePorEmbalagem": "1",
+      "ativo": "1",
+      "createdAt": "2026-01-15 18:29:06",
+      "updatedAt": "2026-01-15 18:29:06",
+      "destinoId": "NULL",
+      "saldoEstoque": "0.00000",
+      "estoqueMinimoDias": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoProduto\tnome\tunidade\tpesoUnitario\tpercentualPerdaLiquida\tshelfLife\tcategoriaId\ttipoEmbalagem\tquantidadePorEmbalagem\tativo\tcreatedAt\tupdatedAt\tdestinoId\tsaldoEstoque\testoqueMinimoDias\n210005\t252\tPAO DE SANDUICHE\tkg\t0.65000\tNULL\tNULL\t90001\tsaco\t1\t1\t2026-01-13 15:44:03\t2026-01-13 15:44:03\t2\t0.00000\t4\n390001\t253\tPAO DE SANDUICHE INTEGRAL\tkg\t0.65000\tNULL\t5\t90001\tSaco plástico\t1\t1\t2026-01-15 18:29:06\t2026-01-15 18:29:06\tNULL\t0.00000\t4\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

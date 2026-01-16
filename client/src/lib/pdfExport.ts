@@ -528,6 +528,46 @@ export async function exportarFichaProducaoPDF(
       doc.text(`${inter.nomeProduto} - ${inter.quantidadeArredondada.toFixed(3)} ${inter.unidade}`, 16, yPosition);
       yPosition += 8;
 
+      // Tabela de Ingredientes
+      if (inter.ingredientes && inter.ingredientes.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ingredientes:', 16, yPosition);
+        yPosition += 5;
+
+        const totalIngredientes = inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          body: [
+            ...inter.ingredientes.map(ing => [
+              ing.nomeComponente,
+              ing.quantidadeArredondada.toFixed(3),
+              ing.unidade
+            ]),
+            ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.ingredientes.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
       // Modo de Preparo
       if (inter.modoPreparo && inter.modoPreparo.length > 0) {
         const tempoTotal = inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);

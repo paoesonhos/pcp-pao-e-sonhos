@@ -631,3 +631,5 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 
 - [x] Incluir Modo de Preparo no PDF da Ficha de Produção
 - [x] Alterar rótulo 'Peso Unitário' para 'Peso Unitário Massa Crua' (apenas na página Criar Novo Produto)
+- [x] Corrigir exportação PDF da Ficha de Produção - massas base não aparecem
+- [x] Campo de pesquisa na página Adicionar Componente da Ficha Técnica

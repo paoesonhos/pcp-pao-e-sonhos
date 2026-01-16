@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, ArrowLeft, Package, Layers, Pencil } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Package, Layers, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -36,6 +36,7 @@ export default function FichaTecnica() {
   const [selectedComponente, setSelectedComponente] = useState<string>("");
   const [quantidadeBase, setQuantidadeBase] = useState("");
   const [unidade, setUnidade] = useState<"kg" | "un">("kg");
+  const [searchFilter, setSearchFilter] = useState("");
 
   const utils = trpc.useUtils();
 
@@ -72,6 +73,7 @@ export default function FichaTecnica() {
     setSelectedComponente("");
     setQuantidadeBase("");
     setUnidade("kg");
+    setSearchFilter("");
   };
 
   const handleAdd = (e: React.FormEvent<HTMLFormElement>) => {
@@ -185,41 +187,82 @@ export default function FichaTecnica() {
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                       <Label htmlFor="componente">Componente *</Label>
-                      <Select 
-                        value={selectedComponente} 
-                        onValueChange={setSelectedComponente}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um insumo ou produto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Insumos</SelectLabel>
-                            {insumos?.map((insumo) => (
-                              <SelectItem 
-                                key={`insumo-${insumo.id}`} 
-                                value={`insumo-${insumo.id}`}
-                              >
-                                {insumo.codigoInsumo} – {insumo.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                          <SelectGroup>
-                            <SelectLabel>Produtos (Massa Base)</SelectLabel>
-                            {produtos
-                              ?.filter((p) => p.id !== produtoId)
-                              .map((prod) => (
-                                <SelectItem 
-                                  key={`produto-${prod.id}`} 
-                                  value={`produto-${prod.id}`}
-                                >
-                                  {prod.codigoProduto} – {prod.nome}
-                                </SelectItem>
-                              ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Pesquisar componente..."
+                          value={searchFilter}
+                          onChange={(e) => setSearchFilter(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                      {selectedComponente && (
+                        <div className="text-sm text-green-600 font-medium bg-green-50 px-3 py-2 rounded border border-green-200">
+                          Selecionado: {(() => {
+                            const [tipo, id] = selectedComponente.split('-');
+                            if (tipo === 'insumo') {
+                              const insumo = insumos?.find(i => i.id === parseInt(id));
+                              return insumo ? `${insumo.codigoInsumo} – ${insumo.nome}` : '';
+                            } else {
+                              const prod = produtos?.find(p => p.id === parseInt(id));
+                              return prod ? `${prod.codigoProduto} – ${prod.nome}` : '';
+                            }
+                          })()}
+                        </div>
+                      )}
+                      <div className="border rounded-md max-h-48 overflow-y-auto">
+                        {/* Insumos */}
+                        {insumos
+                          ?.filter((insumo) => 
+                            searchFilter === "" || 
+                            insumo.nome.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                            insumo.codigoInsumo.toLowerCase().includes(searchFilter.toLowerCase())
+                          )
+                          .map((insumo) => (
+                            <div
+                              key={`insumo-${insumo.id}`}
+                              onClick={() => setSelectedComponente(`insumo-${insumo.id}`)}
+                              className={`px-3 py-2 cursor-pointer hover:bg-amber-50 border-b last:border-b-0 text-sm ${
+                                selectedComponente === `insumo-${insumo.id}` ? 'bg-amber-100 font-medium' : ''
+                              }`}
+                            >
+                              <span className="text-muted-foreground">[INS]</span> {insumo.codigoInsumo} – {insumo.nome}
+                            </div>
+                          ))}
+                        {/* Produtos (Massa Base) */}
+                        {produtos
+                          ?.filter((p) => p.id !== produtoId)
+                          .filter((prod) => 
+                            searchFilter === "" || 
+                            prod.nome.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                            prod.codigoProduto.toLowerCase().includes(searchFilter.toLowerCase())
+                          )
+                          .map((prod) => (
+                            <div
+                              key={`produto-${prod.id}`}
+                              onClick={() => setSelectedComponente(`produto-${prod.id}`)}
+                              className={`px-3 py-2 cursor-pointer hover:bg-orange-50 border-b last:border-b-0 text-sm ${
+                                selectedComponente === `produto-${prod.id}` ? 'bg-orange-100 font-medium' : ''
+                              }`}
+                            >
+                              <span className="text-orange-600">[MASSA]</span> {prod.codigoProduto} – {prod.nome}
+                            </div>
+                          ))}
+                        {/* Mensagem quando não há resultados */}
+                        {searchFilter && 
+                          insumos?.filter((insumo) => 
+                            insumo.nome.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                            insumo.codigoInsumo.toLowerCase().includes(searchFilter.toLowerCase())
+                          ).length === 0 &&
+                          produtos?.filter((p) => p.id !== produtoId).filter((prod) => 
+                            prod.nome.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                            prod.codigoProduto.toLowerCase().includes(searchFilter.toLowerCase())
+                          ).length === 0 && (
+                            <div className="px-3 py-4 text-center text-muted-foreground text-sm">
+                              Nenhum componente encontrado para "{searchFilter}"
+                            </div>
+                          )}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
