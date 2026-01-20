@@ -676,170 +676,192 @@ export default function ProcessamentoPCP() {
                     Exportar Ficha de Produção PDF
                   </Button>
                 </div>
-                {/* Seção de Massas Base / Intermediários Consolidados */}
-                {processamentoData?.intermediarios && processamentoData.intermediarios.length > 0 && (
-                  <Card className="border-purple-300 bg-purple-50">
-                    <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
-                      <CardTitle className="text-base flex items-center gap-2 text-purple-800">
-                        <Scale className="w-5 h-5" />
-                        Massas Base a Produzir (Consolidado)
-                      </CardTitle>
-                      <p className="text-sm text-purple-600 mt-1">
-                        Produtos intermediários que devem ser preparados antes dos produtos finais
-                      </p>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-6">
-                      {processamentoData.intermediarios.map((inter: IntermediarioConsolidado, idx: number) => (
-                        <div key={inter.produtoId} className="border border-purple-200 rounded-lg overflow-hidden">
-                          {/* Cabeçalho do Intermediário */}
-                          <div className="bg-purple-100 px-4 py-3 border-b border-purple-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant="outline" 
-                                  className={inter.nivel === 1 ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-indigo-200 text-indigo-800 border-indigo-400'}
-                                >
-                                  N{inter.nivel}
-                                </Badge>
-                                <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
+                {/* Produtos Finais - Agrupados por Intermediário (cada massa base seguida dos seus produtos) */}
+                {(() => {
+                  const resultadosSemErro = processamentoData?.resultados?.filter(r => !r.erro) || [];
+                  const intermediarios = processamentoData?.intermediarios || [];
+                  
+                  // Produtos que usam cada intermediário
+                  const produtosPorIntermediario: { inter: typeof intermediarios[0]; produtos: typeof resultadosSemErro }[] = [];
+                  const produtosUsados = new Set<string>();
+                  
+                  for (const inter of intermediarios) {
+                    const produtosDoInter = resultadosSemErro.filter(r => 
+                      inter.produtosFilhos.some(filho => {
+                        // Correspondência exata (case-insensitive)
+                        const nomeNormalizado = r.nomeProduto.toLowerCase().trim();
+                        const filhoNormalizado = filho.toLowerCase().trim();
+                        return nomeNormalizado === filhoNormalizado;
+                      })
+                    );
+                    if (produtosDoInter.length > 0) {
+                      produtosPorIntermediario.push({ inter, produtos: produtosDoInter });
+                      produtosDoInter.forEach(p => produtosUsados.add(p.codigoProduto));
+                    }
+                  }
+                  
+                  // Produtos sem intermediário
+                  const produtosSemIntermediario = resultadosSemErro.filter(r => !produtosUsados.has(r.codigoProduto));
+                  
+                  return (
+                    <>
+                      {/* Produtos agrupados por intermediário */}
+                      {produtosPorIntermediario.map(({ inter, produtos }, groupIdx) => (
+                        <div key={`group-${groupIdx}`} className="space-y-4 mb-6">
+                          {/* Card da Massa Base */}
+                          <Card className="border-purple-300 bg-purple-50">
+                            <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={inter.nivel === 1 ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-indigo-200 text-indigo-800 border-indigo-400'}
+                                  >
+                                    N{inter.nivel}
+                                  </Badge>
+                                  <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-mono font-bold text-xl text-purple-700">
+                                    {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className="font-mono font-bold text-xl text-purple-700">
-                                  {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
-                                </span>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                <span className="text-xs text-purple-600 mr-1">Usado em:</span>
+                                {inter.produtosFilhos.slice(0, 5).map((filho, fIdx) => (
+                                  <Badge key={fIdx} variant="outline" className="text-xs bg-white/50 text-purple-700 border-purple-300">
+                                    {filho}
+                                  </Badge>
+                                ))}
+                                {inter.produtosFilhos.length > 5 && (
+                                  <Badge variant="outline" className="text-xs bg-purple-200 text-purple-700">
+                                    +{inter.produtosFilhos.length - 5}
+                                  </Badge>
+                                )}
                               </div>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              <span className="text-xs text-purple-600 mr-1">Usado em:</span>
-                              {inter.produtosFilhos.slice(0, 5).map((filho, fIdx) => (
-                                <Badge key={fIdx} variant="outline" className="text-xs bg-white/50 text-purple-700 border-purple-300">
-                                  {filho}
-                                </Badge>
-                              ))}
-                              {inter.produtosFilhos.length > 5 && (
-                                <Badge variant="outline" className="text-xs bg-purple-200 text-purple-700">
-                                  +{inter.produtosFilhos.length - 5}
-                                </Badge>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-4">
+                              {/* Ficha Técnica - Ingredientes */}
+                              {inter.ingredientes && inter.ingredientes.length > 0 && (
+                                <div className="bg-white rounded-lg border border-purple-200 p-4">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                    <ClipboardList className="w-4 h-4 text-purple-600" />
+                                    Ficha Técnica - Ingredientes
+                                  </h4>
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
+                                        <th className="px-3 py-2 text-right text-gray-600">Proporção</th>
+                                        <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
+                                        <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {inter.ingredientes.map((ing, iIdx) => (
+                                        <tr key={ing.componenteId} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                          <td className="px-3 py-2">
+                                            <span className="font-medium text-gray-800">{ing.nomeComponente}</span>
+                                            {ing.editavel && (
+                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                                                Editável
+                                              </Badge>
+                                            )}
+                                          </td>
+                                          <td className="px-3 py-2 text-right font-mono text-gray-500">
+                                            {(ing.quantidadeBase * 100).toFixed(1)}%
+                                          </td>
+                                          <td className="px-3 py-2 text-right">
+                                            <span className="font-mono font-semibold text-purple-700">
+                                              {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-2 text-center">
+                                            <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                    <tfoot className="bg-purple-50 border-t border-purple-200">
+                                      <tr>
+                                        <td colSpan={2} className="px-3 py-2 text-right font-semibold text-purple-800">
+                                          Total de Ingredientes:
+                                        </td>
+                                        <td className="px-3 py-2 text-right">
+                                          <span className="font-mono font-bold text-purple-700">
+                                            {formatarNumero(
+                                              inter.ingredientes.reduce((sum, ing) => sum + (ing.unidade === 'kg' ? ing.quantidadeArredondada : 0), 0),
+                                              'kg'
+                                            )}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-center">
+                                          <Badge variant="secondary" className="text-xs bg-purple-100">kg</Badge>
+                                        </td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
                               )}
-                            </div>
+                              
+                              {/* Mensagem se não houver ingredientes */}
+                              {(!inter.ingredientes || inter.ingredientes.length === 0) && (
+                                <div className="bg-white rounded-lg border border-purple-200 p-4 text-center text-gray-500 text-sm">
+                                  Ficha técnica não disponível para este intermediário
+                                </div>
+                              )}
+
+                              {/* Modo de Preparo */}
+                              {inter.modoPreparo && inter.modoPreparo.length > 0 && (
+                                <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-blue-600" />
+                                    Modo de Preparo
+                                  </h4>
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-blue-100">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-blue-700 w-12">#</th>
+                                        <th className="px-3 py-2 text-left text-blue-700">Descrição</th>
+                                        <th className="px-3 py-2 text-right text-blue-700 w-32">Tempo (min)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {inter.modoPreparo.map((passo, pIdx) => (
+                                        <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
+                                          <td className="px-3 py-2 font-mono text-blue-600">{passo.ordem}</td>
+                                          <td className="px-3 py-2 text-gray-800">{passo.descricao}</td>
+                                          <td className="px-3 py-2 text-right font-mono text-blue-700">{passo.tempoMinutos}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                    <tfoot className="bg-blue-100 border-t border-blue-200">
+                                      <tr>
+                                        <td colSpan={2} className="px-3 py-2 text-right font-semibold text-blue-800">
+                                          Tempo Total:
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-mono font-bold text-blue-700">
+                                          {inter.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
+                                        </td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+
+                          {/* Separador - Produtos desta Massa Base */}
+                          <div className="bg-orange-100 border border-orange-300 rounded-lg px-4 py-2 flex items-center gap-2 ml-4">
+                            <Boxes className="w-4 h-4 text-orange-600" />
+                            <span className="font-semibold text-orange-800">Produtos que usam {inter.nomeProduto}</span>
+                            <Badge className="bg-orange-600 ml-auto">{produtos.length} produto(s)</Badge>
                           </div>
-                          
-                          {/* Ficha Técnica - Ingredientes */}
-                          {inter.ingredientes && inter.ingredientes.length > 0 && (
-                            <div className="p-4 bg-white">
-                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <ClipboardList className="w-4 h-4 text-purple-600" />
-                                Ficha Técnica - Ingredientes
-                              </h4>
-                              <table className="w-full text-sm">
-                                <thead className="bg-gray-50">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
-                                    <th className="px-3 py-2 text-right text-gray-600">Proporção</th>
-                                    <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
-                                    <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {inter.ingredientes.map((ing, iIdx) => (
-                                    <tr key={ing.componenteId} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                      <td className="px-3 py-2">
-                                        <span className="font-medium text-gray-800">{ing.nomeComponente}</span>
-                                        {ing.editavel && (
-                                          <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                                            Editável
-                                          </Badge>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-mono text-gray-500">
-                                        {(ing.quantidadeBase * 100).toFixed(1)}%
-                                      </td>
-                                      <td className="px-3 py-2 text-right">
-                                        <span className="font-mono font-semibold text-purple-700">
-                                          {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2 text-center">
-                                        <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                                <tfoot className="bg-purple-50 border-t border-purple-200">
-                                  <tr>
-                                    <td colSpan={2} className="px-3 py-2 text-right font-semibold text-purple-800">
-                                      Total de Ingredientes:
-                                    </td>
-                                    <td className="px-3 py-2 text-right">
-                                      <span className="font-mono font-bold text-purple-700">
-                                        {formatarNumero(
-                                          inter.ingredientes.reduce((sum, ing) => sum + (ing.unidade === 'kg' ? ing.quantidadeArredondada : 0), 0),
-                                          'kg'
-                                        )}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-2 text-center">
-                                      <Badge variant="secondary" className="text-xs bg-purple-100">kg</Badge>
-                                    </td>
-                                  </tr>
-                                </tfoot>
-                              </table>
-                            </div>
-                          )}
-                          
-                          {/* Mensagem se não houver ingredientes */}
-                          {(!inter.ingredientes || inter.ingredientes.length === 0) && (
-                            <div className="p-4 bg-white text-center text-gray-500 text-sm">
-                              Ficha técnica não disponível para este intermediário
-                            </div>
-                          )}
 
-                          {/* Modo de Preparo */}
-                          {inter.modoPreparo && inter.modoPreparo.length > 0 && (
-                            <div className="p-4 bg-blue-50 border-t border-purple-200">
-                              <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-blue-600" />
-                                Modo de Preparo
-                              </h4>
-                              <table className="w-full text-sm">
-                                <thead className="bg-blue-100">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-blue-700 w-12">#</th>
-                                    <th className="px-3 py-2 text-left text-blue-700">Descrição</th>
-                                    <th className="px-3 py-2 text-right text-blue-700 w-32">Tempo (min)</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {inter.modoPreparo.map((passo, pIdx) => (
-                                    <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
-                                      <td className="px-3 py-2 font-mono text-blue-600">{passo.ordem}</td>
-                                      <td className="px-3 py-2 text-gray-800">{passo.descricao}</td>
-                                      <td className="px-3 py-2 text-right font-mono text-blue-700">{passo.tempoMinutos}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                                <tfoot className="bg-blue-100 border-t border-blue-200">
-                                  <tr>
-                                    <td colSpan={2} className="px-3 py-2 text-right font-semibold text-blue-800">
-                                      Tempo Total:
-                                    </td>
-                                    <td className="px-3 py-2 text-right font-mono font-bold text-blue-700">
-                                      {inter.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
-                                    </td>
-                                  </tr>
-                                </tfoot>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Produtos Finais */}
-                {processamentoData?.resultados?.filter(r => !r.erro).map((item, idx) => (
-                  <Card key={idx} className="border-orange-200">
+                          {/* Produtos deste intermediário */}
+                          {produtos.map((item, idx) => (
+                            <Card key={`${groupIdx}-${idx}`} className="border-orange-200 ml-4">
                     <CardHeader className="bg-orange-50 border-b border-orange-200 py-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
@@ -1004,7 +1026,190 @@ export default function ProcessamentoPCP() {
                       )}
                     </CardContent>
                   </Card>
-                ))}
+                          ))}
+                        </div>
+                      ))}
+
+                      {/* Produtos sem intermediário */}
+                      {produtosSemIntermediario.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2">
+                            <Boxes className="w-4 h-4 text-gray-600" />
+                            <span className="font-semibold text-gray-800">Produtos sem Massa Base</span>
+                            <Badge className="bg-gray-600 ml-auto">{produtosSemIntermediario.length} produto(s)</Badge>
+                          </div>
+                          {produtosSemIntermediario.map((item, idx) => (
+                            <Card key={`sem-inter-${idx}`} className="border-orange-200 ml-4">
+                              <CardHeader className="bg-orange-50 border-b border-orange-200 py-3">
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-base flex items-center gap-2">
+                                    <Boxes className="w-4 h-4 text-orange-600" />
+                                    {item.codigoProduto} - {item.nomeProduto}
+                                  </CardTitle>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">{item.unidade}</Badge>
+                                    <Badge className="bg-orange-600">
+                                      {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="p-4">
+                                {/* Motor v3.0 - Passo 1: Conversão Assado → Cru */}
+                                {item.passo1 && (
+                                  <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                    <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                                      <Scale className="w-4 h-4" />
+                                      Passo 1: Conversão Assado → Cru
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div className="bg-white p-3 rounded border border-purple-100">
+                                        <p className="text-xs text-gray-500 uppercase">Valor Mapa</p>
+                                        <p className="text-xl font-bold text-purple-700">{item.passo1.valorMapa.toFixed(3)} kg</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-purple-100">
+                                        <p className="text-xs text-gray-500 uppercase">Massa Crua Teórica</p>
+                                        <p className="text-xl font-bold text-purple-700">{item.passo1.massaCruaTeorica.toFixed(3)} kg</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-purple-100">
+                                        <p className="text-xs text-gray-500 uppercase">Unidades Inteiras</p>
+                                        <p className="text-xl font-bold text-blue-700">{item.passo1.qtdInteira}</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-purple-100">
+                                        <p className="text-xs text-gray-500 uppercase">Massa Total Final</p>
+                                        <p className="text-xl font-bold text-green-700">{item.passo1.massaTotalFinal.toFixed(3)} kg</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Motor v3.0 - Passo 3: Blocos e Pedaços */}
+                                {item.passo3 && (
+                                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                                      <Factory className="w-4 h-4" />
+                                      Passo 3: Blocos e Pedaços (Divisora: {item.passo3.divisora} un/bloco)
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div className="bg-white p-3 rounded border border-blue-100">
+                                        <p className="text-xs text-gray-500 uppercase">Unidades Totais</p>
+                                        <p className="text-xl font-bold text-blue-700">{item.passo3.qtdInteira}</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-blue-100">
+                                        <p className="text-xs text-gray-500 uppercase">Blocos</p>
+                                        <p className="text-xl font-bold text-green-700">{item.passo3.blocos}</p>
+                                        <p className="text-xs text-gray-500">{item.passo3.pesoBloco.toFixed(3)} kg cada</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-blue-100">
+                                        <p className="text-xs text-gray-500 uppercase">Pedaços (Manual)</p>
+                                        <p className="text-xl font-bold text-amber-700">{item.passo3.pedacos} un</p>
+                                        <p className="text-xs text-gray-500">{item.passo3.pesoPedaco.toFixed(3)} kg</p>
+                                      </div>
+                                      <div className="bg-white p-3 rounded border border-blue-100">
+                                        <p className="text-xs text-gray-500 uppercase">Peso Unitário Real</p>
+                                        <p className="text-xl font-bold text-gray-800">{item.passo3.pesoUnitarioReal.toFixed(5)} kg</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Instruções visuais */}
+                                    <div className="mt-4 grid grid-cols-2 gap-4">
+                                      {item.passo3.blocos > 0 && (
+                                        <div className="bg-green-100 p-3 rounded border border-green-300">
+                                          <h5 className="font-semibold text-green-800 text-sm mb-1">
+                                            🔄 DIVISORA ({item.passo3.blocos} blocos)
+                                          </h5>
+                                          <p className="text-sm text-green-700">
+                                            {item.passo3.instrucaoBlocos}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {item.passo3.pedacos > 0 && (
+                                        <div className="bg-amber-100 p-3 rounded border border-amber-300">
+                                          <h5 className="font-semibold text-amber-800 text-sm mb-1">
+                                            ✋ MANUAL ({item.passo3.pedacos} un)
+                                          </h5>
+                                          <p className="text-sm text-amber-700">
+                                            {item.passo3.instrucaoPedaco}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Lista de Insumos do Produto */}
+                                <div>
+                                  <h4 className="font-semibold text-gray-700 mb-2">Insumos</h4>
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left">Ingrediente</th>
+                                        <th className="px-3 py-2 text-right">Quantidade</th>
+                                        <th className="px-3 py-2 text-center">Unid.</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {item.insumos.map((insumo, iIdx) => (
+                                        <tr key={iIdx} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                          <td className="px-3 py-2">
+                                            {insumo.nomeComponente}
+                                            {insumo.editavel && (
+                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700">
+                                                Editável
+                                              </Badge>
+                                            )}
+                                          </td>
+                                          <td className="px-3 py-2 text-right font-mono">
+                                            {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
+                                          </td>
+                                          <td className="px-3 py-2 text-center">
+                                            <Badge variant="secondary" className="text-xs">{insumo.unidade}</Badge>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                {/* Modo de Preparo */}
+                                {item.modoPreparo && item.modoPreparo.length > 0 && (
+                                  <div className="mt-4">
+                                    <h4 className="font-semibold text-gray-700 mb-2">Modo de Preparo</h4>
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-blue-50">
+                                        <tr>
+                                          <th className="px-3 py-2 text-center w-12">#</th>
+                                          <th className="px-3 py-2 text-left">Descrição</th>
+                                          <th className="px-3 py-2 text-right w-24">Tempo</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {item.modoPreparo.map((passo, pIdx) => (
+                                          <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="px-3 py-2 text-center text-muted-foreground">{passo.ordem}</td>
+                                            <td className="px-3 py-2">{passo.descricao}</td>
+                                            <td className="px-3 py-2 text-right font-mono">{passo.tempoMinutos} min</td>
+                                          </tr>
+                                        ))}
+                                        <tr className="bg-blue-50 font-medium">
+                                          <td className="px-3 py-2"></td>
+                                          <td className="px-3 py-2 text-right">Tempo Total:</td>
+                                          <td className="px-3 py-2 text-right font-mono text-blue-700">
+                                            {item.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Produtos com erro */}
                 {processamentoData?.resultados?.filter(r => r.erro).map((item, idx) => (

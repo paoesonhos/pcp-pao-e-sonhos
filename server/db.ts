@@ -364,7 +364,7 @@ export async function getBlocoByProduto(produtoId: number) {
   if (!db) throw new Error("Database not available");
 
   const result = await db.select().from(blocos).where(eq(blocos.produtoId, produtoId)).limit(1);
-  return result[0];
+  return result[0] ?? null;
 }
 
 export async function createBloco(data: InsertBloco) {
