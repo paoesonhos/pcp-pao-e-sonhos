@@ -633,3 +633,6 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Alterar rótulo 'Peso Unitário' para 'Peso Unitário Massa Crua' (apenas na página Criar Novo Produto)
 - [x] Corrigir exportação PDF da Ficha de Produção - massas base não aparecem
 - [x] Campo de pesquisa na página Adicionar Componente da Ficha Técnica
+- [x] Ordenação por intermediários na Ficha de Pré-Pesagem (tela)
+- [x] Ordenação por intermediários no PDF da Ficha de Pré-Pesagem
+- [x] Ordenação por intermediários no PDF da Ficha de Produção

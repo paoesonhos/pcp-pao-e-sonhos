@@ -533,11 +533,88 @@ export default function ProcessamentoPCP() {
                     <div className="text-center text-gray-500 py-8">
                       Nenhum insumo para processar neste dia
                     </div>
-                  ) : (
-                    processamentoData.resultados
-                      .filter(r => !r.erro && r.insumos.length > 0)
-                      .map((item, prodIdx) => (
-                        <div key={prodIdx} className="border border-orange-200 rounded-lg overflow-hidden">
+                  ) : (() => {
+                    // Agrupar produtos por intermediário (mesma lógica da Ficha de Produção)
+                    const resultadosSemErro = processamentoData.resultados.filter(r => !r.erro && r.insumos.length > 0);
+                    const intermediarios = processamentoData?.intermediarios || [];
+                    
+                    const produtosPorIntermediario: { inter: typeof intermediarios[0]; produtos: typeof resultadosSemErro }[] = [];
+                    const produtosUsados = new Set<string>();
+                    
+                    for (const inter of intermediarios) {
+                      const produtosDoInter = resultadosSemErro.filter(r => 
+                        inter.produtosFilhos.some(filho => {
+                          const nomeNormalizado = r.nomeProduto.toLowerCase().trim();
+                          const filhoNormalizado = filho.toLowerCase().trim();
+                          return nomeNormalizado === filhoNormalizado;
+                        })
+                      );
+                      if (produtosDoInter.length > 0) {
+                        produtosPorIntermediario.push({ inter, produtos: produtosDoInter });
+                        produtosDoInter.forEach(p => produtosUsados.add(p.codigoProduto));
+                      }
+                    }
+                    
+                    const produtosSemIntermediario = resultadosSemErro.filter(r => !produtosUsados.has(r.codigoProduto));
+                    
+                    return (
+                      <>
+                        {/* Produtos agrupados por intermediário */}
+                        {produtosPorIntermediario.map(({ inter, produtos }, groupIdx) => (
+                          <div key={`group-pre-${groupIdx}`} className="space-y-4 mb-6">
+                            {/* Card da Massa Base */}
+                            <Card className="border-purple-300 bg-purple-50">
+                              <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="bg-purple-200 text-purple-800 border-purple-400">
+                                      Massa Base
+                                    </Badge>
+                                    <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
+                                  </div>
+                                  <span className="font-mono font-bold text-xl text-purple-700">
+                                    {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
+                                  </span>
+                                </div>
+                              </CardHeader>
+                              {inter.ingredientes && inter.ingredientes.length > 0 && (
+                                <CardContent className="p-4">
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
+                                        <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
+                                        <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {inter.ingredientes.map((ing, iIdx) => (
+                                        <tr key={`ing-pre-${iIdx}`} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                          <td className="px-3 py-2 font-medium text-gray-800">{ing.nomeComponente}</td>
+                                          <td className="px-3 py-2 text-right font-mono text-purple-700">
+                                            {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
+                                          </td>
+                                          <td className="px-3 py-2 text-center">
+                                            <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </CardContent>
+                              )}
+                            </Card>
+
+                            {/* Separador - Produtos desta Massa Base */}
+                            <div className="bg-orange-100 border border-orange-300 rounded-lg px-4 py-2 flex items-center gap-2 ml-4">
+                              <Boxes className="w-4 h-4 text-orange-600" />
+                              <span className="font-semibold text-orange-800">Produtos que usam {inter.nomeProduto}</span>
+                              <Badge className="bg-orange-600 ml-auto">{produtos.length} produto(s)</Badge>
+                            </div>
+
+                            {/* Produtos deste intermediário */}
+                            {produtos.map((item, prodIdx) => (
+                              <div key={`prod-pre-${groupIdx}-${prodIdx}`} className="border border-orange-200 rounded-lg overflow-hidden ml-4">
                           {/* Cabeçalho do Produto */}
                           <div className="bg-amber-100 px-4 py-3 border-b border-orange-200">
                             <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -611,9 +688,82 @@ export default function ProcessamentoPCP() {
                               })}
                             </tbody>
                           </table>
-                        </div>
-                      ))
-                  )}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+
+                        {/* Produtos sem intermediário */}
+                        {produtosSemIntermediario.length > 0 && (
+                          <div className="space-y-4 mt-6">
+                            <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2">
+                              <Boxes className="w-4 h-4 text-gray-600" />
+                              <span className="font-semibold text-gray-800">Produtos Individuais (sem massa base)</span>
+                              <Badge className="bg-gray-600 ml-auto">{produtosSemIntermediario.length} produto(s)</Badge>
+                            </div>
+                            {produtosSemIntermediario.map((item, prodIdx) => (
+                              <div key={`sem-inter-pre-${prodIdx}`} className="border border-orange-200 rounded-lg overflow-hidden ml-4">
+                                <div className="bg-amber-100 px-4 py-3 border-b border-orange-200">
+                                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                    <Boxes className="w-4 h-4 text-orange-600" />
+                                    {item.codigoProduto} – {item.nomeProduto}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">
+                                    Qtd Planejada: {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
+                                  </p>
+                                </div>
+                                <table className="w-full">
+                                  <thead className="bg-amber-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 w-12">✓</th>
+                                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
+                                      <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Qtd Calculada</th>
+                                      <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Unid.</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {item.insumos.map((insumo, idx) => {
+                                      const checkKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
+                                      const fermentoKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
+                                      const isChecked = checksPesagem[checkKey] || false;
+                                      const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeAjustada;
+                                      return (
+                                        <tr key={insumo.componenteId} className={`border-b border-gray-100 ${isChecked ? 'bg-green-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                          <td className="px-4 py-2">
+                                            <Checkbox checked={isChecked} onCheckedChange={() => toggleCheck(checkKey)} />
+                                          </td>
+                                          <td className="px-4 py-2">
+                                            <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                              {insumo.nomeComponente}
+                                            </span>
+                                            {insumo.editavel && (
+                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">Editável</Badge>
+                                            )}
+                                          </td>
+                                          <td className="px-4 py-2 text-right">
+                                            {insumo.editavel ? (
+                                              <Input type="number" step="0.005" value={valorFermento} onChange={(e) => atualizarFermento(fermentoKey, parseFloat(e.target.value) || 0)} className="w-24 text-right ml-auto h-8" />
+                                            ) : (
+                                              <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
+                                                {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="px-4 py-2 text-center">
+                                            <Badge variant="secondary" className="bg-gray-100">{insumo.unidade}</Badge>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   </CardContent>
                 </Card>
 

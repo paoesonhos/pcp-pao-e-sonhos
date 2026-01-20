@@ -269,7 +269,7 @@ export async function exportarFichaPrePesagemPDF(
     yPosition += 10;
   }
 
-  // Seção de Produtos
+  // Seção de Produtos - Agrupados por Intermediário
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(234, 88, 12); // Cor laranja
@@ -277,48 +277,106 @@ export async function exportarFichaPrePesagemPDF(
   doc.setTextColor(0);
   yPosition += 10;
 
-  produtos.forEach((produto) => {
+  // Agrupar produtos por intermediário
+  const produtosAgrupados: { inter: IntermediarioItem | null; produtos: ProdutoPrePesagem[] }[] = [];
+  const produtosJaAgrupados = new Set<string>();
+
+  // Para cada intermediário, encontrar os produtos que o usam
+  if (intermediarios && intermediarios.length > 0) {
+    intermediarios.forEach((inter) => {
+      const produtosDoInter = produtos.filter(p => 
+        inter.produtosFilhos.some(filho => 
+          p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
+        ) && !produtosJaAgrupados.has(p.codigoProduto)
+      );
+      
+      produtosDoInter.forEach(p => produtosJaAgrupados.add(p.codigoProduto));
+      
+      if (produtosDoInter.length > 0) {
+        produtosAgrupados.push({ inter, produtos: produtosDoInter });
+      }
+    });
+  }
+
+  // Produtos sem intermediário
+  const produtosSemInter = produtos.filter(p => !produtosJaAgrupados.has(p.codigoProduto));
+  if (produtosSemInter.length > 0) {
+    produtosAgrupados.push({ inter: null, produtos: produtosSemInter });
+  }
+
+  // Renderizar grupos
+  produtosAgrupados.forEach((grupo) => {
     // Verificar se precisa de nova página
-    if (yPosition > 240) {
+    if (yPosition > 220) {
       doc.addPage();
       yPosition = 20;
     }
 
-    // Cabeçalho do produto
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 14, yPosition);
-    yPosition += 5;
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Qtd Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`, 14, yPosition);
-    yPosition += 6;
-
-    // Tabela de insumos
-    if (produto.insumos && produto.insumos.length > 0) {
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
-        body: produto.insumos.map(insumo => [
-          '☐',
-          insumo.nomeComponente,
-          insumo.quantidadeArredondada.toFixed(3),
-          insumo.unidade
-        ]),
-        theme: 'grid',
-        headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 10 },
-          1: { cellWidth: 80 },
-          2: { cellWidth: 30, halign: 'right' },
-          3: { cellWidth: 20, halign: 'center' }
-        },
-        margin: { left: 14, right: 14 }
-      });
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
+    // Cabeçalho do grupo (intermediário ou "Produtos Individuais")
+    if (grupo.inter) {
+      doc.setFillColor(147, 51, 234); // Roxo
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos que usam ${grupo.inter.nomeProduto} (${grupo.produtos.length} produto(s))`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
+    } else {
+      doc.setFillColor(100, 100, 100); // Cinza
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos Individuais (sem massa base) - ${grupo.produtos.length} produto(s)`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
     }
+
+    // Renderizar produtos do grupo
+    grupo.produtos.forEach((produto) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Cabeçalho do produto
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 14, yPosition);
+      yPosition += 5;
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Qtd Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`, 14, yPosition);
+      yPosition += 6;
+
+      // Tabela de insumos
+      if (produto.insumos && produto.insumos.length > 0) {
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+          body: produto.insumos.map(insumo => [
+            '☐',
+            insumo.nomeComponente,
+            insumo.quantidadeArredondada.toFixed(3),
+            insumo.unidade
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 20, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      }
+    });
   });
 
   // Rodapé
@@ -454,52 +512,194 @@ export async function exportarFichaProducaoPDF(
     yPosition = (doc as any).lastAutoTable.finalY + 15;
   }
 
-  // Detalhes por produto
+  // Detalhes por produto - Agrupados por Intermediário
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Detalhes por Produto', 14, yPosition);
   yPosition += 8;
 
-  produtos.filter(p => p.passo3).forEach((produto) => {
+  // Agrupar produtos por intermediário
+  const produtosComPasso3 = produtos.filter(p => p.passo3);
+  const produtosAgrupadosProducao: { inter: IntermediarioProducao | null; produtos: ProdutoProducao[] }[] = [];
+  const produtosJaAgrupadosProducao = new Set<string>();
+
+  // Para cada intermediário, encontrar os produtos que o usam
+  if (intermediarios && intermediarios.length > 0) {
+    intermediarios.forEach((inter) => {
+      const produtosDoInter = produtosComPasso3.filter(p => 
+        inter.produtosFilhos.some(filho => 
+          p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
+        ) && !produtosJaAgrupadosProducao.has(p.codigoProduto)
+      );
+      
+      produtosDoInter.forEach(p => produtosJaAgrupadosProducao.add(p.codigoProduto));
+      
+      if (produtosDoInter.length > 0) {
+        produtosAgrupadosProducao.push({ inter, produtos: produtosDoInter });
+      }
+    });
+  }
+
+  // Produtos sem intermediário
+  const produtosSemInterProducao = produtosComPasso3.filter(p => !produtosJaAgrupadosProducao.has(p.codigoProduto));
+  if (produtosSemInterProducao.length > 0) {
+    produtosAgrupadosProducao.push({ inter: null, produtos: produtosSemInterProducao });
+  }
+
+  // Renderizar grupos
+  produtosAgrupadosProducao.forEach((grupo) => {
     // Verificar se precisa de nova página
-    if (yPosition > 240) {
+    if (yPosition > 200) {
       doc.addPage();
       yPosition = 20;
     }
 
-    const p3 = produto.passo3!;
-    const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
-    
-    // Cabeçalho do produto
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(240, 253, 244); // Verde claro
-    doc.rect(14, yPosition - 4, 182, 8, 'F');
-    doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 16, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    
-    // Informações da divisora (Motor v3.0)
-    const info = [
-      `Quantidade Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
-      `Unidades a Produzir: ${p3.qtdInteira} (Divisora: ${p3.divisora} un/bloco)`,
-      p3.blocos > 0 ? `${p3.instrucaoBlocos}` : null,
-      p3.pedacos > 0 ? `${p3.instrucaoPedaco}` : null,
-      `Massa Total: ${massaTotal.toFixed(3)} kg`
-    ].filter(Boolean);
+    // Renderizar a massa base primeiro (se houver)
+    if (grupo.inter) {
+      // Cabeçalho da massa base
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(255, 247, 237); // Laranja claro
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.text(`${grupo.inter.nomeProduto} - ${grupo.inter.quantidadeArredondada.toFixed(3)} ${grupo.inter.unidade}`, 16, yPosition);
+      yPosition += 8;
 
-    info.forEach(linha => {
-      doc.text(linha as string, 16, yPosition);
+      // Tabela de Ingredientes da massa base
+      if (grupo.inter.ingredientes && grupo.inter.ingredientes.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ingredientes:', 16, yPosition);
+        yPosition += 5;
+
+        const totalIngredientes = grupo.inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          body: [
+            ...grupo.inter.ingredientes.map(ing => [
+              ing.nomeComponente,
+              ing.quantidadeArredondada.toFixed(3),
+              ing.unidade
+            ]),
+            ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            if (data.row.index === grupo.inter!.ingredientes.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Modo de Preparo da massa base
+      if (grupo.inter.modoPreparo && grupo.inter.modoPreparo.length > 0) {
+        const tempoTotal = grupo.inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...grupo.inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 130 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            if (data.row.index === grupo.inter!.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Separador: Produtos que usam esta massa
+      doc.setFillColor(147, 51, 234); // Roxo
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos que usam ${grupo.inter.nomeProduto} (${grupo.produtos.length} produto(s))`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
+    } else {
+      // Separador: Produtos Individuais
+      doc.setFillColor(100, 100, 100); // Cinza
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos Individuais (sem massa base) - ${grupo.produtos.length} produto(s)`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
+    }
+
+    // Renderizar produtos do grupo
+    grupo.produtos.forEach((produto) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      const p3 = produto.passo3!;
+      const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
+      
+      // Cabeçalho do produto
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(240, 253, 244); // Verde claro
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 16, yPosition);
+      yPosition += 8;
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      
+      // Informações da divisora (Motor v3.0)
+      const info = [
+        `Quantidade Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
+        `Unidades a Produzir: ${p3.qtdInteira} (Divisora: ${p3.divisora} un/bloco)`,
+        p3.blocos > 0 ? `${p3.instrucaoBlocos}` : null,
+        p3.pedacos > 0 ? `${p3.instrucaoPedaco}` : null,
+        `Massa Total: ${massaTotal.toFixed(3)} kg`
+      ].filter(Boolean);
+      info.forEach(linha => {
+        doc.text(linha as string, 16, yPosition);
+        yPosition += 5;
+      });
+      
       yPosition += 5;
     });
-    
-    yPosition += 5;
   });
 
-  // Seção de Massas Base com Modo de Preparo
-  if (intermediarios && intermediarios.length > 0) {
+  // Seção de Massas Base com Modo de Preparo (REMOVIDA - agora está integrada acima)
+  // Mantida apenas para compatibilidade caso não haja grupos
+  if (intermediarios && intermediarios.length > 0 && produtosAgrupadosProducao.length === 0) {
     // Verificar se precisa de nova página
     if (yPosition > 200) {
       doc.addPage();
