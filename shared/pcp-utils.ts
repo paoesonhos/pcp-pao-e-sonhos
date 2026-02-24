@@ -44,10 +44,13 @@ export function calcularPesoPedaco(unidadesRestantes: number, pesoUnitario: numb
 
 /**
  * Converte quantidade em kg para unidades
+ * Aplica epsilon para corrigir erros de ponto flutuante
+ * Ex: 1.650 / 0.55000 = 2.9999999... → 3 (com epsilon)
  */
 export function kgParaUnidades(quantidadeKg: number, pesoUnitario: number): number {
   if (pesoUnitario <= 0) return 0;
-  return arredondarUnidades(quantidadeKg / pesoUnitario);
+  const epsilon = 1e-9; // Tolerância para erro de ponto flutuante
+  return Math.floor((quantidadeKg / pesoUnitario) + epsilon);
 }
 
 /**
@@ -99,9 +102,13 @@ export function explodirInsumos(
   fichaTecnica: ItemFichaTecnica[],
   nomeFermento: string = 'FERMENTO'
 ): InsumoExplodido[] {
+  // Calcula rendimento da ficha técnica (soma de todos os componentes)
+  const rendimentoFicha = fichaTecnica.reduce((soma, comp) => soma + comp.quantidadeBase, 0);
+  
   return fichaTecnica.map(item => {
-    // Calcula quantidade: Qtd_Planejada × Proporção
-    const quantidadeCalculada = qtdPlanejada * item.quantidadeBase;
+    // Calcula quantidade: (Qtd_Planejada / Rendimento_Ficha) × Quantidade_Base
+    // Aplicando explosão proporcional conforme Motor de Cálculo v3.0
+    const quantidadeCalculada = rendimentoFicha > 0 ? (qtdPlanejada / rendimentoFicha) * item.quantidadeBase : 0;
     
     // Aplica arredondamento conforme unidade
     let quantidadeArredondada: number;
