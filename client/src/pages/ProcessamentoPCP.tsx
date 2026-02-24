@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
+import { useMapasSalvos } from "@/hooks/useMapasSalvos";
 import { 
   ArrowLeft, 
   Calculator, 
@@ -140,6 +141,7 @@ const DIAS_SEMANA: Record<number, string> = {
 
 export default function ProcessamentoPCP() {
   const [, navigate] = useLocation();
+  const { obterNomeMapaAtual } = useMapasSalvos();
   const [diaSelecionado, setDiaSelecionado] = useState<number>(2);
   const [fermentoEditado, setFermentoEditado] = useState<Record<string, number>>({});
   const [checksPesagem, setChecksPesagem] = useState<Record<string, boolean>>({});
@@ -285,10 +287,17 @@ export default function ProcessamentoPCP() {
                 Voltar
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-orange-600" />
-                  Processamento PCP
-                </h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <Calculator className="w-5 h-5 text-orange-600" />
+                    Processamento PCP
+                  </h1>
+                  {obterNomeMapaAtual() !== "Sem mapa" && (
+                    <Badge className="bg-blue-500 text-white text-sm py-1 px-3">
+                      📌 {obterNomeMapaAtual()}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-gray-500">
                   Mapa salvo com {mapaData.mapa.length} produto(s)
                 </p>

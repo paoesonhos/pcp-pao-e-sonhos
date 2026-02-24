@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { useMapasSalvos } from "@/hooks/useMapasSalvos";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Edit2 } from "lucide-react";
+import { ModalNomeacaoMapa } from "@/components/ModalNomeacaoMapa";
 
 interface ItemMapa {
   id: number;
@@ -94,6 +101,14 @@ export default function MapaProducao() {
   
   // Query para lista de produtos cadastrados (para adicionar ao mapa)
   const { data: produtosCadastrados } = trpc.produtos.list.useQuery({ ativo: true });
+  
+  // Hook para gerenciar mapas salvos
+  const { mapas, mapaAtualId, isLoaded, salvarMapa, carregarMapa, atualizarNomeMapa, deletarMapa, obterNomeMapaAtual } = useMapasSalvos();
+  
+  // Estado para modal de nomeação de mapa
+  const [showModalNomear, setShowModalNomear] = useState(false);
+  const [nomeNovoMapa, setNomeNovoMapa] = useState("");
+  const [editandoMapaId, setEditandoMapaId] = useState<string | null>(null);
   
   // Estado para adicionar produto
   const [showAdicionarProduto, setShowAdicionarProduto] = useState(false);
@@ -419,7 +434,69 @@ export default function MapaProducao() {
     }
   };
 
-  // Salvar como Mapa Base
+  // Salvar mapa com nome em localStorage
+  const handleSalvarMapaComNome = () => {
+    if (mapa.length === 0) {
+      alert("Não há itens para salvar como Mapa Base.");
+      return;
+    }
+    setNomeNovoMapa("");
+    setEditandoMapaId(null);
+    setShowModalNomear(true);
+  };
+
+  // Confirmar salvamento de mapa com nome
+  const handleConfirmarSalvarMapa = () => {
+    if (!nomeNovoMapa.trim()) {
+      alert("Por favor, digite um nome para o mapa.");
+      return;
+    }
+
+    if (editandoMapaId) {
+      // Renomear mapa existente
+      atualizarNomeMapa(editandoMapaId, nomeNovoMapa);
+      alert(`Mapa renomeado para "${nomeNovoMapa}"!`);
+    } else {
+      // Salvar novo mapa
+      salvarMapa(nomeNovoMapa, mapa);
+      alert(`Mapa "${nomeNovoMapa}" salvo com sucesso!`);
+    }
+    
+    setShowModalNomear(false);
+    setNomeNovoMapa("");
+    setEditandoMapaId(null);
+  };
+
+  // Carregar mapa salvo
+  const handleCarregarMapaSalvo = (id: string) => {
+    const mapaCarregado = carregarMapa(id);
+    if (mapaCarregado) {
+      setMapa(mapaCarregado.data);
+      setImportacao(null);
+      setAlterado(false);
+    }
+  };
+
+  // Deletar mapa salvo
+  const handleDeletarMapa = (id: string) => {
+    const mapaParaDeletar = mapas.find(m => m.id === id);
+    if (mapaParaDeletar && window.confirm(`Deseja deletar o mapa "${mapaParaDeletar.nome}"?`)) {
+      deletarMapa(id);
+      alert(`Mapa "${mapaParaDeletar.nome}" deletado!`);
+    }
+  };
+
+  // Renomear mapa
+  const handleRenomearMapa = (id: string) => {
+    const mapaParaRenomear = mapas.find(m => m.id === id);
+    if (mapaParaRenomear) {
+      setEditandoMapaId(id);
+      setNomeNovoMapa(mapaParaRenomear.nome);
+      setShowModalNomear(true);
+    }
+  };
+
+  // Salvar como Mapa Base (banco de dados)
   const handleSalvarMapaBase = async () => {
     if (mapa.length === 0) {
       alert("Não há itens para salvar como Mapa Base.");
@@ -519,7 +596,14 @@ export default function MapaProducao() {
           <a href="/" style={{ color: '#666', textDecoration: 'none', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
             ← Voltar ao Início
           </a>
-          <h1 style={{ marginBottom: 10 }}>Mapa de Produção</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <h1 style={{ margin: 0 }}>Mapa de Produção</h1>
+            {mapaAtualId && (
+              <Badge className="bg-blue-500 text-white text-sm py-1 px-3">
+                📌 {obterNomeMapaAtual()}
+              </Badge>
+            )}
+          </div>
           {importacao ? (
             <p style={{ color: "#666", margin: 0 }}>
               Importação #{importacao.id} - Data Ref: {importacao.dataReferencia}
@@ -543,7 +627,55 @@ export default function MapaProducao() {
             </p>
           )}
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Dropdown de Mapas Salvos */}
+          {isLoaded && mapas.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleCarregarMapaSalvo(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                style={{
+                  padding: "10px 12px",
+                  fontSize: 14,
+                  background: "#f0f0f0",
+                  border: "1px solid #ddd",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  minWidth: 200,
+                }}
+              >
+                <option value="">📂 Carregar Mapa Salvo...</option>
+                {mapas.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome} ({new Date(m.updatedAt).toLocaleDateString('pt-BR')})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          {/* Botão Salvar Mapa com Nome */}
+          {mapa.length > 0 && (
+            <button
+              onClick={handleSalvarMapaComNome}
+              style={{
+                padding: "10px 16px",
+                fontSize: 14,
+                background: "#9b59b6",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              💾 Salvar Mapa
+            </button>
+          )}
+          
           {/* Botão Carregar Mapa Base */}
           {hasMapaBase && (
             <button
@@ -1233,6 +1365,15 @@ export default function MapaProducao() {
           </div>
         </div>
       )}
+      
+      <ModalNomeacaoMapa
+        open={showModalNomear}
+        onOpenChange={setShowModalNomear}
+        editandoMapaId={editandoMapaId}
+        nomeNovoMapa={nomeNovoMapa}
+        setNomeNovoMapa={setNomeNovoMapa}
+        onConfirmar={handleConfirmarSalvarMapa}
+      />
     </div>
   );
 }
