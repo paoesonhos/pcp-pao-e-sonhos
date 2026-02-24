@@ -160,7 +160,9 @@ export function processarDivisora(
   const quantidadeUnidades = kgParaUnidades(qtdPlanejadaKg, pesoUnitario);
   
   // Calcula blocos inteiros
-  const blocosInteiros = Math.floor(quantidadeUnidades / unidadesPorBloco);
+  // Aplica epsilon para corrigir erros de ponto flutuante
+  const epsilon = 1e-9;
+  const blocosInteiros = Math.floor((quantidadeUnidades / unidadesPorBloco) + epsilon);
   
   // Peso de cada bloco
   const pesoBloco = arredondarPesagem(unidadesPorBloco * pesoUnitario);

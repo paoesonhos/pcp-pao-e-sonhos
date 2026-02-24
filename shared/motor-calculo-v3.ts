@@ -127,7 +127,9 @@ export function passo1ConversaoAssadoCru(
   const massaCruaTeorica = valorMapa * (1 + percentualPerdaLiquida);
   
   // 1.2 Ajuste para Unidades Inteiras (Regra Anti-Sobra)
-  const qtdInteira = Math.floor(massaCruaTeorica / pesoUnitarioCru);
+  // Aplica epsilon para corrigir erros de ponto flutuante
+  const epsilon = 1e-9;
+  const qtdInteira = Math.floor((massaCruaTeorica / pesoUnitarioCru) + epsilon);
   
   // 1.3 Massa Total Final (a ser processada)
   const massaTotalFinal = qtdInteira * pesoUnitarioCru;
@@ -232,7 +234,9 @@ export function passo3BlocosPedacos(
   const { divisora, pesoBloco } = dadosBlocos;
   
   // Quantidade de blocos inteiros
-  const blocos = Math.floor(qtdInteira / divisora);
+  // Aplica epsilon para corrigir erros de ponto flutuante
+  const epsilon = 1e-9;
+  const blocos = Math.floor((qtdInteira / divisora) + epsilon);
   
   // Quantidade de pedaços (resto)
   const pedacos = qtdInteira % divisora;
