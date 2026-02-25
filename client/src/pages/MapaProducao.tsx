@@ -658,6 +658,25 @@ export default function MapaProducao() {
             </div>
           )}
           
+          {/* Botão Deletar Mapa Salvo */}
+          {isLoaded && mapaAtualId && (
+            <button
+              onClick={() => handleDeletarMapa(mapaAtualId)}
+              style={{
+                padding: "10px 12px",
+                fontSize: 14,
+                background: "#e74c3c",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+              title="Deletar mapa selecionado"
+            >
+              🗑 Deletar
+            </button>
+          )}
+          
           {/* Botão Salvar Mapa com Nome */}
           {mapa.length > 0 && (
             <button
