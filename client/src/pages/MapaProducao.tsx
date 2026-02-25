@@ -525,6 +525,20 @@ export default function MapaProducao() {
 
       await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
       alert("Mapa Base salvo com sucesso!");
+      
+      // Carregar automaticamente o Mapa Base após salvar
+      setTimeout(async () => {
+        try {
+          const result = await refetchMapaBase();
+          if (result.data?.success && result.data.mapa.length > 0) {
+            setMapa(result.data.mapa);
+            setImportacao(null);
+            setAlterado(false);
+          }
+        } catch (err: any) {
+          console.error("Erro ao carregar Mapa Base automaticamente:", err);
+        }
+      }, 500);
     } catch (err: any) {
       alert("Erro ao salvar Mapa Base: " + err.message);
     } finally {
@@ -695,8 +709,8 @@ export default function MapaProducao() {
             </button>
           )}
           
-          {/* Botão Carregar Mapa Base */}
-          {hasMapaBase && (
+          {/* Botão Carregar Mapa Base - OCULTO */}
+          {false && hasMapaBase && (
             <button
               onClick={handleCarregarMapaBase}
               disabled={salvando}
