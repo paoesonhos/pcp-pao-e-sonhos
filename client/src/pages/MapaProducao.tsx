@@ -618,28 +618,7 @@ export default function MapaProducao() {
               </Badge>
             )}
           </div>
-          {importacao ? (
-            <p style={{ color: "#666", margin: 0 }}>
-              Importação #{importacao.id} - Data Ref: {importacao.dataReferencia}
-              {importacao.createdAt && (
-                <span style={{ marginLeft: 10, color: "#27ae60" }}>
-                  📅 Importado em: {new Date(importacao.createdAt).toLocaleString('pt-BR', { 
-                    day: '2-digit', 
-                    month: '2-digit', 
-                    year: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              )}
-              {alterado && <span style={{ color: "#e67e22", marginLeft: 10 }}>● Alterações não salvas</span>}
-            </p>
-          ) : mapa.length > 0 && (
-            <p style={{ color: "#3498db", margin: 0 }}>
-              📂 Mapa Base carregado
-              {alterado && <span style={{ color: "#e67e22", marginLeft: 10 }}>● Alterações não salvas</span>}
-            </p>
-          )}
+          {/* Mensagens removidas */}
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {/* Dropdown de Mapas Salvos */}
