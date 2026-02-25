@@ -677,7 +677,7 @@ export default function MapaProducao() {
             </button>
           )}
           
-          {/* Botão Salvar Mapa com Nome */}
+          {/* Botão Salvar Modelo */}
           {mapa.length > 0 && (
             <button
               onClick={handleSalvarMapaComNome}
@@ -691,7 +691,7 @@ export default function MapaProducao() {
                 cursor: "pointer",
               }}
             >
-              💾 Salvar Mapa
+              💾 Salvar Modelo
             </button>
           )}
           
