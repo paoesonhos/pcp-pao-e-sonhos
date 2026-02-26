@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Categorias from "./pages/Categorias";
 import ImportaV5 from "./pages/ImportaV5";
+import ImportaV6 from "./pages/ImportaV6";
 import Insumos from "./pages/Insumos";
 import Produtos from "./pages/Produtos";
 import FichaTecnica from "./pages/FichaTecnica";
@@ -29,7 +30,8 @@ function Router() {
       <Route path={"/produtos"} component={Produtos} />
       <Route path={"/fichas-tecnicas"} component={FichasTecnicas} />
       <Route path={"/fichas-tecnicas/:id"} component={FichaTecnica} />
-      <Route path={"/importa-v5"} component={ImportaV5} />
+      <Route path={"/importa-v5"} component={ImportaV6} />
+      <Route path={"/importa-v6"} component={ImportaV6} />
       <Route path={"/mapa-producao"} component={MapaProducao} />
       <Route path={"/processamento-pcp"} component={ProcessamentoPCP} />
       <Route path={"/destinos"} component={Destinos} />
