@@ -453,6 +453,17 @@ export default function MapaProducao() {
       return;
     }
 
+    // Verificar se é modelo do localStorage (sem importacaoId)
+    if (!importacao?.id) {
+      alert(
+        "Este é um modelo temporário (localStorage).\n\n" +
+        "Para salvar permanentemente no banco de dados, clique em:\n" +
+        "📁 Salvar como Mapa Base\n\n" +
+        "Enquanto isso, suas alterações serão mantidas no navegador."
+      );
+      return;
+    }
+
     setSalvando(true);
     try {
       // 1. Validar cadastro dos produtos
