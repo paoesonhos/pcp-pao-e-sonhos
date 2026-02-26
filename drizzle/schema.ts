@@ -1,5 +1,6 @@
 import { mysqlTable, int, varchar, text, timestamp, boolean, index, unique, decimal, mysqlEnum } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
+import { json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -410,3 +411,21 @@ export const mapaRascunhoRelations = relations(mapaRascunho, ({ one }) => ({
     references: [importacoesV5.id],
   }),
 }));
+
+
+/**
+ * Mapas de Produção Salvos (compartilhados entre todos os usuários)
+ */
+export const mapasSalvos = mysqlTable("mapas_salvos", {
+  id: varchar("id", { length: 64 }).primaryKey(), // timestamp em string
+  nome: varchar("nome", { length: 200 }).notNull(),
+  dados: json("dados").notNull(), // Array de ItemMapa em JSON
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  nomeIdx: index("nome_idx").on(table.nome),
+  updatedAtIdx: index("updatedAt_idx").on(table.updatedAt),
+}));
+
+export type MapaSalvo = typeof mapasSalvos.$inferSelect;
+export type InsertMapaSalvo = typeof mapasSalvos.$inferInsert;

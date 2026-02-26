@@ -50,6 +50,13 @@
       "when": 1768428330250,
       "tag": "0006_tan_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1772128491923,
+      "tag": "0007_fancy_iron_fist",
+      "breakpoints": true
     }
   ]
 }

@@ -123,6 +123,53 @@ export default function MapaProducao() {
   
   // Mutation para cadastro em lote
   const cadastrarProdutoMutation = trpc.produtos.create.useMutation();
+  
+  // Função para exportar modelo
+  const handleExportarModelo = () => {
+    if (mapaAtualId && mapa.length > 0) {
+      const nomeModelo = obterNomeMapaAtual();
+      const dados = {
+        nome: nomeModelo,
+        data: mapa,
+        exportadoEm: new Date().toISOString(),
+      };
+      const json = JSON.stringify(dados, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `modelo_${nomeModelo.replace(/\s+/g, '_')}_${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+  
+  // Função para importar modelo
+  const handleImportarModelo = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const conteudo = e.target?.result as string;
+          const dados = JSON.parse(conteudo);
+          if (dados.data && Array.isArray(dados.data)) {
+            const nomeModelo = dados.nome || `Importado_${Date.now()}`;
+            salvarMapa(nomeModelo, dados.data);
+            setMapa(dados.data);
+            setAlterado(false);
+          } else {
+            alert('Formato de arquivo inválido');
+          }
+        } catch (erro) {
+          alert('Erro ao importar arquivo: ' + (erro instanceof Error ? erro.message : 'Desconhecido'));
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
 
   useEffect(() => {
     if (data?.success && data.mapa) {
@@ -751,6 +798,48 @@ export default function MapaProducao() {
               💾 Salvar Modelo
             </button>
           )}
+          
+          {/* Botão Exportar Modelo */}
+          {mapaAtualId && mapa.length > 0 && (
+            <button
+              onClick={handleExportarModelo}
+              style={{
+                padding: "10px 16px",
+                fontSize: 14,
+                background: "#F5E6D3",
+                color: "#333",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+              title="Exportar modelo como arquivo JSON"
+            >
+              📥 Exportar
+            </button>
+          )}
+          
+          {/* Botão Importar Modelo */}
+          <label
+            style={{
+              padding: "10px 16px",
+              fontSize: 14,
+              background: "#F5E6D3",
+              color: "#333",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              display: "inline-block",
+            }}
+            title="Importar modelo de arquivo JSON"
+          >
+            📤 Importar
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportarModelo}
+              style={{ display: "none" }}
+            />
+          </label>
           
           {/* Botão Carregar Mapa Base - OCULTO */}
           {false && hasMapaBase && (

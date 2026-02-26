@@ -1,0 +1,1 @@
+-- Migration vazia - placeholder para sincronizar com banco de dados
