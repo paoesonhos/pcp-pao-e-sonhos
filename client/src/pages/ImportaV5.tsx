@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { useMapasSalvos, ItemMapa } from "@/hooks/useMapasSalvos";
 
 interface DadoVenda {
   codigo_produto: string;
@@ -22,19 +23,26 @@ interface Resultado {
   erro?: string;
 }
 
+
+
 export default function ImportaV5() {
   const [data, setData] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [mostrarJson, setMostrarJson] = useState(false);
+  const [nomeImportacao, setNomeImportacao] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const mutation = trpc.importaV5.importar.useMutation();
+  const { salvarMapa } = useMapasSalvos();
 
   async function importar() {
     setErro("");
     setResultado(null);
+    setMensagemSucesso("");
 
     if (!data) {
       setErro("Informe a data de referência");
@@ -55,10 +63,84 @@ export default function ImportaV5() {
         csvContent: texto,
       });
       setResultado(res as Resultado);
+      setNomeImportacao(`Importação ${data}`);
     } catch (e: any) {
       setErro(e.message || "Erro ao importar");
     }
     setLoading(false);
+  }
+
+  // Transformar dados do CSV para formato ItemMapa (Opção A)
+  function transformarParaMapaItems(dados: DadoVenda[]): ItemMapa[] {
+    const items: ItemMapa[] = [];
+    const diasSemana = [
+      { numero: 2, dia: "Segunda" },
+      { numero: 3, dia: "Terça" },
+      { numero: 4, dia: "Quarta" },
+      { numero: 5, dia: "Quinta" },
+      { numero: 6, dia: "Sexta" },
+      { numero: 7, dia: "Sábado" },
+    ];
+
+    dados.forEach((linha) => {
+      diasSemana.forEach(({ numero, dia }) => {
+        const qtd = linha[`dia${numero}` as keyof DadoVenda] as number;
+
+        // Apenas criar linhas para dias com quantidade > 0
+        if (qtd > 0) {
+          const item: ItemMapa = {
+            id: Date.now() + Math.floor(Math.random() * 10000),
+            codigo: linha.codigo_produto,
+            nome: linha.nome_produto,
+            unidade: "kg", // Padrão conforme especificação
+            qtdImportada: qtd,
+            percentualAjuste: 0,
+            qtdPlanejada: qtd,
+            equipe: "Equipe 1",
+            diaProduzir: numero,
+            produtoId: null,
+            isReposicao: false,
+          };
+          items.push(item);
+        }
+      });
+    });
+
+    return items;
+  }
+
+  async function handleSalvarNoLocalStorage() {
+    if (!resultado?.dados || resultado.dados.length === 0) {
+      setErro("Nenhum dado para salvar");
+      return;
+    }
+
+    if (!nomeImportacao.trim()) {
+      setErro("Informe um nome para a importação");
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      const items = transformarParaMapaItems(resultado.dados);
+      salvarMapa(nomeImportacao, items);
+      setMensagemSucesso(`✓ Importação "${nomeImportacao}" salva com sucesso! ${items.length} itens adicionados.`);
+      setErro("");
+      
+      // Limpar formulário após sucesso
+      setTimeout(() => {
+        setData("");
+        setResultado(null);
+        setNomeImportacao("");
+        setMensagemSucesso("");
+        if (inputRef.current) {
+          inputRef.current.value = "";
+        }
+      }, 2000);
+    } catch (e: any) {
+      setErro(e.message || "Erro ao salvar no localStorage");
+    }
+    setSalvando(false);
   }
 
   // Calcular totais por dia
@@ -123,6 +205,12 @@ export default function ImportaV5() {
       {erro && (
         <div style={{ color: "red", marginTop: 15, padding: 10, background: "#fee" }}>
           {erro}
+        </div>
+      )}
+
+      {mensagemSucesso && (
+        <div style={{ color: "green", marginTop: 15, padding: 10, background: "#efe" }}>
+          {mensagemSucesso}
         </div>
       )}
 
@@ -191,6 +279,40 @@ export default function ImportaV5() {
                 </tr>
               </tfoot>
             </table>
+          </div>
+
+          {/* Seção de Salvamento no localStorage */}
+          <div style={{ marginTop: 20, padding: 15, backgroundColor: "#f5e6d3", borderRadius: 4 }}>
+            <h3 style={{ marginTop: 0 }}>Salvar Importação no localStorage</h3>
+            <div style={{ marginBottom: 10 }}>
+              <label>Nome da Importação: </label>
+              <input
+                type="text"
+                value={nomeImportacao}
+                onChange={(e) => setNomeImportacao(e.target.value)}
+                placeholder="Ex: Importação Semana 1"
+                style={{ padding: 8, marginLeft: 10, width: 300 }}
+              />
+            </div>
+            <button
+              onClick={handleSalvarNoLocalStorage}
+              disabled={salvando}
+              style={{
+                padding: "10px 30px",
+                fontSize: 14,
+                cursor: salvando ? "wait" : "pointer",
+                backgroundColor: "#27ae60",
+                border: "none",
+                borderRadius: 4,
+                color: "#fff",
+              }}
+            >
+              {salvando ? "Salvando..." : "Salvar no localStorage"}
+            </button>
+            <p style={{ fontSize: 12, color: "#666", marginTop: 10 }}>
+              Os dados serão transformados e salvos no formato de Mapa de Produção.
+              Você poderá carregar esta importação na página "Mapa de Produção".
+            </p>
           </div>
 
           {/* JSON (oculto por padrão) */}
