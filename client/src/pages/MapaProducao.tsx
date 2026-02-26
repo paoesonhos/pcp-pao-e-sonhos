@@ -115,6 +115,12 @@ export default function MapaProducao() {
   const [produtoSelecionado, setProdutoSelecionado] = useState<string>("");
   const [diaAdicionarProduto, setDiaAdicionarProduto] = useState<number>(2);
   
+  // Estado para modal de confirmacao de ruptura
+  const [showModalRuptura, setShowModalRuptura] = useState(false);
+  const [itensRupturaParaConfirmar, setItensRupturaParaConfirmar] = useState<any[]>([]);
+  const [itensRupturaConfirmados, setItensRupturaConfirmados] = useState<Set<string>>(new Set());
+  const [rupturaEmProcessamento, setRupturaEmProcessamento] = useState(false);
+  
   // Mutation para cadastro em lote
   const cadastrarProdutoMutation = trpc.produtos.create.useMutation();
 
@@ -262,35 +268,24 @@ export default function MapaProducao() {
       const { data: rupturaData } = await validarRuptura();
       
       if (rupturaData?.produtosEmRuptura && rupturaData.produtosEmRuptura.length > 0) {
-        // Atualizar lista de produtos em ruptura
         setProdutosEmRuptura(rupturaData.produtosEmRuptura.map((p: any) => p.codigoProduto));
         
-        // Se houve itens adicionados, atualizar o mapa
         if (rupturaData.itensAdicionados && rupturaData.itensAdicionados.length > 0) {
-          // Recarregar o mapa para incluir os novos itens de reposição
-          const novoRascunho = await utils.mapaProducao.carregarRascunho.fetch();
-          if (novoRascunho?.mapa) {
-            setMapa(novoRascunho.mapa);
-          }
-          
-          const nomesAdicionados = rupturaData.itensAdicionados.map((i: any) => i.nomeProduto).join('\n- ');
-          alert(
-            `Alterações salvas com sucesso!\n\n` +
-            `⚠️ ALERTA DE RUPTURA:\n` +
-            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do mínimo.\n\n` +
-            `Itens adicionados automaticamente para segunda-feira:\n- ${nomesAdicionados}`
-          );
+          setItensRupturaParaConfirmar(rupturaData.itensAdicionados);
+          setItensRupturaConfirmados(new Set());
+          setShowModalRuptura(true);
+          setSalvando(false);
         } else {
           alert(
-            `Alterações salvas com sucesso!\n\n` +
+            `Alteracoes salvas com sucesso!\n\n` +
             `⚠️ ALERTA DE RUPTURA:\n` +
-            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do mínimo.\n` +
-            `(Já existem itens de reposição no mapa)`
+            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do minimo.\n` +
+            `(Ja existem itens de reposicao no mapa)`
           );
         }
       } else {
         setProdutosEmRuptura([]);
-        alert("Alterações salvas com sucesso!");
+        alert("Alteracoes salvas com sucesso!");
       }
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
@@ -546,6 +541,75 @@ export default function MapaProducao() {
     }
   };
 
+  // Alternar checkbox de item de ruptura
+  const handleToggleItemRuptura = (itemId: string) => {
+    setItensRupturaConfirmados(prev => {
+      const novo = new Set(prev);
+      if (novo.has(itemId)) {
+        novo.delete(itemId);
+      } else {
+        novo.add(itemId);
+      }
+      return novo;
+    });
+  };
+
+  // Confirmar e adicionar itens de ruptura selecionados
+  const handleConfirmarItensRuptura = async () => {
+    setRupturaEmProcessamento(true);
+    try {
+      // Filtrar apenas os itens confirmados
+      const itensSelecionados = itensRupturaParaConfirmar.filter(
+        (item: any) => itensRupturaConfirmados.has(item.id || item.codigoProduto)
+      );
+
+      // Se houver itens selecionados, adicionar ao mapa
+      if (itensSelecionados.length > 0) {
+        // Preparar itens para adicionar ao mapa
+        const novosItens = itensSelecionados.map((item: any) => ({
+          id: Math.random(),
+          codigo: item.codigoProduto,
+          nome: item.nomeProduto,
+          unidade: item.unidade || 'kg',
+          qtdImportada: 0,
+          percentualAjuste: 0,
+          qtdPlanejada: item.quantidade || 0,
+          equipe: 'Reposição',
+          diaProduzir: 2, // Segunda-feira
+          produtoId: item.produtoId,
+          isReposicao: true,
+        }));
+
+        // Adicionar ao mapa
+        setMapa(prev => [...prev, ...novosItens]);
+        setAlterado(true);
+      }
+
+      // Fechar modal
+      setShowModalRuptura(false);
+      setItensRupturaParaConfirmar([]);
+      setItensRupturaConfirmados(new Set());
+
+      const nomesAdicionados = itensSelecionados.map((i: any) => i.nomeProduto).join('\n- ');
+      alert(
+        `Alterações salvas com sucesso!\n\n` +
+        `${itensSelecionados.length} item(ns) de reposição adicionado(s):\n- ${nomesAdicionados}`
+      );
+    } catch (err: any) {
+      alert('Erro ao adicionar itens de ruptura: ' + err.message);
+    } finally {
+      setRupturaEmProcessamento(false);
+    }
+  };
+
+  // Cancelar confirmação de ruptura
+  const handleCancelarRuptura = () => {
+    setShowModalRuptura(false);
+    setItensRupturaParaConfirmar([]);
+    setItensRupturaConfirmados(new Set());
+    alert('Nenhum item de reposição foi adicionado.');
+  };
+
   // Carregar Mapa Base
   const handleCarregarMapaBase = async () => {
     if (alterado) {
@@ -658,8 +722,8 @@ export default function MapaProducao() {
               style={{
                 padding: "10px 12px",
                 fontSize: 14,
-                background: "#e74c3c",
-                color: "white",
+                background: "#F5E6D3",
+                color: "#333",
                 border: "none",
                 borderRadius: 6,
                 cursor: "pointer",
@@ -677,8 +741,8 @@ export default function MapaProducao() {
               style={{
                 padding: "10px 16px",
                 fontSize: 14,
-                background: "#9b59b6",
-                color: "white",
+                background: "#F5E6D3",
+                color: "#333",
                 border: "none",
                 borderRadius: 6,
                 cursor: "pointer",
@@ -712,14 +776,14 @@ export default function MapaProducao() {
             style={{
               padding: "10px 16px",
               fontSize: 14,
-              background: "#27ae60",
-              color: "white",
+              background: "#F5E6D3",
+              color: "#333",
               border: "none",
               borderRadius: 6,
               cursor: "pointer",
             }}
           >
-            ➕ Adicionar Produto
+            ➡ Adicionar Produto
           </button>
           {/* Botão Salvar Alterações */}
           {mapa.length > 0 && (
@@ -729,8 +793,8 @@ export default function MapaProducao() {
               style={{
                 padding: "10px 16px",
                 fontSize: 14,
-                background: alterado ? "#e67e22" : "#bdc3c7",
-                color: "white",
+                background: "#F5E6D3",
+                color: "#333",
                 border: "none",
                 borderRadius: 6,
                 cursor: salvando ? "not-allowed" : "pointer",
@@ -747,8 +811,8 @@ export default function MapaProducao() {
               style={{
                 padding: "10px 16px",
                 fontSize: 14,
-                background: "#9b59b6",
-                color: "white",
+                background: "#F5E6D3",
+                color: "#333",
                 border: "none",
                 borderRadius: 6,
                 cursor: salvando ? "not-allowed" : "pointer",
@@ -766,8 +830,8 @@ export default function MapaProducao() {
                 padding: "12px 24px",
                 fontSize: 16,
                 fontWeight: "bold",
-                background: processando ? "#999" : "#27ae60",
-                color: "white",
+                background: processando ? "#999" : "#F5E6D3",
+                color: "#333",
                 border: "none",
                 borderRadius: 8,
                 cursor: processando ? "not-allowed" : "pointer",
@@ -1386,6 +1450,110 @@ export default function MapaProducao() {
         setNomeNovoMapa={setNomeNovoMapa}
         onConfirmar={handleConfirmarSalvarMapa}
       />
+      
+      {/* Modal de Confirmacao de Ruptura */}
+      {showModalRuptura && itensRupturaParaConfirmar.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            padding: 24,
+            borderRadius: 8,
+            maxWidth: 600,
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}>
+            <h3 style={{ marginTop: 0, color: '#e74c3c' }}>Itens de Reposicao Sugeridos</h3>
+            <p style={{ color: '#666', marginBottom: 20 }}>
+              Selecione os itens que deseja adicionar ao mapa:
+            </p>
+            
+            <div style={{ marginBottom: 20, maxHeight: '300px', overflowY: 'auto' }}>
+              {itensRupturaParaConfirmar.map((item: any, index: number) => {
+                const itemId = item.id || item.codigoProduto || index.toString();
+                const isChecked = itensRupturaConfirmados.has(itemId);
+                
+                return (
+                  <div key={itemId} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 12,
+                    marginBottom: 8,
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: 6,
+                    border: '1px solid #eee',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggleItemRuptura(itemId)}
+                      style={{ marginRight: 12, cursor: 'pointer', width: 18, height: 18 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold', color: '#333' }}>
+                        {item.nomeProduto} ({item.codigoProduto})
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        Quantidade: {item.quantidade} {item.unidade || 'kg'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              gap: 10,
+              justifyContent: 'flex-end',
+              paddingTop: 15,
+              borderTop: '1px solid #eee',
+            }}>
+              <button
+                onClick={handleCancelarRuptura}
+                disabled={rupturaEmProcessamento}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#bdc3c7',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarItensRuptura}
+                disabled={rupturaEmProcessamento || itensRupturaConfirmados.size === 0}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: itensRupturaConfirmados.size > 0 ? '#27ae60' : '#bdc3c7',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: itensRupturaConfirmados.size > 0 ? 'pointer' : 'not-allowed',
+                  fontWeight: 500,
+                }}
+              >
+                {rupturaEmProcessamento ? 'Processando...' : `Confirmar (${itensRupturaConfirmados.size})`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
