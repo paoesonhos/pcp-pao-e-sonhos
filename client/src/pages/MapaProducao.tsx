@@ -686,7 +686,7 @@ export default function MapaProducao() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {/* Dropdown de Mapas Salvos */}
-          {isLoaded && mapas.length > 0 && (
+          {mapas.length > 0 && (
             <div style={{ position: "relative" }}>
               <select
                 onChange={(e) => {
