@@ -381,6 +381,65 @@ export default function MapaProducao() {
   };
 
   // Salvar alterações (rascunho) - com validação de cadastro
+  // Aplicar regra de shelf life: consolidar quantidades em intervalos
+  const applyShelfLife = (mapaItems: any[]) => {
+    // Agrupar itens por produto
+    const produtoMap = new Map<string, any[]>();
+    
+    mapaItems.forEach(item => {
+      const key = item.codigo;
+      if (!produtoMap.has(key)) {
+        produtoMap.set(key, []);
+      }
+      produtoMap.get(key)!.push({ ...item });
+    });
+
+    // Aplicar shelf life para cada produto
+    const mapaModificado = [...mapaItems];
+    
+    produtoMap.forEach((items, codigoProduto) => {
+      const shelfLife = items[0].shelfLife || 0;
+      
+      if (shelfLife > 0) {
+        // Agrupar dias em intervalos de shelf life
+        const diasUnicos = Array.from(new Set(items.map(i => i.diaProduzir))).sort((a, b) => a - b);
+        
+        // Processar cada intervalo
+        for (let i = 0; i < diasUnicos.length; i += shelfLife) {
+          const intervaloDias = diasUnicos.slice(i, i + shelfLife);
+          
+          // Somar quantidades do intervalo
+          let somaQuantidade = 0;
+          intervaloDias.forEach(dia => {
+            const item = items.find(it => it.diaProduzir === dia);
+            if (item) {
+              somaQuantidade += parseFloat(item.qtdPlanejada) || 0;
+            }
+          });
+          
+          // Atualizar: colocar soma no primeiro dia, zerar os demais
+          intervaloDias.forEach((dia, index) => {
+            const itemIndex = mapaModificado.findIndex(
+              it => it.codigo === codigoProduto && it.diaProduzir === dia
+            );
+            
+            if (itemIndex !== -1) {
+              if (index === 0) {
+                // Primeiro dia do intervalo: recebe a soma
+                mapaModificado[itemIndex].qtdPlanejada = somaQuantidade;
+              } else {
+                // Demais dias: zerados
+                mapaModificado[itemIndex].qtdPlanejada = 0;
+              }
+            }
+          });
+        }
+      }
+    });
+    
+    return mapaModificado;
+  };
+
   // Salvar mapa (banco de dados)
   const handleSalvarMapa = async () => {
     if (mapa.length === 0) {
@@ -402,8 +461,11 @@ export default function MapaProducao() {
         return;
       }
       
+      // Aplicar regra de shelf life
+      const mapaComShelfLife = applyShelfLife(mapa);
+      
       // Salvar em mapa_base
-      const itensParaSalvar = mapa.map(item => ({
+      const itensParaSalvar = mapaComShelfLife.map(item => ({
         produtoId: item.produtoId || 0,
         codigoProduto: item.codigo,
         nomeProduto: item.nome,
@@ -413,6 +475,9 @@ export default function MapaProducao() {
         diaProduzir: item.diaProduzir,
         equipe: item.equipe,
       }));
+      
+      // Atualizar estado do mapa com shelf life aplicado
+      setMapa(mapaComShelfLife);
 
       await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
       
