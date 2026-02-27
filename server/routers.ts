@@ -618,26 +618,28 @@ export const appRouter = router({
       const { importacoesV5, vendasV5 } = await import("../drizzle/schema");
       const { desc, eq } = await import("drizzle-orm");
 
-      // PRIMEIRO: Verificar se existe rascunho salvo
-      const rascunhoExistente = await db.getMapaRascunho();
-      if (rascunhoExistente && rascunhoExistente.length > 0) {
-        // Retornar dados do rascunho em vez de gerar novamente
+      // PRIMEIRO: Verificar se existe Mapa Base salvo (fonte unica de verdade)
+      const mapaBaseSalvo = await db.getMapaBase();
+      if (mapaBaseSalvo && mapaBaseSalvo.length > 0) {
         return {
           success: true,
           importacao: null,
-          mapa: rascunhoExistente.map((item, idx) => ({
-            id: idx + 1,
-            codigo: item.codigoProduto,
-            nome: item.nomeProduto,
-            unidade: item.unidade,
-            qtdImportada: parseFloat(item.qtdImportada),
-            percentualAjuste: item.percentualAjuste,
-            qtdPlanejada: parseFloat(item.qtdPlanejada),
-            equipe: item.equipe || "Equipe 1",
-            diaProduzir: item.diaProduzir,
-            produtoId: item.produtoId || 0,
-            isReposicao: item.isReposicao,
-          })),
+          mapa: mapaBaseSalvo.map((item, idx) => {
+            const qtdImportada = parseFloat(item.quantidade);
+            const qtdPlanejada = qtdImportada * (1 + item.percentualAjuste / 100);
+            return {
+              id: idx + 1,
+              codigo: item.codigoProduto,
+              nome: item.nomeProduto,
+              unidade: item.unidade,
+              qtdImportada: qtdImportada,
+              percentualAjuste: item.percentualAjuste,
+              qtdPlanejada: qtdPlanejada,
+              equipe: item.equipe || "Equipe 1",
+              diaProduzir: item.diaProduzir,
+              produtoId: item.produtoId || 0,
+            };
+          }),
         };
       }
 
