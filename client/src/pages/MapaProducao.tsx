@@ -381,7 +381,8 @@ export default function MapaProducao() {
   };
 
   // Salvar alterações (rascunho) - com validação de cadastro
-  const handleSalvarAlteracoes = async () => {
+  // Salvar mapa (banco de dados)
+  const handleSalvarMapa = async () => {
     if (mapa.length === 0) {
       alert("Não há itens para salvar.");
       return;
@@ -401,7 +402,7 @@ export default function MapaProducao() {
         return;
       }
       
-      // Salvar em mapa_base (em vez de rascunho)
+      // Salvar em mapa_base
       const itensParaSalvar = mapa.map(item => ({
         produtoId: item.produtoId || 0,
         codigoProduto: item.codigo,
@@ -419,7 +420,7 @@ export default function MapaProducao() {
       await utils.mapaProducao.hasMapaBase.invalidate();
       await utils.mapaProducao.gerarMapa.invalidate();
       
-      alert("Alterações salvas com sucesso!");
+      alert("Mapa salvo com sucesso!");
       setAlterado(false);
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
@@ -490,40 +491,7 @@ export default function MapaProducao() {
     }
   };
 
-  // Salvar como Mapa Base (banco de dados)
-  const handleSalvarMapaBase = async () => {
-    if (mapa.length === 0) {
-      alert("Não há itens para salvar como Mapa Base.");
-      return;
-    }
 
-    setSalvando(true);
-    try {
-      const itensParaSalvar = mapa.map(item => ({
-        produtoId: item.produtoId || 0,
-        codigoProduto: item.codigo,
-        nomeProduto: item.nome,
-        unidade: item.unidade,
-        quantidade: item.qtdPlanejada.toString(),
-        percentualAjuste: item.percentualAjuste,
-        diaProduzir: item.diaProduzir,
-        equipe: item.equipe,
-      }));
-
-      await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
-      
-      // Invalidar cache
-      await utils.mapaProducao.hasMapaBase.invalidate();
-      await utils.mapaProducao.gerarMapa.invalidate();
-      
-      alert("Mapa Base salvo com sucesso!");
-      setAlterado(false);
-    } catch (err: any) {
-      alert("Erro ao salvar Mapa Base: " + err.message);
-    } finally {
-      setSalvando(false);
-    }
-  };
 
   // Alternar checkbox de item de ruptura
   const handleToggleItemRuptura = (itemId: string) => {
@@ -762,10 +730,10 @@ export default function MapaProducao() {
           >
             ➡ Adicionar Produto
           </button>
-          {/* Botão Salvar Alterações */}
+          {/* Botão Salvar Mapa */}
           {mapa.length > 0 && (
             <button
-              onClick={handleSalvarAlteracoes}
+              onClick={handleSalvarMapa}
               disabled={salvando}
               style={{
                 padding: "10px 16px",
@@ -777,25 +745,7 @@ export default function MapaProducao() {
                 cursor: salvando ? "not-allowed" : "pointer",
               }}
             >
-              {salvando ? "Salvando..." : "💾 Salvar Alterações"}
-            </button>
-          )}
-          {/* Botão Salvar como Mapa Base */}
-          {mapa.length > 0 && (
-            <button
-              onClick={handleSalvarMapaBase}
-              disabled={salvando}
-              style={{
-                padding: "10px 16px",
-                fontSize: 14,
-                background: "#F5E6D3",
-                color: "#333",
-                border: "none",
-                borderRadius: 6,
-                cursor: salvando ? "not-allowed" : "pointer",
-              }}
-            >
-              📁 Salvar como Mapa Base
+              {salvando ? "Salvando..." : "💾 Salvar Mapa"}
             </button>
           )}
           {/* Botão Processar PCP */}
