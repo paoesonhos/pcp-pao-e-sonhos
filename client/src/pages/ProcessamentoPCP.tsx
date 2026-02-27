@@ -146,8 +146,8 @@ export default function ProcessamentoPCP() {
   const [fermentoEditado, setFermentoEditado] = useState<Record<string, number>>({});
   const [checksPesagem, setChecksPesagem] = useState<Record<string, boolean>>({});
 
-  // Buscar mapa do rascunho salvo (obrigatório salvar antes de processar)
-  const { data: mapaData, isLoading: loadingMapa } = trpc.mapaProducao.carregarRascunho.useQuery();
+  // Buscar mapa do mapa_base salvo
+  const { data: mapaData, isLoading: loadingMapa } = trpc.mapaProducao.carregarMapaBase.useQuery();
 
   // Filtrar itens do dia selecionado
   const itensDoDia = useMemo(() => {

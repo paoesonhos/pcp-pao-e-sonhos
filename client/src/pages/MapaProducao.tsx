@@ -60,12 +60,9 @@ export default function MapaProducao() {
   const [, setLocation] = useLocation();
 
   // Mutations para salvar
-  const salvarRascunhoMutation = trpc.mapaProducao.salvarRascunho.useMutation();
   const salvarMapaBaseMutation = trpc.mapaProducao.salvarMapaBase.useMutation();
   const validarCadastroMutation = trpc.mapaProducao.validarCadastroProdutos.useMutation();
   const { data: hasMapaBase } = trpc.mapaProducao.hasMapaBase.useQuery();
-  const { data: mapaBaseData, refetch: refetchMapaBase } = trpc.mapaProducao.carregarMapaBase.useQuery(undefined, { enabled: false });
-  const { refetch: validarRuptura } = trpc.mapaProducao.validarRupturaEstoque.useQuery(undefined, { enabled: false });
   
   // Estado para produtos em ruptura
   const [produtosEmRuptura, setProdutosEmRuptura] = useState<string[]>([]);
@@ -174,7 +171,6 @@ export default function MapaProducao() {
   useEffect(() => {
     if (data?.success && data.mapa) {
       setMapa(data.mapa);
-      setImportacao(data.importacao);
     } else if (data?.erro) {
       setErro(data.erro);
     }
@@ -281,65 +277,7 @@ export default function MapaProducao() {
 
   const gruposPorDia = agruparPorDia();
 
-  // Função para continuar salvamento após validação de cadastro
-  const continuarSalvamento = async () => {
-    try {
-      // Preparar itens para salvar
-      const itensParaSalvar = mapa.map(item => ({
-        produtoId: item.produtoId || 0,
-        codigoProduto: item.codigo,
-        nomeProduto: item.nome,
-        unidade: item.unidade,
-        qtdImportada: item.qtdImportada.toString(),
-        percentualAjuste: item.percentualAjuste,
-        qtdPlanejada: item.qtdPlanejada.toString(),
-        diaProduzir: item.diaProduzir,
-        equipe: item.equipe,
-        isReposicao: item.isReposicao || false,
-      }));
 
-      await salvarRascunhoMutation.mutateAsync({
-        importacaoId: importacao?.id || null,
-        itens: itensParaSalvar,
-      });
-
-      // Recarregar o mapa para obter os dados otimizados por shelf life
-      const novoRascunhoOtimizado = await utils.mapaProducao.carregarRascunho.fetch();
-      if (novoRascunhoOtimizado?.mapa) {
-        setMapa(novoRascunhoOtimizado.mapa);
-      }
-
-      setAlterado(false);
-      
-      // Executar validação de ruptura após salvar
-      const { data: rupturaData } = await validarRuptura();
-      
-      if (rupturaData?.produtosEmRuptura && rupturaData.produtosEmRuptura.length > 0) {
-        setProdutosEmRuptura(rupturaData.produtosEmRuptura.map((p: any) => p.codigoProduto));
-        
-        if (rupturaData.itensAdicionados && rupturaData.itensAdicionados.length > 0) {
-          setItensRupturaParaConfirmar(rupturaData.itensAdicionados);
-          setItensRupturaConfirmados(new Set());
-          setShowModalRuptura(true);
-          setSalvando(false);
-        } else {
-          alert(
-            `Alteracoes salvas com sucesso!\n\n` +
-            `⚠️ ALERTA DE RUPTURA:\n` +
-            `${rupturaData.produtosEmRuptura.length} produto(s) com estoque abaixo do minimo.\n` +
-            `(Ja existem itens de reposicao no mapa)`
-          );
-        }
-      } else {
-        setProdutosEmRuptura([]);
-        alert("Alteracoes salvas com sucesso!");
-      }
-    } catch (err: any) {
-      alert("Erro ao salvar: " + err.message);
-    } finally {
-      setSalvando(false);
-    }
-  };
 
   // Excluir produto do mapa
   const handleExcluirDoMapa = (nomeProduto: string) => {
@@ -401,10 +339,9 @@ export default function MapaProducao() {
       setProdutosParaCadastrar(prev => prev.filter(p => p.nome !== produto.nome));
       utils.produtos.list.invalidate();
       
-      // Se não há mais produtos para cadastrar, fechar modal e continuar
+      // Se não há mais produtos para cadastrar, fechar modal
       if (produtosNaoCadastrados.length === 1) {
         setShowModalCadastro(false);
-        await continuarSalvamento();
       }
     } catch (err: any) {
       alert('Erro ao cadastrar: ' + err.message);
@@ -436,9 +373,6 @@ export default function MapaProducao() {
       setProdutosParaCadastrar([]);
       setShowModalCadastro(false);
       utils.produtos.list.invalidate();
-      
-      // Continuar salvamento
-      await continuarSalvamento();
     } catch (err: any) {
       alert('Erro ao cadastrar em lote: ' + err.message);
     } finally {
@@ -453,25 +387,13 @@ export default function MapaProducao() {
       return;
     }
 
-    // Verificar se é modelo do localStorage (sem importacaoId)
-    if (!importacao?.id) {
-      alert(
-        "Este é um modelo temporário (localStorage).\n\n" +
-        "Para salvar permanentemente no banco de dados, clique em:\n" +
-        "📁 Salvar como Mapa Base\n\n" +
-        "Enquanto isso, suas alterações serão mantidas no navegador."
-      );
-      return;
-    }
-
     setSalvando(true);
     try {
-      // 1. Validar cadastro dos produtos
+      // Validar cadastro dos produtos
       const nomesProdutos = Array.from(new Set(mapa.map(item => item.nome)));
       const validacao = await validarCadastroMutation.mutateAsync({ nomesProdutos });
       
       if (validacao.totalNaoCadastrados > 0) {
-        // Mostrar modal com produtos não cadastrados
         setProdutosNaoCadastrados(validacao.produtosNaoCadastrados);
         setProximoCodigo(validacao.proximoCodigo);
         setShowModalCadastro(true);
@@ -479,10 +401,29 @@ export default function MapaProducao() {
         return;
       }
       
-      // 2. Se todos cadastrados, continuar salvamento
-      await continuarSalvamento();
+      // Salvar em mapa_base (em vez de rascunho)
+      const itensParaSalvar = mapa.map(item => ({
+        produtoId: item.produtoId || 0,
+        codigoProduto: item.codigo,
+        nomeProduto: item.nome,
+        unidade: item.unidade,
+        quantidade: item.qtdPlanejada.toString(),
+        percentualAjuste: item.percentualAjuste,
+        diaProduzir: item.diaProduzir,
+        equipe: item.equipe,
+      }));
+
+      await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
+      
+      // Invalidar cache
+      await utils.mapaProducao.hasMapaBase.invalidate();
+      await utils.mapaProducao.gerarMapa.invalidate();
+      
+      alert("Alterações salvas com sucesso!");
+      setAlterado(false);
     } catch (err: any) {
-      alert("Erro ao validar: " + err.message);
+      alert("Erro ao salvar: " + err.message);
+    } finally {
       setSalvando(false);
     }
   };
@@ -556,13 +497,6 @@ export default function MapaProducao() {
       return;
     }
 
-    const confirmar = window.confirm(
-      "Deseja salvar o mapa atual como Mapa Base?\n\n" +
-      "O Mapa Base anterior será substituído."
-    );
-
-    if (!confirmar) return;
-
     setSalvando(true);
     try {
       const itensParaSalvar = mapa.map(item => ({
@@ -577,21 +511,13 @@ export default function MapaProducao() {
       }));
 
       await salvarMapaBaseMutation.mutateAsync({ itens: itensParaSalvar });
-      alert("Mapa Base salvo com sucesso!");
       
-      // Carregar automaticamente o Mapa Base após salvar
-      setTimeout(async () => {
-        try {
-          const result = await refetchMapaBase();
-          if (result.data?.success && result.data.mapa.length > 0) {
-            setMapa(result.data.mapa);
-            setImportacao(null);
-            setAlterado(false);
-          }
-        } catch (err: any) {
-          console.error("Erro ao carregar Mapa Base automaticamente:", err);
-        }
-      }, 500);
+      // Invalidar cache
+      await utils.mapaProducao.hasMapaBase.invalidate();
+      await utils.mapaProducao.gerarMapa.invalidate();
+      
+      alert("Mapa Base salvo com sucesso!");
+      setAlterado(false);
     } catch (err: any) {
       alert("Erro ao salvar Mapa Base: " + err.message);
     } finally {
@@ -668,29 +594,6 @@ export default function MapaProducao() {
     alert('Nenhum item de reposição foi adicionado.');
   };
 
-  // Carregar Mapa Base
-  const handleCarregarMapaBase = async () => {
-    if (alterado) {
-      const confirmar = window.confirm(
-        "Existem alterações não salvas. Deseja descartá-las e carregar o Mapa Base?"
-      );
-      if (!confirmar) return;
-    }
-
-    try {
-      const result = await refetchMapaBase();
-      if (result.data?.success && result.data.mapa.length > 0) {
-        setMapa(result.data.mapa);
-        setImportacao(null);
-        setAlterado(false);
-        alert("Mapa Base carregado com sucesso!");
-      } else {
-        alert("Nenhum Mapa Base encontrado.");
-      }
-    } catch (err: any) {
-      alert("Erro ao carregar Mapa Base: " + err.message);
-    }
-  };
 
   // Processar PCP manualmente
   const handleProcessarPCP = async () => {
@@ -699,24 +602,15 @@ export default function MapaProducao() {
       return;
     }
     
-    const confirmar = window.confirm(
-      "Deseja processar o PCP com os dados atuais do mapa?\n\n" +
-      "Isso irá gerar as fichas de pré-pesagem e produção."
-    );
-    
-    if (!confirmar) return;
-    
-    setProcessando(true);
-    try {
-      // Redirecionar para a página de processamento
-      setLocation("/processamento-pcp");
-    } catch (err: any) {
-      alert("Erro ao processar: " + err.message);
-    } finally {
-      setProcessando(false);
+    // Verificar se existe Mapa Base salvo
+    if (!hasMapaBase) {
+      alert("Nenhum Mapa Salvo\n\nÉ necessário salvar o Mapa de Produção antes de processar o PCP.");
+      return;
     }
-  };
-
+    
+    // Redirecionar diretamente para processamento
+    setLocation("/processamento-pcp");
+  }
   if (isLoading) {
     return (
       <div style={{ padding: 20, textAlign: "center" }}>
@@ -852,24 +746,7 @@ export default function MapaProducao() {
             />
           </label>
           
-          {/* Botão Carregar Mapa Base - OCULTO */}
-          {false && hasMapaBase && (
-            <button
-              onClick={handleCarregarMapaBase}
-              disabled={salvando}
-              style={{
-                padding: "10px 16px",
-                fontSize: 14,
-                background: "#3498db",
-                color: "white",
-                border: "none",
-                borderRadius: 6,
-                cursor: salvando ? "not-allowed" : "pointer",
-              }}
-            >
-              📂 Carregar Mapa Base
-            </button>
-          )}
+
           {/* Botão Adicionar Produto */}
           <button
             onClick={() => setShowAdicionarProduto(true)}
