@@ -1,0 +1,1 @@
+ALTER TABLE `mapa_base` ADD `qtdPlanejada` decimal(10,2) NOT NULL;

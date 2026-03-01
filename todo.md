@@ -366,10 +366,14 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Frontend: Exibir saldo na listagem de Produtos
 - [x] Frontend: Nova aba Expedição no Processamento PCP
 - [x] Backend: Inteligência de reposição (validação na importação)
-- [x] Backend: Auto-inclusão de produtos em ruptura no Mapa
+- [x] Bac- [x] Auto-inclusão de produtos em ruptura no Mapa
 
+## Shelf Life - Consolidação no Backend
+- [ ] Implementar função consolidarComShelfLife no db.ts
+- [ ] Integrar função na procedure salvarMapaBase
+- [ ] Testar fluxo completo com shelf life
 
-- [x] Bug: Corrigir validação de código duplicado na edição de produtos
+- [x] Bug: Corrigir validação de código...plicado na edição de produtos
 
 ## Gatilho Manual de Processamento - 11/01/2026
 

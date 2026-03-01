@@ -626,7 +626,7 @@ export const appRouter = router({
           importacao: null,
           mapa: mapaBaseSalvo.map((item, idx) => {
             const qtdImportada = parseFloat(item.quantidade);
-            const qtdPlanejada = qtdImportada * (1 + item.percentualAjuste / 100);
+            const qtdPlanejada = parseFloat(item.qtdPlanejada);
             return {
               id: idx + 1,
               codigo: item.codigoProduto,
@@ -858,7 +858,9 @@ export const appRouter = router({
         })),
       }))
       .mutation(async ({ input }) => {
-        return await db.salvarMapaBase(input.itens);
+        // Consolidar com shelf life ANTES de salvar
+        const itensConsolidados = await db.consolidarComShelfLife(input.itens);
+        return await db.salvarMapaBase(itensConsolidados);
       }),
 
     // Carregar Mapa Base

@@ -583,6 +583,7 @@ export async function getMapaBase() {
       nomeProduto: mapaBase.nomeProduto,
       unidade: mapaBase.unidade,
       quantidade: mapaBase.quantidade,
+      qtdPlanejada: mapaBase.qtdPlanejada,
       percentualAjuste: mapaBase.percentualAjuste,
       diaProduzir: mapaBase.diaProduzir,
       equipe: mapaBase.equipe,
@@ -593,7 +594,7 @@ export async function getMapaBase() {
   return result;
 }
 
-export async function salvarMapaBase(itens: { produtoId: number; codigoProduto: string; nomeProduto: string; unidade: string; quantidade: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
+export async function salvarMapaBase(itens: { produtoId: number; codigoProduto: string; nomeProduto: string; unidade: string; quantidade: string; qtdPlanejada?: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -608,6 +609,7 @@ export async function salvarMapaBase(itens: { produtoId: number; codigoProduto: 
       nomeProduto: item.nomeProduto,
       unidade: item.unidade,
       quantidade: item.quantidade,
+      qtdPlanejada: item.qtdPlanejada || item.quantidade,
       percentualAjuste: item.percentualAjuste,
       diaProduzir: item.diaProduzir,
       equipe: item.equipe || "Equipe 1",
@@ -780,4 +782,90 @@ export async function hasMapaRascunho() {
 
   const result = await db.select({ count: sql<number>`count(*)` }).from(mapaRascunho);
   return result[0]?.count > 0;
+}
+
+
+// ==================== CONSOLIDAÇÃO COM SHELF LIFE ====================
+
+export async function consolidarComShelfLife(itens: { produtoId: number; codigoProduto: string; nomeProduto: string; unidade: string; quantidade: string; percentualAjuste: number; diaProduzir: number; equipe: string }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar shelfLife de cada produto pelo código (não por ID, pois pode ser 0 para não cadastrados)
+  const produtosComShelfLife = await db
+    .select({ codigoProduto: produtos.codigoProduto, shelfLife: produtos.shelfLife })
+    .from(produtos);
+
+  const shelfLifeMap = new Map(produtosComShelfLife.map(p => [p.codigoProduto, p.shelfLife || 0]));
+
+  // Consolidar itens
+  const itensFinais: typeof itens = [];
+
+  // Agrupar por código de produto (chave única)
+  const porCodigo = new Map<string, typeof itens>();
+  itens.forEach(item => {
+    if (!porCodigo.has(item.codigoProduto)) {
+      porCodigo.set(item.codigoProduto, []);
+    }
+    porCodigo.get(item.codigoProduto)!.push(item);
+  });
+
+  // Processar cada produto
+  porCodigo.forEach((itemsProduto) => {
+    const shelfLife = shelfLifeMap.get(itemsProduto[0].codigoProduto) || 0;
+
+    // Se sem shelf life, adicionar como está (qtdPlanejada = quantidade)
+    if (shelfLife <= 0) {
+      itemsProduto.forEach(item => {
+        itensFinais.push({
+          ...item,
+          qtdPlanejada: item.quantidade,
+        } as any);
+      });
+      return;
+    }
+
+    // Ordenar por dia
+    itemsProduto.sort((a, b) => a.diaProduzir - b.diaProduzir);
+
+    // Agrupar por intervalo de shelf life
+    const porIntervalo = new Map<number, typeof itemsProduto>();
+    itemsProduto.forEach(item => {
+      const intervaloIndex = Math.floor((item.diaProduzir - 2) / shelfLife);
+      if (!porIntervalo.has(intervaloIndex)) {
+        porIntervalo.set(intervaloIndex, []);
+      }
+      porIntervalo.get(intervaloIndex)!.push(item);
+    });
+
+    // Para cada intervalo, consolidar
+    porIntervalo.forEach((itemsIntervalo) => {
+      // O primeiro dia do intervalo recebe a soma de todos os dias do intervalo
+      const primeirodia = itemsIntervalo[0].diaProduzir;
+      const quantidadeTotal = itemsIntervalo.reduce((sum, item) => sum + parseFloat(item.quantidade), 0);
+
+      // Primeiro dia do intervalo: manter quantidade original, mas consolidar em qtdPlanejada
+      itensFinais.push({
+        ...itemsIntervalo[0],
+        quantidade: itemsIntervalo[0].quantidade,
+        qtdPlanejada: quantidadeTotal.toString(),
+        diaProduzir: primeirodia,
+      } as any);
+
+      // Demais dias do intervalo: manter quantidade original, mas qtdPlanejada = 0
+      for (let i = 1; i < shelfLife; i++) {
+        const dia = primeirodia + i;
+        if (dia <= 7) {
+          itensFinais.push({
+            ...itemsIntervalo[0],
+            quantidade: itemsIntervalo[i]?.quantidade || itemsIntervalo[0].quantidade,
+            qtdPlanejada: "0",
+            diaProduzir: dia,
+          } as any);
+        }
+      }
+    });
+  });
+
+  return itensFinais;
 }
