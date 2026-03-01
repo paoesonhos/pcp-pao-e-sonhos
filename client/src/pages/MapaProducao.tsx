@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useMapasSalvos } from "@/hooks/useMapasSalvos";
@@ -98,6 +98,22 @@ export default function MapaProducao() {
   
   // Query para lista de produtos cadastrados (para adicionar ao mapa)
   const { data: produtosCadastrados } = trpc.produtos.list.useQuery({ ativo: true });
+  
+  // Query para buscar shelf life dos produtos
+  const { data: shelfLifeData } = trpc.produtos.list.useQuery({ ativo: true });
+  
+  // Mapa de shelf life por código de produto
+  const shelfLifeMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (shelfLifeData && Array.isArray(shelfLifeData)) {
+      for (const produto of shelfLifeData) {
+        if (produto.shelfLife && produto.shelfLife > 0) {
+          map.set(produto.codigoProduto, produto.shelfLife);
+        }
+      }
+    }
+    return map;
+  }, [shelfLifeData]);
   
   // Hook para gerenciar mapas salvos
   const { mapas, mapaAtualId, isLoaded, salvarMapa, carregarMapa, atualizarNomeMapa, deletarMapa, obterNomeMapaAtual } = useMapasSalvos();
@@ -896,7 +912,22 @@ export default function MapaProducao() {
                             {item.codigo}
                           </td>
                           <td style={{ padding: 8, borderBottom: "1px solid #eee", color: emRuptura || isReposicao ? "#c0392b" : "inherit", fontWeight: emRuptura || isReposicao ? "bold" : "normal" }}>
-                            {item.nome}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span>{item.nome}</span>
+                              {shelfLifeMap.has(item.codigo) && (
+                                <span style={{
+                                  fontSize: 11,
+                                  background: "#3498db",
+                                  color: "#fff",
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  fontWeight: "bold",
+                                  whiteSpace: "nowrap"
+                                }}>
+                                  ⏱ {shelfLifeMap.get(item.codigo)}d
+                                </span>
+                              )}
+                            </div>
                             {emRuptura && !isReposicao && <span style={{ marginLeft: 8, fontSize: 11, background: "#e74c3c", color: "#fff", padding: "2px 6px", borderRadius: 4 }}>RUPTURA</span>}
                           </td>
                           <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #eee" }}>
