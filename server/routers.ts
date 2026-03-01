@@ -868,18 +868,26 @@ export const appRouter = router({
       const mapaBase = await db.getMapaBase();
       return {
         success: true,
-        mapa: mapaBase.map((item, idx) => ({
-          id: idx + 1,
-          codigo: item.codigoProduto,
-          nome: item.nomeProduto,
-          unidade: item.unidade,
-          qtdImportada: parseFloat(item.quantidade),
-          percentualAjuste: item.percentualAjuste,
-          qtdPlanejada: parseFloat(item.quantidade) * (1 + item.percentualAjuste / 100),
-          equipe: item.equipe || "Equipe 1",
-          diaProduzir: item.diaProduzir,
-          produtoId: item.produtoId,
-        })),
+        mapa: mapaBase.map((item, idx) => {
+          // Usar qtdPlanejada do banco (já consolidado com shelf life)
+          // Se não existir, usar quantidade * percentualAjuste como fallback
+          const qtdPlanejada = item.qtdPlanejada !== null && item.qtdPlanejada !== undefined
+            ? parseFloat(item.qtdPlanejada)
+            : parseFloat(item.quantidade) * (1 + item.percentualAjuste / 100);
+          
+          return {
+            id: idx + 1,
+            codigo: item.codigoProduto,
+            nome: item.nomeProduto,
+            unidade: item.unidade,
+            qtdImportada: parseFloat(item.quantidade),
+            percentualAjuste: item.percentualAjuste,
+            qtdPlanejada: qtdPlanejada,
+            equipe: item.equipe || "Equipe 1",
+            diaProduzir: item.diaProduzir,
+            produtoId: item.produtoId,
+          };
+        }),
       };
     }),
 
