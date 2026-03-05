@@ -632,15 +632,8 @@ export async function exportarFichaProducaoPDF(
         yPosition = (doc as any).lastAutoTable.finalY + 8;
       }
 
-      // Separador: Produtos que usam esta massa
-      doc.setFillColor(147, 51, 234); // Roxo
-      doc.rect(14, yPosition - 4, 182, 8, 'F');
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text(`Produtos que usam ${grupo.inter.nomeProduto} (${grupo.produtos.length} produto(s))`, 16, yPosition + 1);
-      doc.setTextColor(0);
-      yPosition += 10;
+      // Separador: Produtos que usam esta massa - REMOVIDO
+      // O cabeçalho "Produtos que usam..." foi removido conforme solicitado
     } else {
       // Separador: Produtos Individuais - REMOVIDO
       // A lista de produtos individuais foi removida conforme solicitado
