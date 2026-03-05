@@ -642,54 +642,13 @@ export async function exportarFichaProducaoPDF(
       doc.setTextColor(0);
       yPosition += 10;
     } else {
-      // Separador: Produtos Individuais
-      doc.setFillColor(100, 100, 100); // Cinza
-      doc.rect(14, yPosition - 4, 182, 8, 'F');
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text(`Produtos Individuais (sem massa base) - ${grupo.produtos.length} produto(s)`, 16, yPosition + 1);
-      doc.setTextColor(0);
-      yPosition += 10;
+      // Separador: Produtos Individuais - REMOVIDO
+      // A lista de produtos individuais foi removida conforme solicitado
     }
 
-    // Renderizar produtos do grupo
-    grupo.produtos.forEach((produto) => {
-      // Verificar se precisa de nova página
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
-      const p3 = produto.passo3!;
-      const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
-      
-      // Cabeçalho do produto
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setFillColor(240, 253, 244); // Verde claro
-      doc.rect(14, yPosition - 4, 182, 8, 'F');
-      doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 16, yPosition);
-      yPosition += 8;
-      
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      
-      // Informações da divisora (Motor v3.0)
-      const info = [
-        `Quantidade Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
-        `Unidades a Produzir: ${p3.qtdInteira} (Divisora: ${p3.divisora} un/bloco)`,
-        p3.blocos > 0 ? `${p3.instrucaoBlocos}` : null,
-        p3.pedacos > 0 ? `${p3.instrucaoPedaco}` : null,
-        `Massa Total: ${massaTotal.toFixed(3)} kg`
-      ].filter(Boolean);
-      info.forEach(linha => {
-        doc.text(linha as string, 16, yPosition);
-        yPosition += 5;
-      });
-      
-      yPosition += 5;
-    });
+    // Renderizar produtos do grupo - REMOVIDO
+    // A lista de produtos individuais foi removida conforme solicitado
+    // Mantém apenas o cabeçalho "Produtos que usam..."
   });
 
   // Seção de Massas Base com Modo de Preparo (REMOVIDA - agora está integrada acima)
