@@ -757,18 +757,8 @@ export async function exportarFichaProducaoPDF(
     });
   }
 
-  // Área de assinatura
-  if (yPosition > 240) {
-    doc.addPage();
-    yPosition = 20;
-  }
-  
-  yPosition += 10;
-  doc.setFontSize(10);
-  doc.text('Responsável pela Produção: _______________________________', 14, yPosition);
-  doc.text('Data/Hora Início: _______________', 14, yPosition + 10);
-  doc.text('Data/Hora Fim: _______________', 100, yPosition + 10);
-  doc.text('Assinatura: _______________________________', 14, yPosition + 20);
+  // Área de assinatura - REMOVIDA
+  // A seção de assinatura foi removida conforme solicitado
 
   // Rodapé
   adicionarRodape(doc);
