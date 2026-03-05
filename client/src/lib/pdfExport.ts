@@ -476,36 +476,31 @@ export async function exportarFichaProducaoPDF(
     .filter(p => p.passo3)
     .map(produto => {
       const p3 = produto.passo3!;
-      const massaTotal = (p3.blocos * p3.pesoBloco) + p3.pesoPedaco;
       return [
         produto.codigoProduto,
         produto.nomeProduto,
-        `${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`,
         p3.blocos.toString(),
         p3.pesoBloco.toFixed(3),
         p3.pedacos.toString(),
-        p3.pesoPedaco.toFixed(3),
-        massaTotal.toFixed(3)
+        p3.pesoPedaco.toFixed(3)
       ];
     });
 
   if (dadosTabela.length > 0) {
     autoTable(doc, {
       startY: yPosition,
-      head: [['Código', 'Produto', 'Qtd Plan.', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço', 'Massa Total']],
+      head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço']],
       body: dadosTabela,
       theme: 'grid',
       headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       styles: { fontSize: 8, cellPadding: 2 },
       columnStyles: {
         0: { cellWidth: 18 },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 22, halign: 'right' },
-        3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 22, halign: 'right' },
-        5: { cellWidth: 15, halign: 'center' },
-        6: { cellWidth: 22, halign: 'right' },
-        7: { cellWidth: 22, halign: 'right' }
+        1: { cellWidth: 60 },
+        2: { cellWidth: 18, halign: 'center' },
+        3: { cellWidth: 22, halign: 'right' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 22, halign: 'right' }
       },
       margin: { left: 14, right: 14 }
     });
