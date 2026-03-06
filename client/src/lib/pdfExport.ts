@@ -519,9 +519,6 @@ export async function exportarFichaProducaoPDF(
       doc.text(`${grupo.inter.nomeProduto}`, 16, yPosition + 1);
       doc.setTextColor(0);
       yPosition += 10;
-    } else {
-      // Espaço entre massas base quando não é a primeira
-      yPosition += 15;
     }
 
     // ===== 2. TABELA DE INSTRUÇÕES DE PRODUÇÃO =====
@@ -594,7 +591,7 @@ export async function exportarFichaProducaoPDF(
           }
         }
       });
-      yPosition = (doc as any).lastAutoTable.finalY + 8;
+      yPosition = (doc as any).lastAutoTable.finalY + 15; // Espaço maior após ingredientes da massa base
     }
 
     // ===== 4. PARA CADA PRODUTO: INGREDIENTES ADICIONAIS + MODO DE PREPARO =====
