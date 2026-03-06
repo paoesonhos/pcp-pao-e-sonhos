@@ -609,9 +609,9 @@ export async function exportarFichaProducaoPDF(
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
         styles: { fontSize: 9, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 12, halign: 'center' },
-          1: { cellWidth: 88 },
-          2: { cellWidth: 35, halign: 'right' },
+          0: { cellWidth: 70 },
+          1: { cellWidth: 25, halign: 'right' },
+          2: { cellWidth: 15, halign: 'center' },
           3: { cellWidth: 8, halign: 'center' }
         },
         margin: { left: 14, right: 14 },
