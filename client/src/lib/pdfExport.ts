@@ -511,7 +511,7 @@ export async function exportarFichaProducaoPDF(
 
     // Adicionar espaço antes de cada grupo (se não for o primeiro)
     if (yPosition > 30) {
-      yPosition += 50; // Espaço entre massas base
+      yPosition += 20; // Espaço entre massas base
     }
     
     // ===== 1. CABEÇALHO DA MASSA BASE =====
