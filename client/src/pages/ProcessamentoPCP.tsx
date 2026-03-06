@@ -22,7 +22,7 @@ import {
   Download,
   Clock
 } from "lucide-react";
-import { exportarFichaProducaoPDF, exportarDetalhesProdutoPDF } from "@/lib/pdfExport";
+import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF, exportarDetalhesProdutoPDF, exportarMolhadosConsolidadosPDF } from "@/lib/pdfExport";
 
 // Tipos - Motor de Cálculo v3.0
 interface InsumoConsolidado {
@@ -525,7 +525,7 @@ export default function ProcessamentoPCP() {
                               tempoMinutos: mp.tempoMinutos
                             })) || []
                           })) || [];
-                          exportarFichaProducaoPDF(diaSelecionado, produtos, intermediarios);
+                          exportarFichaPrePesagemPDF(diaSelecionado, produtos, intermediarios);
                         }}
                         className="border-orange-300 text-orange-700 hover:bg-orange-100"
                       >
@@ -1581,7 +1581,7 @@ function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: n
                 saldoEstoque: p.saldoEstoque || '0',
                 unidade: 'un'
               })) || [];
-              // exportarListaExpedicaoPDF(diaSelecionado, produtos); // Função não implementada
+              exportarListaExpedicaoPDF(diaSelecionado, produtos);
             }}
             className="border-blue-300 text-blue-700 hover:bg-blue-100"
           >
@@ -1787,7 +1787,7 @@ function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ cod
         <Button
           variant="outline"
           onClick={() => {
-            // exportarMolhadosConsolidadosPDF(molhadosConsolidados); // Função não implementada
+            exportarMolhadosConsolidadosPDF(molhadosConsolidados);
           }}
           className="border-blue-300 text-blue-700 hover:bg-blue-100"
         >

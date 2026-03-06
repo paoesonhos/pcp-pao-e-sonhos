@@ -1,21 +1,439 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Tipos de dados
+// Dias da semana
+const DIAS_SEMANA: Record<number, string> = {
+  2: "Segunda-feira",
+  3: "Terça-feira",
+  4: "Quarta-feira",
+  5: "Quinta-feira",
+  6: "Sexta-feira",
+  7: "Sábado",
+};
+
+// Logo em base64 será carregado dinamicamente
+let logoBase64: string | null = null;
+
+// Função para carregar o logo
+async function carregarLogo(): Promise<string | null> {
+  if (logoBase64) return logoBase64;
+  
+  try {
+    const response = await fetch('/logo.png');
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        logoBase64 = reader.result as string;
+        resolve(logoBase64);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Função para adicionar cabeçalho com logo
+async function adicionarCabecalho(doc: jsPDF, titulo: string, diaSelecionado: number): Promise<number> {
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+  const logo = await carregarLogo();
+  
+  let yPosition = 15;
+  
+  // Adicionar logo se disponível
+  if (logo) {
+    try {
+      doc.addImage(logo, 'PNG', 14, 10, 25, 25);
+      yPosition = 18;
+      
+      // Título ao lado do logo
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(titulo, 45, yPosition);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Pão & Sonhos - Produto Artesanal Feito com Carinho', 45, yPosition + 6);
+      
+      doc.setFontSize(11);
+      doc.text(`${DIAS_SEMANA[diaSelecionado]} - Gerado em: ${dataAtual}`, 45, yPosition + 14);
+      
+      return 42; // Posição Y após o cabeçalho com logo
+    } catch {
+      // Se falhar ao adicionar imagem, usar cabeçalho sem logo
+    }
+  }
+  
+  // Cabeçalho sem logo (fallback)
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text(titulo, 14, 20);
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${DIAS_SEMANA[diaSelecionado]} - Gerado em: ${dataAtual}`, 14, 28);
+  
+  return 38;
+}
+
+// Função para adicionar rodapé com logo
+function adicionarRodape(doc: jsPDF) {
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(`Pão & Sonhos - Sistema PCP | Página ${i} de ${pageCount}`, 14, 290);
+    doc.setTextColor(0);
+  }
+}
+
+interface InsumoItem {
+  nomeComponente: string;
+  quantidadeArredondada: number;
+  unidade: string;
+}
+
+interface ProdutoPrePesagem {
+  codigoProduto: string;
+  nomeProduto: string;
+  qtdPlanejada: number;
+  unidade: string;
+  insumos: InsumoItem[];
+}
+
+interface IntermediarioItem {
+  nomeProduto: string;
+  quantidadeArredondada: number;
+  unidade: string;
+  produtosFilhos: string[];
+  ingredientes: {
+    nomeComponente: string;
+    quantidadeArredondada: number;
+    unidade: string;
+  }[];
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
+}
+
+interface ProdutoExpedicao {
+  codigoProduto: string;
+  nome: string;
+  saldoEstoque: string;
+  unidade: string;
+}
+
+// Motor v3.0 - Passo 3: Blocos e Pedaços
+interface Passo3 {
+  qtdInteira: number;
+  divisora: number;
+  blocos: number;
+  pedacos: number;
+  pesoBloco: number;
+  pesoUnitarioReal: number;
+  pesoPedaco: number;
+  instrucaoBlocos: string;
+  instrucaoPedaco: string;
+}
+
 interface ProdutoProducao {
   codigoProduto: string;
   nomeProduto: string;
-  passo3?: {
-    qtdInteira?: number;
-    divisora?: number;
-    blocos: number;
-    pedacos: number;
-    pesoBloco: number;
-    pesoUnitarioReal?: number;
-    pesoPedaco: number;
-    instrucaoBlocos?: string;
-    instrucaoPedaco?: string;
-  } | null;
+  qtdPlanejada: number;
+  unidade: string;
+  pesoUnitario: number;
+  passo3: Passo3 | null;
+  modoPreparo?: Array<{
+    ordem: number;
+    descricao: string;
+    tempoMinutos: number;
+  }>;
+}
+
+export async function exportarFichaPrePesagemPDF(
+  diaSelecionado: number,
+  produtos: ProdutoPrePesagem[],
+  intermediarios: IntermediarioItem[]
+) {
+  const doc = new jsPDF();
+  
+  // Cabeçalho com logo
+  let yPosition = await adicionarCabecalho(doc, 'Ficha de Pré-Pesagem', diaSelecionado);
+
+  // Seção de Massas Base (Intermediários)
+  if (intermediarios && intermediarios.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(180, 83, 9); // Cor âmbar
+    doc.text('Massas Base a Produzir', 14, yPosition);
+    doc.setTextColor(0);
+    yPosition += 8;
+
+    intermediarios.forEach((inter) => {
+      // Nome do intermediário
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${inter.nomeProduto} - ${inter.quantidadeArredondada.toFixed(3)} ${inter.unidade}`, 14, yPosition);
+      yPosition += 5;
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Usado em: ${inter.produtosFilhos.join(', ')}`, 14, yPosition);
+      yPosition += 6;
+
+      // Tabela de ingredientes do intermediário
+      if (inter.ingredientes && inter.ingredientes.length > 0) {
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+          body: inter.ingredientes.map(ing => [
+            '☐',
+            ing.nomeComponente,
+            ing.quantidadeArredondada.toFixed(3),
+            ing.unidade
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [245, 158, 11], textColor: [0, 0, 0], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 20, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Modo de Preparo do intermediário
+      if (inter.modoPreparo && inter.modoPreparo.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(139, 69, 19); // Marrom
+        doc.text('Modo de Preparo:', 14, yPosition);
+        doc.setTextColor(0);
+        yPosition += 5;
+
+        const tempoTotal = inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [139, 69, 19], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 120 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [245, 245, 220];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Verificar se precisa de nova página
+      if (yPosition > 260) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+  }
+
+  // Linha separadora
+  if (intermediarios && intermediarios.length > 0) {
+    doc.setDrawColor(200);
+    doc.line(14, yPosition, 196, yPosition);
+    yPosition += 10;
+  }
+
+  // Seção de Produtos - Agrupados por Intermediário
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(234, 88, 12); // Cor laranja
+  doc.text('Ficha de Pré-Pesagem por Produto', 14, yPosition);
+  doc.setTextColor(0);
+  yPosition += 10;
+
+  // Agrupar produtos por intermediário
+  const produtosAgrupados: { inter: IntermediarioItem | null; produtos: ProdutoPrePesagem[] }[] = [];
+  const produtosJaAgrupados = new Set<string>();
+
+  // Para cada intermediário, encontrar os produtos que o usam
+  if (intermediarios && intermediarios.length > 0) {
+    intermediarios.forEach((inter) => {
+      const produtosDoInter = produtos.filter(p => 
+        inter.produtosFilhos.some(filho => 
+          p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
+        ) && !produtosJaAgrupados.has(p.codigoProduto)
+      );
+      
+      produtosDoInter.forEach(p => produtosJaAgrupados.add(p.codigoProduto));
+      
+      if (produtosDoInter.length > 0) {
+        produtosAgrupados.push({ inter, produtos: produtosDoInter });
+      }
+    });
+  }
+
+  // Produtos sem intermediário
+  const produtosSemInter = produtos.filter(p => !produtosJaAgrupados.has(p.codigoProduto));
+  if (produtosSemInter.length > 0) {
+    produtosAgrupados.push({ inter: null, produtos: produtosSemInter });
+  }
+
+  // Renderizar grupos
+  produtosAgrupados.forEach((grupo) => {
+    // Verificar se precisa de nova página
+    if (yPosition > 220) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Cabeçalho do grupo (intermediário ou "Produtos Individuais")
+    if (grupo.inter) {
+      doc.setFillColor(147, 51, 234); // Roxo
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos que usam ${grupo.inter.nomeProduto} (${grupo.produtos.length} produto(s))`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
+    } else {
+      doc.setFillColor(100, 100, 100); // Cinza
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Produtos Individuais (sem massa base) - ${grupo.produtos.length} produto(s)`, 16, yPosition + 1);
+      doc.setTextColor(0);
+      yPosition += 10;
+    }
+
+    // Renderizar produtos do grupo
+    grupo.produtos.forEach((produto) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Cabeçalho do produto
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${produto.codigoProduto} - ${produto.nomeProduto}`, 14, yPosition);
+      yPosition += 5;
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Qtd Planejada: ${produto.qtdPlanejada.toFixed(2)} ${produto.unidade}`, 14, yPosition);
+      yPosition += 6;
+
+      // Tabela de insumos
+      if (produto.insumos && produto.insumos.length > 0) {
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+          body: produto.insumos.map(insumo => [
+            '☐',
+            insumo.nomeComponente,
+            insumo.quantidadeArredondada.toFixed(3),
+            insumo.unidade
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 20, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      }
+    });
+  });
+
+  // Rodapé
+  adicionarRodape(doc);
+
+  // Salvar
+  doc.save(`ficha-pre-pesagem-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
+}
+
+export async function exportarListaExpedicaoPDF(
+  diaSelecionado: number,
+  produtos: ProdutoExpedicao[]
+) {
+  const doc = new jsPDF();
+  
+  // Cabeçalho com logo
+  const yPosition = await adicionarCabecalho(doc, 'Lista de Expedição', diaSelecionado);
+  
+  // Tabela de produtos
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['☐', 'Código', 'Produto', 'Saldo Estoque', 'Qtd. Separar', 'Unid.']],
+    body: produtos.map(produto => [
+      '☐',
+      produto.codigoProduto,
+      produto.nome,
+      parseFloat(produto.saldoEstoque || '0').toFixed(0),
+      '', // Campo vazio para preenchimento manual
+      'un'
+    ]),
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
+    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 70 },
+      3: { cellWidth: 30, halign: 'right' },
+      4: { cellWidth: 30, halign: 'right' },
+      5: { cellWidth: 15, halign: 'center' }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  // Área de assinatura
+  const finalY = (doc as any).lastAutoTable.finalY + 20;
+  
+  doc.setFontSize(10);
+  doc.text('Responsável pela Separação: _______________________________', 14, finalY);
+  doc.text('Data/Hora: _______________', 14, finalY + 10);
+  doc.text('Assinatura: _______________________________', 14, finalY + 20);
+
+  // Rodapé
+  adicionarRodape(doc);
+
+  // Salvar
+  doc.save(`lista-expedicao-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
 }
 
 interface IntermediarioProducao {
@@ -23,64 +441,18 @@ interface IntermediarioProducao {
   quantidadeArredondada: number;
   unidade: string;
   produtosFilhos: string[];
-  ingredientes?: {
+  ingredientes: Array<{
     nomeComponente: string;
     quantidadeArredondada: number;
     unidade: string;
-  }[];
-  modoPreparo?: {
+  }>;
+  modoPreparo?: Array<{
     ordem: number;
     descricao: string;
     tempoMinutos: number;
-  }[];
+  }>;
 }
 
-const DIAS_SEMANA = [
-  'Domingo',
-  'Segunda-feira',
-  'Terça-feira',
-  'Quarta-feira',
-  'Quinta-feira',
-  'Sexta-feira',
-  'Sábado'
-];
-
-// Função para adicionar cabeçalho com logo
-async function adicionarCabecalho(doc: jsPDF, titulo: string, diaSelecionado: number): Promise<number> {
-  // Cabeçalho simples
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(titulo, 14, 20);
-  
-  // Dia da semana
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${DIAS_SEMANA[diaSelecionado]}`, 14, 28);
-  
-  return 35;
-}
-
-// Função para adicionar rodapé
-function adicionarRodape(doc: jsPDF) {
-  const pageCount = (doc as any).internal.getNumberOfPages();
-  const pageSize = doc.internal.pageSize;
-  const pageHeight = pageSize.getHeight();
-  
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      `Página ${i} de ${pageCount}`,
-      pageSize.getWidth() / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
-  }
-}
-
-// Exportar Ficha de Produção em PDF
 export async function exportarFichaProducaoPDF(
   diaSelecionado: number,
   produtos: ProdutoProducao[],
@@ -89,56 +461,20 @@ export async function exportarFichaProducaoPDF(
   const doc = new jsPDF();
   
   // Cabeçalho com logo
-  let yPosition = await adicionarCabecalho(doc, 'Mapa de Produção', diaSelecionado);
+  let yPosition = await adicionarCabecalho(doc, 'Ficha de Produção', diaSelecionado);
 
-  // Agrupar produtos por intermediário para renderização segmentada
-  const produtosComPasso3 = produtos.filter(p => p.passo3);
-  const produtosAgrupadosTabelaProducao: { inter: IntermediarioProducao | null; produtos: ProdutoProducao[] }[] = [];
-  const produtosJaAgrupadosTabelaProducao = new Set<string>();
+  // Título da seção
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(22, 163, 74); // Cor verde
+  doc.text('Instruções de Produção - Divisora (Motor v3.0)', 14, yPosition);
+  doc.setTextColor(0);
+  yPosition += 10;
 
-  // Para cada intermediário, encontrar os produtos que o usam
-  if (intermediarios && intermediarios.length > 0) {
-    intermediarios.forEach((inter) => {
-      const produtosDoInter = produtosComPasso3.filter(p => 
-        inter.produtosFilhos.some(filho => 
-          p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
-        ) && !produtosJaAgrupadosTabelaProducao.has(p.codigoProduto)
-      );
-      
-      produtosDoInter.forEach(p => produtosJaAgrupadosTabelaProducao.add(p.codigoProduto));
-      
-      if (produtosDoInter.length > 0) {
-        produtosAgrupadosTabelaProducao.push({ inter, produtos: produtosDoInter });
-      }
-    });
-  }
-
-  // Produtos sem intermediário
-  const produtosSemInterTabelaProducao = produtosComPasso3.filter(p => !produtosJaAgrupadosTabelaProducao.has(p.codigoProduto));
-  if (produtosSemInterTabelaProducao.length > 0) {
-    produtosAgrupadosTabelaProducao.push({ inter: null, produtos: produtosSemInterTabelaProducao });
-  }
-
-  // Renderizar tabelas segmentadas por massa base
-  produtosAgrupadosTabelaProducao.forEach((grupo) => {
-    // Verificar se precisa de nova página
-    if (yPosition > 200) {
-      doc.addPage();
-      yPosition = 20;
-    }
-
-    // Cabeçalho da massa base
-    if (grupo.inter) {
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setFillColor(255, 247, 237); // Laranja claro
-      doc.rect(14, yPosition - 4, 182, 8, 'F');
-      doc.text(`${grupo.inter.nomeProduto} - ${grupo.inter.quantidadeArredondada.toFixed(3)} ${grupo.inter.unidade}`, 16, yPosition);
-      yPosition += 8;
-    }
-
-    // Tabela de produtos da massa base
-    const dadosTabela = grupo.produtos.map(produto => {
+  // Tabela principal de produção
+  const dadosTabela = produtos
+    .filter(p => p.passo3)
+    .map(produto => {
       const p3 = produto.passo3!;
       return [
         produto.codigoProduto,
@@ -150,100 +486,279 @@ export async function exportarFichaProducaoPDF(
       ];
     });
 
-    if (dadosTabela.length > 0) {
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço']],
-        body: dadosTabela,
-        theme: 'grid',
-        headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-        styles: { fontSize: 8, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 18 },
-          1: { cellWidth: 60 },
-          2: { cellWidth: 18, halign: 'center' },
-          3: { cellWidth: 22, halign: 'right' },
-          4: { cellWidth: 15, halign: 'center' },
-          5: { cellWidth: 22, halign: 'right' }
-        },
-        margin: { left: 14, right: 14 }
-      });
-      yPosition = (doc as any).lastAutoTable.finalY + 8;
+  if (dadosTabela.length > 0) {
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço']],
+      body: dadosTabela,
+      theme: 'grid',
+      headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 18, halign: 'center' },
+        3: { cellWidth: 22, halign: 'right' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 22, halign: 'right' }
+      },
+      margin: { left: 14, right: 14 }
+    });
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+  }
+
+  // Detalhes por produto - Agrupados por Intermediário
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detalhes por Produto', 14, yPosition);
+  yPosition += 8;
+
+  // Agrupar produtos por intermediário
+  const produtosComPasso3 = produtos.filter(p => p.passo3);
+  const produtosAgrupadosProducao: { inter: IntermediarioProducao | null; produtos: ProdutoProducao[] }[] = [];
+  const produtosJaAgrupadosProducao = new Set<string>();
+
+  // Para cada intermediário, encontrar os produtos que o usam
+  if (intermediarios && intermediarios.length > 0) {
+    intermediarios.forEach((inter) => {
+      const produtosDoInter = produtosComPasso3.filter(p => 
+        inter.produtosFilhos.some(filho => 
+          p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
+        ) && !produtosJaAgrupadosProducao.has(p.codigoProduto)
+      );
+      
+      produtosDoInter.forEach(p => produtosJaAgrupadosProducao.add(p.codigoProduto));
+      
+      if (produtosDoInter.length > 0) {
+        produtosAgrupadosProducao.push({ inter, produtos: produtosDoInter });
+      }
+    });
+  }
+
+  // Produtos sem intermediário
+  const produtosSemInterProducao = produtosComPasso3.filter(p => !produtosJaAgrupadosProducao.has(p.codigoProduto));
+  if (produtosSemInterProducao.length > 0) {
+    produtosAgrupadosProducao.push({ inter: null, produtos: produtosSemInterProducao });
+  }
+
+  // Renderizar grupos
+  produtosAgrupadosProducao.forEach((grupo) => {
+    // Verificar se precisa de nova página
+    if (yPosition > 200) {
+      doc.addPage();
+      yPosition = 20;
     }
 
-    // Tabela de Ingredientes da massa base
-    if (grupo.inter && grupo.inter.ingredientes && grupo.inter.ingredientes.length > 0) {
-      doc.setFontSize(10);
+    // Renderizar a massa base primeiro (se houver)
+    if (grupo.inter) {
+      // Cabeçalho da massa base
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('Ingredientes:', 16, yPosition);
-      yPosition += 5;
+      doc.setFillColor(255, 247, 237); // Laranja claro
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.text(`${grupo.inter.nomeProduto} - ${grupo.inter.quantidadeArredondada.toFixed(3)} ${grupo.inter.unidade}`, 16, yPosition);
+      yPosition += 8;
 
-      const totalIngredientes = grupo.inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
-      
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Ingrediente', 'Quantidade', 'Unid.']],
-        body: [
-          ...grupo.inter.ingredientes.map(ing => [
-            ing.nomeComponente,
-            ing.quantidadeArredondada.toFixed(3),
-            ing.unidade
-          ]),
-          ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-        styles: { fontSize: 9, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 100 },
-          1: { cellWidth: 35, halign: 'right' },
-          2: { cellWidth: 25, halign: 'center' }
-        },
-        margin: { left: 14, right: 14 },
-        didParseCell: function(data) {
-          if (grupo.inter?.ingredientes && data.row.index === grupo.inter.ingredientes.length) {
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [255, 247, 237];
+      // Tabela de Ingredientes da massa base
+      if (grupo.inter.ingredientes && grupo.inter.ingredientes.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ingredientes:', 16, yPosition);
+        yPosition += 5;
+
+        const totalIngredientes = grupo.inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          body: [
+            ...grupo.inter.ingredientes.map(ing => [
+              ing.nomeComponente,
+              ing.quantidadeArredondada.toFixed(3),
+              ing.unidade
+            ]),
+            ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            if (data.row.index === grupo.inter!.ingredientes.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
           }
-        }
-      });
-      yPosition = (doc as any).lastAutoTable.finalY + 8;
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Modo de Preparo da massa base
+      if (grupo.inter.modoPreparo && grupo.inter.modoPreparo.length > 0) {
+        const tempoTotal = grupo.inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...grupo.inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 130 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            if (data.row.index === grupo.inter!.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Separador: Produtos que usam esta massa - REMOVIDO
+      // O cabeçalho "Produtos que usam..." foi removido conforme solicitado
+    } else {
+      // Separador: Produtos Individuais - REMOVIDO
+      // A lista de produtos individuais foi removida conforme solicitado
     }
 
-    // Modo de Preparo da massa base
-    if (grupo.inter && grupo.inter.modoPreparo && grupo.inter.modoPreparo.length > 0) {
-      const tempoTotal = grupo.inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
-      
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['#', 'Descrição', 'Tempo (min)']],
-        body: [
-          ...grupo.inter.modoPreparo.map(p => [
-            p.ordem.toString(),
-            p.descricao,
-            p.tempoMinutos.toString()
-          ]),
-          ['', 'TEMPO TOTAL', tempoTotal.toString()]
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 130 },
-          2: { cellWidth: 25, halign: 'center' }
-        },
-        margin: { left: 14, right: 14 },
-        didParseCell: function(data) {
-          if (data.row.index === grupo.inter!.modoPreparo!.length) {
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [255, 247, 237];
-          }
-        }
-      });
-      yPosition = (doc as any).lastAutoTable.finalY + 15;
-    }
+    // Renderizar produtos do grupo - REMOVIDO
+    // A lista de produtos individuais foi removida conforme solicitado
+    // Mantém apenas o cabeçalho "Produtos que usam..."
   });
+
+  // Seção de Massas Base com Modo de Preparo (REMOVIDA - agora está integrada acima)
+  // Mantida apenas para compatibilidade caso não haja grupos
+  if (intermediarios && intermediarios.length > 0 && produtosAgrupadosProducao.length === 0) {
+    // Verificar se precisa de nova página
+    if (yPosition > 200) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(180, 83, 9); // Cor âmbar
+    doc.text('Massas Base - Modo de Preparo', 14, yPosition);
+    doc.setTextColor(0);
+    yPosition += 10;
+
+    intermediarios.forEach((inter) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Nome do intermediário
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(255, 247, 237); // Laranja claro
+      doc.rect(14, yPosition - 4, 182, 8, 'F');
+      doc.text(`${inter.nomeProduto} - ${inter.quantidadeArredondada.toFixed(3)} ${inter.unidade}`, 16, yPosition);
+      yPosition += 8;
+
+      // Tabela de Ingredientes
+      if (inter.ingredientes && inter.ingredientes.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ingredientes:', 16, yPosition);
+        yPosition += 5;
+
+        const totalIngredientes = inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          body: [
+            ...inter.ingredientes.map(ing => [
+              ing.nomeComponente,
+              ing.quantidadeArredondada.toFixed(3),
+              ing.unidade
+            ]),
+            ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.ingredientes.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // Modo de Preparo
+      if (inter.modoPreparo && inter.modoPreparo.length > 0) {
+        const tempoTotal = inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...inter.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 130 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            // Destacar linha de total
+            if (data.row.index === inter.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [255, 247, 237];
+            }
+          }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Modo de preparo não cadastrado', 16, yPosition);
+        yPosition += 8;
+      }
+    });
+  }
+
+  // Área de assinatura - REMOVIDA
+  // A seção de assinatura foi removida conforme solicitado
 
   // Rodapé
   adicionarRodape(doc);
@@ -273,34 +788,151 @@ export async function exportarDetalhesProdutoPDF(
   const doc = new jsPDF();
   
   // Cabeçalho com logo
-  let yPosition = await adicionarCabecalho(doc, 'Detalhes de Embalagem', diaSelecionado);
+  let yPosition = await adicionarCabecalho(doc, 'Embalagem', diaSelecionado);
 
-  // Tabela de detalhes
-  const dadosTabela = produtos.map(p => [
-    p.codigoProduto,
-    p.nomeProduto,
-    p.qtdPlanejada.toFixed(2),
-    p.unidade,
-    p.tipoEmbalagem,
-    p.quantidadePorEmbalagem.toString(),
-    p.status === 'ok' ? '✓' : '✗'
+  // Tabela de embalagem
+  const dadosTabela = produtos.map(produto => [
+    produto.codigoProduto,
+    produto.nomeProduto,
+    produto.unidade,
+    produto.qtdPlanejada.toFixed(3),
+    produto.tipoEmbalagem || '-',
+    produto.quantidadePorEmbalagem > 0 ? produto.quantidadePorEmbalagem.toString() : '-',
+    produto.status === 'ok' ? 'OK' : produto.erro || 'Erro'
   ]);
 
-  if (dadosTabela.length > 0) {
-    autoTable(doc, {
-      startY: yPosition,
-      head: [['Código', 'Produto', 'Qtd', 'Unid.', 'Embalagem', 'Qtd/Emb', 'Status']],
-      body: dadosTabela,
-      theme: 'grid',
-      headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 2 },
-      margin: { left: 14, right: 14 }
-    });
-  }
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Código', 'Produto', 'Unid.', 'Qtd Plan.', 'Tipo Embalagem', 'Qtde/Emb.', 'Status']],
+    body: dadosTabela,
+    theme: 'grid',
+    headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    columnStyles: {
+      0: { cellWidth: 20 },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 15, halign: 'center' },
+      3: { cellWidth: 22, halign: 'right' },
+      4: { cellWidth: 40 },
+      5: { cellWidth: 18, halign: 'center' },
+      6: { cellWidth: 22, halign: 'center' }
+    },
+    margin: { left: 14, right: 14 },
+    didParseCell: function(data) {
+      // Colorir status
+      if (data.column.index === 6 && data.section === 'body') {
+        if (data.cell.raw === 'OK') {
+          data.cell.styles.textColor = [22, 163, 74]; // Verde
+          data.cell.styles.fontStyle = 'bold';
+        } else {
+          data.cell.styles.textColor = [220, 38, 38]; // Vermelho
+        }
+      }
+    }
+  });
+
+  // Resumo
+  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  const totalProdutos = produtos.length;
+  const produtosOk = produtos.filter(p => p.status === 'ok').length;
+  const produtosErro = produtos.filter(p => p.status === 'erro').length;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumo:', 14, yPosition);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total de Produtos: ${totalProdutos}`, 14, yPosition + 6);
+  doc.text(`Produtos OK: ${produtosOk}`, 14, yPosition + 12);
+  doc.text(`Produtos com Erro: ${produtosErro}`, 14, yPosition + 18);
 
   // Rodapé
   adicionarRodape(doc);
 
   // Salvar
-  doc.save(`detalhes-embalagem-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
+  doc.save(`detalhes-produto-${DIAS_SEMANA[diaSelecionado].toLowerCase().replace('-feira', '')}.pdf`);
+}
+
+// Interface para Molhados Consolidados
+interface InsumoMolhado {
+  nomeComponente: string;
+  quantidadeTotal: number;
+  unidade: string;
+}
+
+// Exportar Molhados Consolidados em PDF
+export async function exportarMolhadosConsolidadosPDF(
+  molhados: InsumoMolhado[]
+) {
+  const doc = new jsPDF();
+  
+  // Cabeçalho manual (sem dia específico)
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+  const logo = await carregarLogo();
+  
+  let yPosition = 15;
+  
+  if (logo) {
+    try {
+      doc.addImage(logo, 'PNG', 14, 10, 25, 25);
+      yPosition = 18;
+    } catch (e) {
+      console.warn('Erro ao adicionar logo:', e);
+    }
+  }
+
+  // Título
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(37, 99, 235); // Azul
+  doc.text('Insumos Molhados - Consolidado da Semana', logo ? 45 : 14, yPosition);
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(`Gerado em: ${dataAtual}`, logo ? 45 : 14, yPosition + 7);
+  doc.setTextColor(0);
+  
+  yPosition = logo ? 45 : 35;
+
+  // Tabela de molhados
+  const dadosTabela = molhados.map(insumo => [
+    insumo.nomeComponente,
+    insumo.quantidadeTotal.toFixed(3),
+    insumo.unidade
+  ]);
+
+  // Calcular total
+  const totalGeral = molhados.reduce((acc, item) => acc + item.quantidadeTotal, 0);
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Insumo', 'Quantidade Total', 'Unidade']],
+    body: dadosTabela,
+    foot: [[`Total (${molhados.length} insumos)`, totalGeral.toFixed(3), 'kg']],
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+    footStyles: { fillColor: [219, 234, 254], textColor: [30, 64, 175], fontStyle: 'bold', fontSize: 10 },
+    styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { cellWidth: 45, halign: 'right', fontStyle: 'bold' },
+      2: { cellWidth: 30, halign: 'center' }
+    },
+    margin: { left: 14, right: 14 },
+    alternateRowStyles: { fillColor: [248, 250, 252] }
+  });
+
+  // Área de assinatura
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
+  
+  doc.setFontSize(10);
+  doc.text('Responsável pelo Pedido: _______________________________', 14, yPosition);
+  doc.text('Data: _______________', 14, yPosition + 10);
+  doc.text('Assinatura: _______________________________', 14, yPosition + 20);
+
+  // Rodapé
+  adicionarRodape(doc);
+
+  // Salvar
+  doc.save(`molhados-consolidados-semana.pdf`);
 }
