@@ -513,7 +513,7 @@ export async function exportarFichaProducaoPDF(
     if (grupo.inter) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.setFillColor(147, 51, 234); // Roxo
+      doc.setFillColor(230, 126, 34); // Laranja
       doc.rect(14, yPosition - 4, 182, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.text(`${grupo.inter.nomeProduto}`, 16, yPosition + 1);
@@ -540,7 +540,7 @@ export async function exportarFichaProducaoPDF(
         head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço']],
         body: dadosTabela,
         theme: 'grid',
-        headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
           0: { cellWidth: 18 },
@@ -576,7 +576,7 @@ export async function exportarFichaProducaoPDF(
           ['Total:', totalIngredientes.toFixed(3), 'kg']
         ],
         theme: 'grid',
-        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
         styles: { fontSize: 9, cellPadding: 2 },
         columnStyles: {
           0: { cellWidth: 100 },
@@ -587,7 +587,7 @@ export async function exportarFichaProducaoPDF(
         didParseCell: function(data) {
           if (data.row.index === grupo.inter!.ingredientes.length) {
             data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [245, 245, 220];
+            data.cell.styles.fillColor = [255, 243, 224];
           }
         }
       });
@@ -613,7 +613,7 @@ export async function exportarFichaProducaoPDF(
       // Título do produto
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setFillColor(240, 240, 240); // Cinza claro
+      doc.setFillColor(255, 243, 224); // Laranja claro
       doc.rect(14, yPosition - 3, 182, 7, 'F');
       doc.text(`${produto.nomeProduto} (${produto.passo3?.qtdInteira.toFixed(3)} ${produto.unidade})`, 16, yPosition + 1);
       yPosition += 8;
@@ -635,7 +635,7 @@ export async function exportarFichaProducaoPDF(
             ing.unidade
           ]),
           theme: 'grid',
-          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: {
             0: { cellWidth: 100 },
@@ -663,7 +663,7 @@ export async function exportarFichaProducaoPDF(
             ['', 'TEMPO TOTAL', tempoTotal.toString()]
           ],
           theme: 'grid',
-          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: {
             0: { cellWidth: 10, halign: 'center' },
