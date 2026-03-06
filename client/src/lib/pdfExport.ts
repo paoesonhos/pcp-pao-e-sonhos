@@ -542,18 +542,19 @@ export async function exportarFichaProducaoPDF(
     if (dadosTabela.length > 0) {
       autoTable(doc, {
         startY: yPosition,
-        head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
-        body: dadosTabela,
+        head: [['☐', 'Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
+        body: dadosTabela.map(row => ['☐', ...row]),
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 18 },
-          1: { cellWidth: 60 },
-          2: { cellWidth: 18, halign: 'center' },
-          3: { cellWidth: 22, halign: 'right' },
-          4: { cellWidth: 15, halign: 'center' },
-          5: { cellWidth: 22, halign: 'right' }
+          0: { cellWidth: 12, halign: 'center' },
+          1: { cellWidth: 15 },
+          2: { cellWidth: 55 },
+          3: { cellWidth: 15, halign: 'center' },
+          4: { cellWidth: 20, halign: 'right' },
+          5: { cellWidth: 12, halign: 'center' },
+          6: { cellWidth: 20, halign: 'right' }
         },
         margin: { left: 14, right: 14 }
       });
@@ -571,22 +572,24 @@ export async function exportarFichaProducaoPDF(
       
       autoTable(doc, {
         startY: yPosition,
-        head: [['Ingrediente', 'Quantidade', 'Unid.']],
+        head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
         body: [
           ...grupo.inter.ingredientes.map(ing => [
+            '☐',
             ing.nomeComponente,
             ing.quantidadeArredondada.toFixed(3),
             ing.unidade
           ]),
-          ['Total:', totalIngredientes.toFixed(3), 'kg']
+          ['☐', 'Total:', totalIngredientes.toFixed(3), 'kg']
         ],
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
         styles: { fontSize: 9, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 100 },
-          1: { cellWidth: 35, halign: 'right' },
-          2: { cellWidth: 25, halign: 'center' }
+          0: { cellWidth: 12, halign: 'center' },
+          1: { cellWidth: 88 },
+          2: { cellWidth: 35, halign: 'right' },
+          3: { cellWidth: 25, halign: 'center' }
         },
         margin: { left: 14, right: 14 },
         didParseCell: function(data) {
@@ -633,8 +636,9 @@ export async function exportarFichaProducaoPDF(
         // Tabela de ingredientes adicionais com dados reais
         autoTable(doc, {
           startY: yPosition,
-          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
           body: ingredientesAdicionais.map(ing => [
+            '☐',
             ing.nomeComponente,
             ing.quantidadeAjustada.toFixed(3),
             ing.unidade
@@ -643,9 +647,10 @@ export async function exportarFichaProducaoPDF(
           headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: {
-            0: { cellWidth: 100 },
-            1: { cellWidth: 35, halign: 'right' },
-            2: { cellWidth: 25, halign: 'center' }
+            0: { cellWidth: 12, halign: 'center' },
+            1: { cellWidth: 88 },
+            2: { cellWidth: 35, halign: 'right' },
+            3: { cellWidth: 25, halign: 'center' }
           },
           margin: { left: 14, right: 14 }
         });
