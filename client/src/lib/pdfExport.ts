@@ -596,6 +596,14 @@ export async function exportarFichaProducaoPDF(
 
     // ===== 4. PARA CADA PRODUTO: INGREDIENTES ADICIONAIS + MODO DE PREPARO =====
     grupo.produtos.forEach((produto) => {
+      // Ingredientes adicionais do produto (se houver)
+      const ingredientesAdicionais = produto.insumos?.filter(i => i.tipoComponente === 'ingrediente') || [];
+      
+      // Ocultar produtos que têm apenas massa base (sem ingredientes adicionais)
+      if (ingredientesAdicionais.length === 0) {
+        return; // Pular para o próximo produto
+      }
+
       // Verificar se precisa de nova página
       if (yPosition > 240) {
         doc.addPage();
@@ -610,8 +618,7 @@ export async function exportarFichaProducaoPDF(
       doc.text(`${produto.nomeProduto} (${produto.passo3?.qtdInteira.toFixed(3)} ${produto.unidade})`, 16, yPosition + 1);
       yPosition += 8;
 
-      // Ingredientes adicionais do produto (se houver)
-      const ingredientesAdicionais = produto.insumos?.filter(i => i.tipoComponente === 'ingrediente') || [];
+      // Ingredientes adicionais do produto
       if (ingredientesAdicionais.length > 0) {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
