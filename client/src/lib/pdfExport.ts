@@ -154,6 +154,15 @@ interface ProdutoProducao {
     descricao: string;
     tempoMinutos: number;
   }>;
+  insumos?: Array<{
+    componenteId: number;
+    nomeComponente: string;
+    tipoComponente: string;
+    quantidadeCalculada: number;
+    quantidadeAjustada: number;
+    unidade: string;
+    editavel: boolean;
+  }>;
 }
 
 export async function exportarFichaPrePesagemPDF(
@@ -602,19 +611,22 @@ export async function exportarFichaProducaoPDF(
       yPosition += 8;
 
       // Ingredientes adicionais do produto (se houver)
-      if (produto.modoPreparo && produto.modoPreparo.length > 0) {
+      const ingredientesAdicionais = produto.insumos?.filter(i => i.tipoComponente === 'ingrediente') || [];
+      if (ingredientesAdicionais.length > 0) {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.text('Ingredientes Adicionais:', 16, yPosition);
         yPosition += 4;
 
-        // Tabela de ingredientes adicionais (placeholder - será preenchido com dados reais)
+        // Tabela de ingredientes adicionais com dados reais
         autoTable(doc, {
           startY: yPosition,
           head: [['Ingrediente', 'Quantidade', 'Unid.']],
-          body: [
-            ['(Ingredientes adicionais do produto)', '', '']
-          ],
+          body: ingredientesAdicionais.map(ing => [
+            ing.nomeComponente,
+            ing.quantidadeAjustada.toFixed(3),
+            ing.unidade
+          ]),
           theme: 'grid',
           headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },

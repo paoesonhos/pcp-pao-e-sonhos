@@ -343,7 +343,8 @@ export default function ProcessamentoPCP() {
                           unidade: r.unidade,
                           pesoUnitario: r.pesoUnitario,
                           passo3: r.passo3,
-                          modoPreparo: r.modoPreparo
+                          modoPreparo: r.modoPreparo,
+                          insumos: r.insumos || []
                         })) || [];
                       const intermediarios = processamentoData?.intermediarios?.map(i => ({
                         nomeProduto: i.nomeProduto,
