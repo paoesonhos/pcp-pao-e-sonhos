@@ -509,6 +509,11 @@ export async function exportarFichaProducaoPDF(
       yPosition = 20;
     }
 
+    // Adicionar espaço antes de cada grupo (se não for o primeiro)
+    if (yPosition > 30) {
+      yPosition += 50; // Espaço entre massas base
+    }
+    
     // ===== 1. CABEÇALHO DA MASSA BASE =====
     if (grupo.inter) {
       doc.setFontSize(12);
@@ -591,7 +596,7 @@ export async function exportarFichaProducaoPDF(
           }
         }
       });
-      yPosition = (doc as any).lastAutoTable.finalY + 15; // Espaço maior após ingredientes da massa base
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
     // ===== 4. PARA CADA PRODUTO: INGREDIENTES ADICIONAIS + MODO DE PREPARO =====
