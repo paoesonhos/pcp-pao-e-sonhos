@@ -575,7 +575,7 @@ export async function exportarFichaProducaoPDF(
           3: { cellWidth: 20, halign: 'right' },
           4: { cellWidth: 12, halign: 'center' },
           5: { cellWidth: 20, halign: 'right' },
-          6: { cellWidth: 12, halign: 'center' }
+          6: { cellWidth: 8, halign: 'center' }
         },
         margin: { left: 14, right: 14 }
       });
@@ -612,7 +612,7 @@ export async function exportarFichaProducaoPDF(
           0: { cellWidth: 12, halign: 'center' },
           1: { cellWidth: 88 },
           2: { cellWidth: 35, halign: 'right' },
-          3: { cellWidth: 25, halign: 'center' }
+          3: { cellWidth: 8, halign: 'center' }
         },
         margin: { left: 14, right: 14 },
         didParseCell: function(data) {
@@ -675,7 +675,7 @@ export async function exportarFichaProducaoPDF(
             0: { cellWidth: 12, halign: 'center' },
             1: { cellWidth: 88 },
             2: { cellWidth: 35, halign: 'right' },
-            3: { cellWidth: 25, halign: 'center' }
+            3: { cellWidth: 8, halign: 'center' }
           },
           margin: { left: 14, right: 14 }
         });
