@@ -1442,6 +1442,7 @@ export const appRouter = router({
           nivel: 1,
           produtosFilhos: mb.produtosFilhos,
           ingredientes: mb.ingredientes.map(ing => ({
+            tipoComponente: 'massa_base',
             componenteId: ing.componenteId,
             nomeComponente: ing.nomeComponente,
             quantidadeBase: 0, // não usado no frontend
