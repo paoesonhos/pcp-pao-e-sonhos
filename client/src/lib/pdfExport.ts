@@ -14,8 +14,23 @@ const DIAS_SEMANA: Record<number, string> = {
 // Logo em base64 será carregado dinamicamente
 let logoBase64: string | null = null;
 
-// Símbolo Unicode para checkbox vazio
-const CHECKBOX = '☐'; // ☐
+// Função para desenhar checkbox vazio na última coluna
+function adicionarCheckboxNaUltimaColuna(doc: jsPDF) {
+  const tableData = (doc as any).lastAutoTable;
+  if (tableData && tableData.rows) {
+    tableData.rows.forEach((row: any) => {
+      const lastCell = row.cells[row.cells.length - 1];
+      if (lastCell) {
+        const x = lastCell.x + 2;
+        const y = lastCell.y + 2;
+        const size = 3;
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.rect(x, y, size, size);
+      }
+    });
+  }
+}
 
 // Função para carregar o logo
 async function carregarLogo(): Promise<string | null> {
@@ -545,23 +560,23 @@ export async function exportarFichaProducaoPDF(
     if (dadosTabela.length > 0) {
       autoTable(doc, {
         startY: yPosition,
-        head: [[CHECKBOX, 'Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
-        body: dadosTabela.map(row => [CHECKBOX, ...row]),
+        head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço', '']],
+        body: dadosTabela.map(row => [...row, '']),
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 12, halign: 'center' },
-          1: { cellWidth: 15 },
-          2: { cellWidth: 55 },
-          3: { cellWidth: 15, halign: 'center' },
-          4: { cellWidth: 20, halign: 'right' },
-          5: { cellWidth: 12, halign: 'center' },
-          6: { cellWidth: 20, halign: 'right' }
+          0: { cellWidth: 15 },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 15, halign: 'center' },
+          3: { cellWidth: 20, halign: 'right' },
+          4: { cellWidth: 12, halign: 'center' },
+          5: { cellWidth: 20, halign: 'right' },
+          6: { cellWidth: 12, halign: 'center' }
         },
         margin: { left: 14, right: 14 }
       });
-      
+      adicionarCheckboxNaUltimaColuna(doc);
 
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
@@ -577,15 +592,15 @@ export async function exportarFichaProducaoPDF(
       
       autoTable(doc, {
         startY: yPosition,
-        head: [[CHECKBOX, 'Ingrediente', 'Quantidade', 'Unid.']],
+        head: [['Ingrediente', 'Quantidade', 'Unid.', '']],
         body: [
           ...grupo.inter.ingredientes.map(ing => [
-            CHECKBOX,
             ing.nomeComponente,
             ing.quantidadeArredondada.toFixed(3),
-            ing.unidade
+            ing.unidade,
+            ''
           ]),
-          [CHECKBOX, 'Total:', totalIngredientes.toFixed(3), 'kg']
+          ['Total:', totalIngredientes.toFixed(3), 'kg', '']
         ],
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
@@ -604,7 +619,7 @@ export async function exportarFichaProducaoPDF(
           }
         }
       });
-      
+      adicionarCheckboxNaUltimaColuna(doc);
 
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
@@ -643,12 +658,12 @@ export async function exportarFichaProducaoPDF(
         // Tabela de ingredientes adicionais com dados reais
         autoTable(doc, {
           startY: yPosition,
-          head: [[CHECKBOX, 'Ingrediente', 'Quantidade', 'Unid.']],
+          head: [['Ingrediente', 'Quantidade', 'Unid.', '']],
           body: ingredientesAdicionais.map(ing => [
-            CHECKBOX,
             ing.nomeComponente,
             ing.quantidadeAjustada.toFixed(3),
-            ing.unidade
+            ing.unidade,
+            ''
           ]),
           theme: 'grid',
           headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
@@ -661,7 +676,7 @@ export async function exportarFichaProducaoPDF(
           },
           margin: { left: 14, right: 14 }
         });
-        
+        adicionarCheckboxNaUltimaColuna(doc);
 
         yPosition = (doc as any).lastAutoTable.finalY + 5;
       }
