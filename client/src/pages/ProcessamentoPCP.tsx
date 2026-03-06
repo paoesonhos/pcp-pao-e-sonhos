@@ -22,7 +22,7 @@ import {
   Download,
   Clock
 } from "lucide-react";
-import { exportarFichaPrePesagemPDF, exportarListaExpedicaoPDF, exportarFichaProducaoPDF, exportarDetalhesProdutoPDF, exportarMolhadosConsolidadosPDF } from "@/lib/pdfExport";
+import { exportarFichaProducaoPDF, exportarDetalhesProdutoPDF } from "@/lib/pdfExport";
 
 // Tipos - Motor de Cálculo v3.0
 interface InsumoConsolidado {
@@ -35,7 +35,6 @@ interface InsumoConsolidado {
   origens: string[];
 }
 
-// Passo 1: Conversão Assado → Cru
 interface Passo1 {
   valorMapa: number;
   massaCruaTeorica: number;
@@ -43,7 +42,6 @@ interface Passo1 {
   massaTotalFinal: number;
 }
 
-// Passo 3: Blocos e Pedaços
 interface Passo3 {
   qtdInteira: number;
   divisora: number;
@@ -56,7 +54,6 @@ interface Passo3 {
   instrucaoPedaco: string;
 }
 
-// Componente individual (Passo 2)
 interface ComponenteProcessado {
   componenteId: number;
   nomeComponente: string;
@@ -67,7 +64,6 @@ interface ComponenteProcessado {
   editavel: boolean;
 }
 
-// Modo de Preparo
 interface PassoModoPreparo {
   ordem: number;
   descricao: string;
@@ -106,9 +102,9 @@ interface IntermediarioConsolidado {
   quantidadeTotal: number;
   quantidadeArredondada: number;
   unidade: 'kg' | 'un';
-  nivel: number; // 1 = Massa Base, 2 = Sub-bloco
-  produtosFilhos: string[]; // produtos que usam este intermediário
-  ingredientes: IngredienteIntermediario[]; // ficha técnica do intermediário
+  nivel: number;
+  produtosFilhos: string[];
+  ingredientes: IngredienteIntermediario[];
   modoPreparo?: Array<{
     ordem: number;
     descricao: string;
@@ -116,12 +112,10 @@ interface IntermediarioConsolidado {
   }>;
 }
 
-// Função de arredondamento para pesagem (múltiplos de 0.005)
 function arredondarPesagem(valor: number): number {
   return Math.floor(valor * 200) / 200;
 }
 
-// Formatar número para exibição
 function formatarNumero(valor: number, unidade: string): string {
   if (unidade === 'un') {
     return Math.floor(valor).toString();
@@ -129,7 +123,6 @@ function formatarNumero(valor: number, unidade: string): string {
   return valor.toFixed(3);
 }
 
-// Dias da semana
 const DIAS_SEMANA: Record<number, string> = {
   2: "Segunda-feira",
   3: "Terça-feira",
@@ -146,16 +139,13 @@ export default function ProcessamentoPCP() {
   const [fermentoEditado, setFermentoEditado] = useState<Record<string, number>>({});
   const [checksPesagem, setChecksPesagem] = useState<Record<string, boolean>>({});
 
-  // Buscar mapa do mapa_base salvo
   const { data: mapaData, isLoading: loadingMapa } = trpc.mapaProducao.carregarMapaBase.useQuery();
 
-  // Filtrar itens do dia selecionado
   const itensDoDia = useMemo(() => {
     if (!mapaData?.mapa) return [];
     return mapaData.mapa.filter(item => item.diaProduzir === diaSelecionado);
   }, [mapaData?.mapa, diaSelecionado]);
 
-  // Preparar input para processamento
   const inputProcessamento = useMemo(() => {
     return itensDoDia.map(item => ({
       codigoProduto: item.codigo,
@@ -166,20 +156,17 @@ export default function ProcessamentoPCP() {
     }));
   }, [itensDoDia]);
 
-  // Processar itens
   const { data: processamentoData, isLoading: loadingProcessamento } = trpc.pcp.processarMapa.useQuery(
     inputProcessamento,
     { enabled: inputProcessamento.length > 0 }
   );
 
-  // Dias disponíveis
   const diasDisponiveis = useMemo(() => {
     if (!mapaData?.mapa) return [];
     const dias = new Set(mapaData.mapa.map(item => item.diaProduzir));
     return Array.from(dias).sort();
   }, [mapaData?.mapa]);
 
-  // Agregar insumos de todos os produtos do dia (com suporte a cascata)
   const insumosAgregados = useMemo(() => {
     if (!processamentoData?.resultados) return [];
 
@@ -189,7 +176,7 @@ export default function ProcessamentoPCP() {
       quantidadeTotal: number;
       unidade: string;
       editavel: boolean;
-      origens: string[]; // origens da cascata (massas base, produtos)
+      origens: string[];
     }>();
 
     for (const item of processamentoData.resultados) {
@@ -199,7 +186,6 @@ export default function ProcessamentoPCP() {
         const existing = agregado.get(insumo.componenteId);
         if (existing) {
           existing.quantidadeTotal += insumo.quantidadeAjustada;
-          // Merge origens sem duplicatas
           if (!existing.origens.includes(item.nomeProduto)) {
             existing.origens.push(item.nomeProduto);
           }
@@ -216,7 +202,6 @@ export default function ProcessamentoPCP() {
       }
     }
 
-    // Arredondar totais e ordenar
     return Array.from(agregado.values())
       .map(item => ({
         ...item,
@@ -227,12 +212,10 @@ export default function ProcessamentoPCP() {
       .sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
   }, [processamentoData?.resultados]);
 
-  // Toggle check de pesagem
   const toggleCheck = (key: string) => {
     setChecksPesagem(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Atualizar fermento editado
   const atualizarFermento = (key: string, valor: number) => {
     setFermentoEditado(prev => ({ ...prev, [key]: valor }));
   };
@@ -277,7 +260,6 @@ export default function ProcessamentoPCP() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
-      {/* Header */}
       <div className="bg-white border-b border-orange-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -308,13 +290,12 @@ export default function ProcessamentoPCP() {
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Seletor de Dia */}
         <Card className="mb-6 border-orange-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Selecione o Dia de Produção</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
               {diasDisponiveis.map(dia => (
                 <Button
                   key={dia}
@@ -322,7 +303,7 @@ export default function ProcessamentoPCP() {
                   onClick={() => setDiaSelecionado(dia)}
                   className={diaSelecionado === dia ? "bg-orange-600 hover:bg-orange-700" : ""}
                 >
-                  Dia {dia} - {DIAS_SEMANA[dia]}
+                  {DIAS_SEMANA[dia]}
                 </Button>
               ))}
             </div>
@@ -330,476 +311,21 @@ export default function ProcessamentoPCP() {
         </Card>
 
         {loadingProcessamento ? (
-          <div className="animate-pulse space-y-4">
-            <div className="h-64 bg-amber-100 rounded"></div>
-          </div>
+          <Card className="border-orange-200">
+            <CardContent className="p-8 text-center">
+              <div className="animate-pulse">Processando dados...</div>
+            </CardContent>
+          </Card>
         ) : (
-          <Tabs defaultValue="pre-pesagem" className="space-y-4">
-            <TabsList className="bg-amber-100">
-              <TabsTrigger value="pre-pesagem" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
-                <Scale className="w-4 h-4 mr-2" />
-                Ficha de Pré-Pesagem
-              </TabsTrigger>
-              <TabsTrigger value="producao" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
-                <Factory className="w-4 h-4 mr-2" />
-                Ficha de Produção
-              </TabsTrigger>
-              <TabsTrigger value="detalhes" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Embalagem
-              </TabsTrigger>
-              <TabsTrigger value="expedicao" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
-                <Truck className="w-4 h-4 mr-2" />
-                Expedição
-              </TabsTrigger>
-              <TabsTrigger value="molhados" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Package className="w-4 h-4 mr-2" />
-                Molhados Consolidados
-              </TabsTrigger>
+          <Tabs defaultValue="producao" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="producao">Ficha de Produção</TabsTrigger>
+              <TabsTrigger value="pesagem">Pré-Pesagem</TabsTrigger>
+              <TabsTrigger value="detalhes">Embalagem</TabsTrigger>
+              <TabsTrigger value="expedicao">Expedição</TabsTrigger>
             </TabsList>
 
-            {/* Ficha de Pré-Pesagem */}
-            <TabsContent value="pre-pesagem">
-              <div className="space-y-4">
-                {/* Seção de Massas Base / Intermediários Consolidados */}
-                {processamentoData?.intermediarios && processamentoData.intermediarios.length > 0 && (
-                  <Card className="border-purple-300 bg-purple-50">
-                    <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
-                      <CardTitle className="text-base flex items-center gap-2 text-purple-800">
-                        <Scale className="w-5 h-5" />
-                        Massas Base a Produzir (Consolidado)
-                      </CardTitle>
-                      <p className="text-sm text-purple-600 mt-1">
-                        Produtos intermediários que devem ser preparados antes dos produtos finais
-                      </p>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-6">
-                      {processamentoData.intermediarios.map((inter: IntermediarioConsolidado, idx: number) => (
-                        <div key={inter.produtoId} className="border border-purple-200 rounded-lg overflow-hidden">
-                          {/* Cabeçalho do Intermediário */}
-                          <div className="bg-purple-100 px-4 py-3 border-b border-purple-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant="outline" 
-                                  className={inter.nivel === 1 ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-indigo-200 text-indigo-800 border-indigo-400'}
-                                >
-                                  N{inter.nivel}
-                                </Badge>
-                                <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="font-mono font-bold text-xl text-purple-700">
-                                  {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              <span className="text-xs text-purple-600 mr-1">Usado em:</span>
-                              {inter.produtosFilhos.slice(0, 5).map((filho, fIdx) => (
-                                <Badge key={fIdx} variant="outline" className="text-xs bg-white/50 text-purple-700 border-purple-300">
-                                  {filho}
-                                </Badge>
-                              ))}
-                              {inter.produtosFilhos.length > 5 && (
-                                <Badge variant="outline" className="text-xs bg-purple-200 text-purple-700">
-                                  +{inter.produtosFilhos.length - 5}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Ficha Técnica - Ingredientes */}
-                          {inter.ingredientes && inter.ingredientes.length > 0 && (
-                            <div className="p-4 bg-white">
-                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <ClipboardList className="w-4 h-4 text-purple-600" />
-                                Ficha Técnica - Ingredientes
-                              </h4>
-                              <table className="w-full text-sm">
-                                <thead className="bg-gray-50">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
-                                    <th className="px-3 py-2 text-right text-gray-600">Proporção</th>
-                                    <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
-                                    <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {inter.ingredientes.map((ing, iIdx) => (
-                                    <tr key={ing.componenteId} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                      <td className="px-3 py-2">
-                                        <span className="font-medium text-gray-800">{ing.nomeComponente}</span>
-                                        {ing.editavel && (
-                                          <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                                            Editável
-                                          </Badge>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-mono text-gray-500">
-                                        {(ing.quantidadeBase * 100).toFixed(1)}%
-                                      </td>
-                                      <td className="px-3 py-2 text-right">
-                                        <span className="font-mono font-semibold text-purple-700">
-                                          {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2 text-center">
-                                        <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                                <tfoot className="bg-purple-50 border-t border-purple-200">
-                                  <tr>
-                                    <td colSpan={2} className="px-3 py-2 text-right font-semibold text-purple-800">
-                                      Total de Ingredientes:
-                                    </td>
-                                    <td className="px-3 py-2 text-right">
-                                      <span className="font-mono font-bold text-purple-700">
-                                        {formatarNumero(
-                                          inter.ingredientes.reduce((sum, ing) => sum + (ing.unidade === 'kg' ? ing.quantidadeArredondada : 0), 0),
-                                          'kg'
-                                        )}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-2 text-center">
-                                      <Badge variant="secondary" className="text-xs bg-purple-100">kg</Badge>
-                                    </td>
-                                  </tr>
-                                </tfoot>
-                              </table>
-                            </div>
-                          )}
-                          
-                          {/* Mensagem se não houver ingredientes */}
-                          {(!inter.ingredientes || inter.ingredientes.length === 0) && (
-                            <div className="p-4 bg-white text-center text-gray-500 text-sm">
-                              Ficha técnica não disponível para este intermediário
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Produtos Finais - Pré-Pesagem */}
-                <Card className="border-orange-200">
-                  <CardHeader className="bg-orange-50 border-b border-orange-200">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Scale className="w-5 h-5 text-orange-600" />
-                        Ficha de Pré-Pesagem - {DIAS_SEMANA[diaSelecionado]}
-                      </CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const produtos = processamentoData?.resultados
-                            ?.filter(r => !r.erro && r.insumos.length > 0)
-                            .map(r => ({
-                              codigoProduto: r.codigoProduto,
-                              nomeProduto: r.nomeProduto,
-                              qtdPlanejada: r.qtdPlanejada,
-                              unidade: r.unidade,
-                              insumos: r.insumos.map(i => ({
-                                nomeComponente: i.nomeComponente,
-                                quantidadeArredondada: i.quantidadeAjustada,
-                                unidade: i.unidade
-                              }))
-                            })) || [];
-                          const intermediarios = processamentoData?.intermediarios?.map(i => ({
-                            nomeProduto: i.nomeProduto,
-                            quantidadeArredondada: i.quantidadeArredondada,
-                            unidade: i.unidade,
-                            produtosFilhos: i.produtosFilhos,
-                            ingredientes: i.ingredientes?.map(ing => ({
-                              nomeComponente: ing.nomeComponente,
-                              quantidadeArredondada: ing.quantidadeArredondada,
-                              unidade: ing.unidade
-                            })) || [],
-                            modoPreparo: i.modoPreparo?.map(mp => ({
-                              ordem: mp.ordem,
-                              descricao: mp.descricao,
-                              tempoMinutos: mp.tempoMinutos
-                            })) || []
-                          })) || [];
-                          exportarFichaPrePesagemPDF(diaSelecionado, produtos, intermediarios);
-                        }}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Exportar PDF
-                      </Button>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Checklist de ingredientes abertos por produto. Apenas Fermento é editável.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-6">
-                  {!processamentoData?.resultados || processamentoData.resultados.filter(r => !r.erro && r.insumos.length > 0).length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                      Nenhum insumo para processar neste dia
-                    </div>
-                  ) : (() => {
-                    // Agrupar produtos por intermediário (mesma lógica da Ficha de Produção)
-                    const resultadosSemErro = processamentoData.resultados.filter(r => !r.erro && r.insumos.length > 0);
-                    const intermediarios = processamentoData?.intermediarios || [];
-                    
-                    const produtosPorIntermediario: { inter: typeof intermediarios[0]; produtos: typeof resultadosSemErro }[] = [];
-                    const produtosUsados = new Set<string>();
-                    
-                    for (const inter of intermediarios) {
-                      const produtosDoInter = resultadosSemErro.filter(r => 
-                        inter.produtosFilhos.some(filho => {
-                          const nomeNormalizado = r.nomeProduto.toLowerCase().trim();
-                          const filhoNormalizado = filho.toLowerCase().trim();
-                          return nomeNormalizado === filhoNormalizado;
-                        })
-                      );
-                      if (produtosDoInter.length > 0) {
-                        produtosPorIntermediario.push({ inter, produtos: produtosDoInter });
-                        produtosDoInter.forEach(p => produtosUsados.add(p.codigoProduto));
-                      }
-                    }
-                    
-                    const produtosSemIntermediario = resultadosSemErro.filter(r => !produtosUsados.has(r.codigoProduto));
-                    
-                    return (
-                      <>
-                        {/* Produtos agrupados por intermediário */}
-                        {produtosPorIntermediario.map(({ inter, produtos }, groupIdx) => (
-                          <div key={`group-pre-${groupIdx}`} className="space-y-4 mb-6">
-                            {/* Card da Massa Base */}
-                            <Card className="border-purple-300 bg-purple-50">
-                              <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="bg-purple-200 text-purple-800 border-purple-400">
-                                      Massa Base
-                                    </Badge>
-                                    <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
-                                  </div>
-                                  <span className="font-mono font-bold text-xl text-purple-700">
-                                    {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
-                                  </span>
-                                </div>
-                              </CardHeader>
-                              {inter.ingredientes && inter.ingredientes.length > 0 && (
-                                <CardContent className="p-4">
-                                  <table className="w-full text-sm">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
-                                        <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
-                                        <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {inter.ingredientes.map((ing, iIdx) => (
-                                        <tr key={`ing-pre-${iIdx}`} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                          <td className="px-3 py-2 font-medium text-gray-800">{ing.nomeComponente}</td>
-                                          <td className="px-3 py-2 text-right font-mono text-purple-700">
-                                            {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
-                                          </td>
-                                          <td className="px-3 py-2 text-center">
-                                            <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </CardContent>
-                              )}
-                            </Card>
-
-                            {/* Separador - Produtos desta Massa Base */}
-                            <div className="bg-orange-100 border border-orange-300 rounded-lg px-4 py-2 flex items-center gap-2 ml-4">
-                              <Boxes className="w-4 h-4 text-orange-600" />
-                              <span className="font-semibold text-orange-800">Produtos que usam {inter.nomeProduto}</span>
-                              <Badge className="bg-orange-600 ml-auto">{produtos.length} produto(s)</Badge>
-                            </div>
-
-                            {/* Produtos deste intermediário */}
-                            {produtos.map((item, prodIdx) => (
-                              <div key={`prod-pre-${groupIdx}-${prodIdx}`} className="border border-orange-200 rounded-lg overflow-hidden ml-4">
-                          {/* Cabeçalho do Produto */}
-                          <div className="bg-amber-100 px-4 py-3 border-b border-orange-200">
-                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                              <Boxes className="w-4 h-4 text-orange-600" />
-                              {item.codigoProduto} – {item.nomeProduto}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Qtd Planejada: {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
-                            </p>
-                          </div>
-                          {/* Tabela de Ingredientes */}
-                          <table className="w-full">
-                            <thead className="bg-amber-50">
-                              <tr>
-                                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 w-12">✓</th>
-                                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
-                                <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Qtd Calculada</th>
-                                <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Unid.</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {item.insumos.map((insumo, idx) => {
-                                const checkKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
-                                const fermentoKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
-                                const isChecked = checksPesagem[checkKey] || false;
-                                const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeAjustada;
-
-                                return (
-                                  <tr 
-                                    key={insumo.componenteId} 
-                                    className={`border-b border-gray-100 ${isChecked ? 'bg-green-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                                  >
-                                    <td className="px-4 py-2">
-                                      <Checkbox 
-                                        checked={isChecked}
-                                        onCheckedChange={() => toggleCheck(checkKey)}
-                                      />
-                                    </td>
-                                    <td className="px-4 py-2">
-                                      <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                        {insumo.nomeComponente}
-                                      </span>
-                                      {insumo.editavel && (
-                                        <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                                          Editável
-                                        </Badge>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2 text-right">
-                                      {insumo.editavel ? (
-                                        <Input
-                                          type="number"
-                                          step="0.005"
-                                          value={valorFermento}
-                                          onChange={(e) => atualizarFermento(fermentoKey, parseFloat(e.target.value) || 0)}
-                                          className="w-24 text-right ml-auto h-8"
-                                        />
-                                      ) : (
-                                        <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
-                                          {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2 text-center">
-                                      <Badge variant="secondary" className="bg-gray-100">
-                                        {insumo.unidade}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-
-                        {/* Produtos sem intermediário */}
-                        {produtosSemIntermediario.length > 0 && (
-                          <div className="space-y-4 mt-6">
-                            <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2">
-                              <Boxes className="w-4 h-4 text-gray-600" />
-                              <span className="font-semibold text-gray-800">Produtos Individuais (sem massa base)</span>
-                              <Badge className="bg-gray-600 ml-auto">{produtosSemIntermediario.length} produto(s)</Badge>
-                            </div>
-                            {produtosSemIntermediario.map((item, prodIdx) => (
-                              <div key={`sem-inter-pre-${prodIdx}`} className="border border-orange-200 rounded-lg overflow-hidden ml-4">
-                                <div className="bg-amber-100 px-4 py-3 border-b border-orange-200">
-                                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <Boxes className="w-4 h-4 text-orange-600" />
-                                    {item.codigoProduto} – {item.nomeProduto}
-                                  </h3>
-                                  <p className="text-sm text-gray-600">
-                                    Qtd Planejada: {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
-                                  </p>
-                                </div>
-                                <table className="w-full">
-                                  <thead className="bg-amber-50">
-                                    <tr>
-                                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 w-12">✓</th>
-                                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
-                                      <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Qtd Calculada</th>
-                                      <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Unid.</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {item.insumos.map((insumo, idx) => {
-                                      const checkKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
-                                      const fermentoKey = `${diaSelecionado}-${item.codigoProduto}-${insumo.componenteId}`;
-                                      const isChecked = checksPesagem[checkKey] || false;
-                                      const valorFermento = fermentoEditado[fermentoKey] ?? insumo.quantidadeAjustada;
-                                      return (
-                                        <tr key={insumo.componenteId} className={`border-b border-gray-100 ${isChecked ? 'bg-green-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                          <td className="px-4 py-2">
-                                            <Checkbox checked={isChecked} onCheckedChange={() => toggleCheck(checkKey)} />
-                                          </td>
-                                          <td className="px-4 py-2">
-                                            <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                              {insumo.nomeComponente}
-                                            </span>
-                                            {insumo.editavel && (
-                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">Editável</Badge>
-                                            )}
-                                          </td>
-                                          <td className="px-4 py-2 text-right">
-                                            {insumo.editavel ? (
-                                              <Input type="number" step="0.005" value={valorFermento} onChange={(e) => atualizarFermento(fermentoKey, parseFloat(e.target.value) || 0)} className="w-24 text-right ml-auto h-8" />
-                                            ) : (
-                                              <span className={`font-mono ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
-                                                {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
-                                              </span>
-                                            )}
-                                          </td>
-                                          <td className="px-4 py-2 text-center">
-                                            <Badge variant="secondary" className="bg-gray-100">{insumo.unidade}</Badge>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                  </CardContent>
-                </Card>
-
-                {/* Produtos com erro - Pré-Pesagem */}
-                {processamentoData?.resultados && processamentoData.resultados.filter(r => r.erro).length > 0 && (
-                  <Card className="border-red-200 bg-red-50">
-                    <CardHeader className="bg-red-100 border-b border-red-200 py-3">
-                      <CardTitle className="text-base flex items-center gap-2 text-red-700">
-                        <AlertCircle className="w-5 h-5" />
-                        Produtos com Pendências
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-2">
-                      {processamentoData.resultados.filter(r => r.erro).map((item, idx) => (
-                        <div key={`erro-pre-${idx}`} className="flex items-center gap-2 text-red-700">
-                          <AlertCircle className="w-4 h-4" />
-                          <span className="font-medium">{item.codigoProduto} - {item.nomeProduto}</span>
-                          <span className="text-sm">({item.erro})</span>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Ficha de Produção */}
+            {/* Ficha de Produção - ESTRUTURA SIMPLES */}
             <TabsContent value="producao">
               <div className="space-y-4">
                 {/* Botão Exportar PDF */}
@@ -835,19 +361,18 @@ export default function ProcessamentoPCP() {
                     Exportar Ficha de Produção PDF
                   </Button>
                 </div>
-                {/* Produtos Finais - Agrupados por Intermediário (cada massa base seguida dos seus produtos) */}
+
+                {/* Produtos agrupados por massa base - ESTRUTURA SIMPLES */}
                 {(() => {
                   const resultadosSemErro = processamentoData?.resultados?.filter(r => !r.erro) || [];
                   const intermediarios = processamentoData?.intermediarios || [];
                   
-                  // Produtos que usam cada intermediário
                   const produtosPorIntermediario: { inter: typeof intermediarios[0]; produtos: typeof resultadosSemErro }[] = [];
                   const produtosUsados = new Set<string>();
                   
                   for (const inter of intermediarios) {
                     const produtosDoInter = resultadosSemErro.filter(r => 
                       inter.produtosFilhos.some(filho => {
-                        // Correspondência exata (case-insensitive)
                         const nomeNormalizado = r.nomeProduto.toLowerCase().trim();
                         const filhoNormalizado = filho.toLowerCase().trim();
                         return nomeNormalizado === filhoNormalizado;
@@ -859,535 +384,181 @@ export default function ProcessamentoPCP() {
                     }
                   }
                   
-                  // Produtos sem intermediário
                   const produtosSemIntermediario = resultadosSemErro.filter(r => !produtosUsados.has(r.codigoProduto));
                   
                   return (
                     <>
-                      {/* Produtos agrupados por intermediário */}
+                      {/* Produtos por massa base */}
                       {produtosPorIntermediario.map(({ inter, produtos }, groupIdx) => (
-                        <div key={`group-${groupIdx}`} className="space-y-4 mb-6">
-                          {/* Card da Massa Base */}
-                          <Card className="border-purple-300 bg-purple-50">
-                            <CardHeader className="bg-purple-100 border-b border-purple-300 py-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={inter.nivel === 1 ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-indigo-200 text-indigo-800 border-indigo-400'}
-                                  >
-                                    N{inter.nivel}
-                                  </Badge>
-                                  <span className="font-bold text-purple-900 text-lg">{inter.nomeProduto}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="font-mono font-bold text-xl text-purple-700">
-                                    {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                <span className="text-xs text-purple-600 mr-1">Usado em:</span>
-                                {inter.produtosFilhos.slice(0, 5).map((filho, fIdx) => (
-                                  <Badge key={fIdx} variant="outline" className="text-xs bg-white/50 text-purple-700 border-purple-300">
-                                    {filho}
-                                  </Badge>
-                                ))}
-                                {inter.produtosFilhos.length > 5 && (
-                                  <Badge variant="outline" className="text-xs bg-purple-200 text-purple-700">
-                                    +{inter.produtosFilhos.length - 5}
-                                  </Badge>
-                                )}
-                              </div>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                              {/* Ficha Técnica - Ingredientes */}
-                              {inter.ingredientes && inter.ingredientes.length > 0 && (
-                                <div className="bg-white rounded-lg border border-purple-200 p-4">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                    <ClipboardList className="w-4 h-4 text-purple-600" />
-                                    Ficha Técnica - Ingredientes
-                                  </h4>
-                                  <table className="w-full text-sm">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-gray-600">Ingrediente</th>
-                                        <th className="px-3 py-2 text-right text-gray-600">Proporção</th>
-                                        <th className="px-3 py-2 text-right text-gray-600">Quantidade</th>
-                                        <th className="px-3 py-2 text-center text-gray-600">Unid.</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {inter.ingredientes.map((ing, iIdx) => (
-                                        <tr key={ing.componenteId} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                          <td className="px-3 py-2">
-                                            <span className="font-medium text-gray-800">{ing.nomeComponente}</span>
-                                            {ing.editavel && (
-                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                                                Editável
-                                              </Badge>
-                                            )}
-                                          </td>
-                                          <td className="px-3 py-2 text-right font-mono text-gray-500">
-                                            {(ing.quantidadeBase * 100).toFixed(1)}%
-                                          </td>
-                                          <td className="px-3 py-2 text-right">
-                                            <span className="font-mono font-semibold text-purple-700">
-                                              {formatarNumero(ing.quantidadeArredondada, ing.unidade)}
-                                            </span>
-                                          </td>
-                                          <td className="px-3 py-2 text-center">
-                                            <Badge variant="secondary" className="text-xs bg-gray-100">{ing.unidade}</Badge>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                    <tfoot className="bg-purple-50 border-t border-purple-200">
-                                      <tr>
-                                        <td colSpan={2} className="px-3 py-2 text-right font-semibold text-purple-800">
-                                          Total de Ingredientes:
-                                        </td>
-                                        <td className="px-3 py-2 text-right">
-                                          <span className="font-mono font-bold text-purple-700">
-                                            {formatarNumero(
-                                              inter.ingredientes.reduce((sum, ing) => sum + (ing.unidade === 'kg' ? ing.quantidadeArredondada : 0), 0),
-                                              'kg'
-                                            )}
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-center">
-                                          <Badge variant="secondary" className="text-xs bg-purple-100">kg</Badge>
-                                        </td>
-                                      </tr>
-                                    </tfoot>
-                                  </table>
-                                </div>
-                              )}
-                              
-                              {/* Mensagem se não houver ingredientes */}
-                              {(!inter.ingredientes || inter.ingredientes.length === 0) && (
-                                <div className="bg-white rounded-lg border border-purple-200 p-4 text-center text-gray-500 text-sm">
-                                  Ficha técnica não disponível para este intermediário
-                                </div>
-                              )}
+                        <div key={`group-${groupIdx}`} className="mb-6">
+                          {/* Cabeçalho da Massa Base */}
+                          <div className="bg-purple-100 border border-purple-300 rounded-lg px-4 py-3 mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge className="bg-purple-600">{inter.nomeProduto}</Badge>
+                              <span className="font-mono font-bold text-purple-700">
+                                {formatarNumero(inter.quantidadeArredondada, inter.unidade)} {inter.unidade}
+                              </span>
+                            </div>
+                          </div>
 
-                              {/* Modo de Preparo */}
-                              {inter.modoPreparo && inter.modoPreparo.length > 0 && (
-                                <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-                                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-blue-600" />
-                                    Modo de Preparo
-                                  </h4>
-                                  <table className="w-full text-sm">
-                                    <thead className="bg-blue-100">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-blue-700 w-12">#</th>
-                                        <th className="px-3 py-2 text-left text-blue-700">Descrição</th>
-                                        <th className="px-3 py-2 text-right text-blue-700 w-32">Tempo (min)</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {inter.modoPreparo.map((passo, pIdx) => (
-                                        <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
-                                          <td className="px-3 py-2 font-mono text-blue-600">{passo.ordem}</td>
-                                          <td className="px-3 py-2 text-gray-800">{passo.descricao}</td>
-                                          <td className="px-3 py-2 text-right font-mono text-blue-700">{passo.tempoMinutos}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                    <tfoot className="bg-blue-100 border-t border-blue-200">
-                                      <tr>
-                                        <td colSpan={2} className="px-3 py-2 text-right font-semibold text-blue-800">
-                                          Tempo Total:
-                                        </td>
-                                        <td className="px-3 py-2 text-right font-mono font-bold text-blue-700">
-                                          {inter.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
-                                        </td>
-                                      </tr>
-                                    </tfoot>
-                                  </table>
-                                </div>
-                              )}
+                          {/* Tabela de Produtos */}
+                          <Card className="border-orange-200">
+                            <CardContent className="p-0">
+                              <table className="w-full">
+                                <thead className="bg-orange-50">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Código</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produto</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Planejada</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Blocos</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Peso Bloco</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Pedaços</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Peso Pedaço</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {produtos.map((item, idx) => (
+                                    <tr key={idx} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                      <td className="px-4 py-3 font-mono text-sm">{item.codigoProduto}</td>
+                                      <td className="px-4 py-3">{item.nomeProduto}</td>
+                                      <td className="px-4 py-3 text-center">
+                                        <Badge variant="secondary">{item.unidade}</Badge>
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {formatarNumero(item.qtdPlanejada, item.unidade)}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.blocos || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pesoBloco.toFixed(3) || '-'} kg
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pedacos || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pesoPedaco.toFixed(3) || '-'} kg
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </CardContent>
                           </Card>
-
-                          {/* Separador - Produtos desta Massa Base */}
-                          <div className="bg-orange-100 border border-orange-300 rounded-lg px-4 py-2 flex items-center gap-2 ml-4">
-                            <Boxes className="w-4 h-4 text-orange-600" />
-                            <span className="font-semibold text-orange-800">Produtos que usam {inter.nomeProduto}</span>
-                            <Badge className="bg-orange-600 ml-auto">{produtos.length} produto(s)</Badge>
-                          </div>
-
-                          {/* Produtos deste intermediário */}
-                          {produtos.map((item, idx) => (
-                            <Card key={`${groupIdx}-${idx}`} className="border-orange-200 ml-4">
-                    <CardHeader className="bg-orange-50 border-b border-orange-200 py-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Boxes className="w-4 h-4 text-orange-600" />
-                          {item.codigoProduto} - {item.nomeProduto}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{item.unidade}</Badge>
-                          <Badge className="bg-orange-600">
-                            {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      {/* Motor v3.0 - Passo 1: Conversão Assado → Cru */}
-                      {item.passo1 && (
-                        <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                          <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                            <Scale className="w-4 h-4" />
-                            Passo 1: Conversão Assado → Cru
-                          </h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 rounded border border-purple-100">
-                              <p className="text-xs text-gray-500 uppercase">Valor Mapa</p>
-                              <p className="text-xl font-bold text-purple-700">{item.passo1.valorMapa.toFixed(3)} kg</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-purple-100">
-                              <p className="text-xs text-gray-500 uppercase">Massa Crua Teórica</p>
-                              <p className="text-xl font-bold text-purple-700">{item.passo1.massaCruaTeorica.toFixed(3)} kg</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-purple-100">
-                              <p className="text-xs text-gray-500 uppercase">Unidades Inteiras</p>
-                              <p className="text-xl font-bold text-blue-700">{item.passo1.qtdInteira}</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-purple-100">
-                              <p className="text-xs text-gray-500 uppercase">Massa Total Final</p>
-                              <p className="text-xl font-bold text-green-700">{item.passo1.massaTotalFinal.toFixed(3)} kg</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Motor v3.0 - Passo 3: Blocos e Pedaços */}
-                      {item.passo3 && (
-                        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                          <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                            <Factory className="w-4 h-4" />
-                            Passo 3: Blocos e Pedaços (Divisora: {item.passo3.divisora} un/bloco)
-                          </h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Unidades Totais</p>
-                              <p className="text-xl font-bold text-blue-700">{item.passo3.qtdInteira}</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Blocos</p>
-                              <p className="text-xl font-bold text-green-700">{item.passo3.blocos}</p>
-                              <p className="text-xs text-gray-500">{item.passo3.pesoBloco.toFixed(3)} kg cada</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Pedaços (Manual)</p>
-                              <p className="text-xl font-bold text-amber-700">{item.passo3.pedacos} un</p>
-                              <p className="text-xs text-gray-500">{item.passo3.pesoPedaco.toFixed(3)} kg</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-blue-100">
-                              <p className="text-xs text-gray-500 uppercase">Peso Unitário Real</p>
-                              <p className="text-xl font-bold text-gray-800">{item.passo3.pesoUnitarioReal.toFixed(5)} kg</p>
-                            </div>
-                          </div>
-
-                          {/* Instruções visuais */}
-                          <div className="mt-4 grid grid-cols-2 gap-4">
-                            {item.passo3.blocos > 0 && (
-                              <div className="bg-green-100 p-3 rounded border border-green-300">
-                                <h5 className="font-semibold text-green-800 text-sm mb-1">
-                                  🔄 DIVISORA ({item.passo3.blocos} blocos)
-                                </h5>
-                                <p className="text-sm text-green-700">
-                                  {item.passo3.instrucaoBlocos}
-                                </p>
-                              </div>
-                            )}
-                            {item.passo3.pedacos > 0 && (
-                              <div className="bg-amber-100 p-3 rounded border border-amber-300">
-                                <h5 className="font-semibold text-amber-800 text-sm mb-1">
-                                  ✋ MANUAL ({item.passo3.pedacos} un)
-                                </h5>
-                                <p className="text-sm text-amber-700">
-                                  {item.passo3.instrucaoPedaco}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Lista de Insumos do Produto */}
-                      <div>
-                        <h4 className="font-semibold text-gray-700 mb-2">Insumos</h4>
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-3 py-2 text-left">Ingrediente</th>
-                              <th className="px-3 py-2 text-right">Quantidade</th>
-                              <th className="px-3 py-2 text-center">Unid.</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {item.insumos.map((insumo, iIdx) => (
-                              <tr key={iIdx} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                <td className="px-3 py-2">
-                                  {insumo.nomeComponente}
-                                  {insumo.editavel && (
-                                    <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700">
-                                      Editável
-                                    </Badge>
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-right font-mono">
-                                  {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                  <Badge variant="secondary" className="text-xs">{insumo.unidade}</Badge>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Modo de Preparo */}
-                      {item.modoPreparo && item.modoPreparo.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="font-semibold text-gray-700 mb-2">Modo de Preparo</h4>
-                          <table className="w-full text-sm">
-                            <thead className="bg-blue-50">
-                              <tr>
-                                <th className="px-3 py-2 text-center w-12">#</th>
-                                <th className="px-3 py-2 text-left">Descrição</th>
-                                <th className="px-3 py-2 text-right w-24">Tempo</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {item.modoPreparo.map((passo, pIdx) => (
-                                <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-3 py-2 text-center text-muted-foreground">{passo.ordem}</td>
-                                  <td className="px-3 py-2">{passo.descricao}</td>
-                                  <td className="px-3 py-2 text-right font-mono">{passo.tempoMinutos} min</td>
-                                </tr>
-                              ))}
-                              <tr className="bg-blue-50 font-medium">
-                                <td className="px-3 py-2"></td>
-                                <td className="px-3 py-2 text-right">Tempo Total:</td>
-                                <td className="px-3 py-2 text-right font-mono text-blue-700">
-                                  {item.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                          ))}
                         </div>
                       ))}
 
                       {/* Produtos sem intermediário */}
                       {produtosSemIntermediario.length > 0 && (
-                        <div className="space-y-2">
-                          <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2">
-                            <Boxes className="w-4 h-4 text-gray-600" />
-                            <span className="font-semibold text-gray-800">Produtos sem Massa Base</span>
-                            <Badge className="bg-gray-600 ml-auto">{produtosSemIntermediario.length} produto(s)</Badge>
+                        <div className="mb-6">
+                          <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-3 flex items-center justify-between">
+                            <Badge className="bg-gray-600">Produtos sem Massa Base</Badge>
+                            <span className="text-sm font-semibold text-gray-700">{produtosSemIntermediario.length} produto(s)</span>
                           </div>
-                          {produtosSemIntermediario.map((item, idx) => (
-                            <Card key={`sem-inter-${idx}`} className="border-orange-200 ml-4">
-                              <CardHeader className="bg-orange-50 border-b border-orange-200 py-3">
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-base flex items-center gap-2">
-                                    <Boxes className="w-4 h-4 text-orange-600" />
-                                    {item.codigoProduto} - {item.nomeProduto}
-                                  </CardTitle>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{item.unidade}</Badge>
-                                    <Badge className="bg-orange-600">
-                                      {formatarNumero(item.qtdPlanejada, item.unidade)} {item.unidade}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="p-4">
-                                {/* Motor v3.0 - Passo 1: Conversão Assado → Cru */}
-                                {item.passo1 && (
-                                  <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                                    <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                                      <Scale className="w-4 h-4" />
-                                      Passo 1: Conversão Assado → Cru
-                                    </h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                      <div className="bg-white p-3 rounded border border-purple-100">
-                                        <p className="text-xs text-gray-500 uppercase">Valor Mapa</p>
-                                        <p className="text-xl font-bold text-purple-700">{item.passo1.valorMapa.toFixed(3)} kg</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-purple-100">
-                                        <p className="text-xs text-gray-500 uppercase">Massa Crua Teórica</p>
-                                        <p className="text-xl font-bold text-purple-700">{item.passo1.massaCruaTeorica.toFixed(3)} kg</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-purple-100">
-                                        <p className="text-xs text-gray-500 uppercase">Unidades Inteiras</p>
-                                        <p className="text-xl font-bold text-blue-700">{item.passo1.qtdInteira}</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-purple-100">
-                                        <p className="text-xs text-gray-500 uppercase">Massa Total Final</p>
-                                        <p className="text-xl font-bold text-green-700">{item.passo1.massaTotalFinal.toFixed(3)} kg</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
 
-                                {/* Motor v3.0 - Passo 3: Blocos e Pedaços */}
-                                {item.passo3 && (
-                                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                                      <Factory className="w-4 h-4" />
-                                      Passo 3: Blocos e Pedaços (Divisora: {item.passo3.divisora} un/bloco)
-                                    </h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                      <div className="bg-white p-3 rounded border border-blue-100">
-                                        <p className="text-xs text-gray-500 uppercase">Unidades Totais</p>
-                                        <p className="text-xl font-bold text-blue-700">{item.passo3.qtdInteira}</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-blue-100">
-                                        <p className="text-xs text-gray-500 uppercase">Blocos</p>
-                                        <p className="text-xl font-bold text-green-700">{item.passo3.blocos}</p>
-                                        <p className="text-xs text-gray-500">{item.passo3.pesoBloco.toFixed(3)} kg cada</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-blue-100">
-                                        <p className="text-xs text-gray-500 uppercase">Pedaços (Manual)</p>
-                                        <p className="text-xl font-bold text-amber-700">{item.passo3.pedacos} un</p>
-                                        <p className="text-xs text-gray-500">{item.passo3.pesoPedaco.toFixed(3)} kg</p>
-                                      </div>
-                                      <div className="bg-white p-3 rounded border border-blue-100">
-                                        <p className="text-xs text-gray-500 uppercase">Peso Unitário Real</p>
-                                        <p className="text-xl font-bold text-gray-800">{item.passo3.pesoUnitarioReal.toFixed(5)} kg</p>
-                                      </div>
-                                    </div>
-
-                                    {/* Instruções visuais */}
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                      {item.passo3.blocos > 0 && (
-                                        <div className="bg-green-100 p-3 rounded border border-green-300">
-                                          <h5 className="font-semibold text-green-800 text-sm mb-1">
-                                            🔄 DIVISORA ({item.passo3.blocos} blocos)
-                                          </h5>
-                                          <p className="text-sm text-green-700">
-                                            {item.passo3.instrucaoBlocos}
-                                          </p>
-                                        </div>
-                                      )}
-                                      {item.passo3.pedacos > 0 && (
-                                        <div className="bg-amber-100 p-3 rounded border border-amber-300">
-                                          <h5 className="font-semibold text-amber-800 text-sm mb-1">
-                                            ✋ MANUAL ({item.passo3.pedacos} un)
-                                          </h5>
-                                          <p className="text-sm text-amber-700">
-                                            {item.passo3.instrucaoPedaco}
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Lista de Insumos do Produto */}
-                                <div>
-                                  <h4 className="font-semibold text-gray-700 mb-2">Insumos</h4>
-                                  <table className="w-full text-sm">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left">Ingrediente</th>
-                                        <th className="px-3 py-2 text-right">Quantidade</th>
-                                        <th className="px-3 py-2 text-center">Unid.</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {item.insumos.map((insumo, iIdx) => (
-                                        <tr key={iIdx} className={iIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                          <td className="px-3 py-2">
-                                            {insumo.nomeComponente}
-                                            {insumo.editavel && (
-                                              <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700">
-                                                Editável
-                                              </Badge>
-                                            )}
-                                          </td>
-                                          <td className="px-3 py-2 text-right font-mono">
-                                            {formatarNumero(insumo.quantidadeAjustada, insumo.unidade)}
-                                          </td>
-                                          <td className="px-3 py-2 text-center">
-                                            <Badge variant="secondary" className="text-xs">{insumo.unidade}</Badge>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-
-                                {/* Modo de Preparo */}
-                                {item.modoPreparo && item.modoPreparo.length > 0 && (
-                                  <div className="mt-4">
-                                    <h4 className="font-semibold text-gray-700 mb-2">Modo de Preparo</h4>
-                                    <table className="w-full text-sm">
-                                      <thead className="bg-blue-50">
-                                        <tr>
-                                          <th className="px-3 py-2 text-center w-12">#</th>
-                                          <th className="px-3 py-2 text-left">Descrição</th>
-                                          <th className="px-3 py-2 text-right w-24">Tempo</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {item.modoPreparo.map((passo, pIdx) => (
-                                          <tr key={pIdx} className={pIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="px-3 py-2 text-center text-muted-foreground">{passo.ordem}</td>
-                                            <td className="px-3 py-2">{passo.descricao}</td>
-                                            <td className="px-3 py-2 text-right font-mono">{passo.tempoMinutos} min</td>
-                                          </tr>
-                                        ))}
-                                        <tr className="bg-blue-50 font-medium">
-                                          <td className="px-3 py-2"></td>
-                                          <td className="px-3 py-2 text-right">Tempo Total:</td>
-                                          <td className="px-3 py-2 text-right font-mono text-blue-700">
-                                            {item.modoPreparo.reduce((sum, p) => sum + p.tempoMinutos, 0)} min
-                                          </td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
+                          <Card className="border-orange-200">
+                            <CardContent className="p-0">
+                              <table className="w-full">
+                                <thead className="bg-orange-50">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Código</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produto</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Planejada</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Blocos</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Peso Bloco</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Pedaços</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Peso Pedaço</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {produtosSemIntermediario.map((item, idx) => (
+                                    <tr key={idx} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                      <td className="px-4 py-3 font-mono text-sm">{item.codigoProduto}</td>
+                                      <td className="px-4 py-3">{item.nomeProduto}</td>
+                                      <td className="px-4 py-3 text-center">
+                                        <Badge variant="secondary">{item.unidade}</Badge>
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {formatarNumero(item.qtdPlanejada, item.unidade)}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.blocos || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pesoBloco.toFixed(3) || '-'} kg
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pedacos || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-mono">
+                                        {item.passo3?.pesoPedaco.toFixed(3) || '-'} kg
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </CardContent>
+                          </Card>
                         </div>
                       )}
+
+                      {/* Produtos com erro */}
+                      {processamentoData?.resultados?.filter(r => r.erro).map((item, idx) => (
+                        <Card key={`erro-${idx}`} className="border-red-200 bg-red-50">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2 text-red-700">
+                              <AlertCircle className="w-5 h-5" />
+                              <span className="font-medium">{item.codigoProduto} - {item.nomeProduto}</span>
+                              <span className="text-sm">({item.erro})</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </>
                   );
                 })()}
-
-                {/* Produtos com erro */}
-                {processamentoData?.resultados?.filter(r => r.erro).map((item, idx) => (
-                  <Card key={`erro-${idx}`} className="border-red-200 bg-red-50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 text-red-700">
-                        <AlertCircle className="w-5 h-5" />
-                        <span className="font-medium">{item.codigoProduto} - {item.nomeProduto}</span>
-                        <span className="text-sm">({item.erro})</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
             </TabsContent>
 
-            {/* Detalhes por Produto */}
+            {/* Pré-Pesagem */}
+            <TabsContent value="pesagem">
+              <div className="space-y-4">
+                <Card className="border-orange-200">
+                  <CardHeader className="bg-amber-50 border-b border-orange-200">
+                    <CardTitle>Insumos Agregados - Pré-Pesagem</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <table className="w-full">
+                      <thead className="bg-amber-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Total</th>
+                          <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {insumosAgregados.map((item, idx) => (
+                          <tr key={idx} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                            <td className="px-4 py-3">{item.nomeComponente}</td>
+                            <td className="px-4 py-3 text-right font-mono">
+                              {item.unidade === 'kg' ? item.quantidadeTotal.toFixed(3) : Math.floor(item.quantidadeTotal)}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="secondary">{item.unidade}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Embalagem */}
             <TabsContent value="detalhes">
-              {/* Botão Exportar PDF */}
               <div className="flex justify-end mb-4">
                 <Button
                   variant="outline"
@@ -1467,377 +638,17 @@ export default function ProcessamentoPCP() {
 
             {/* Expedição */}
             <TabsContent value="expedicao">
-              <ExpedicaoTab diaSelecionado={diaSelecionado} processamentoData={processamentoData} />
-            </TabsContent>
-
-            {/* Molhados Consolidados */}
-            <TabsContent value="molhados">
-              <MolhadosConsolidadosTab mapaData={mapaData} />
+              <Card className="border-orange-200">
+                <CardContent className="p-8 text-center">
+                  <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Expedição</h3>
+                  <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         )}
       </div>
-    </div>
-  );
-}
-
-// Componente da aba Expedição
-function ExpedicaoTab({ diaSelecionado, processamentoData }: { diaSelecionado: number; processamentoData?: { resultados?: Array<{ codigoProduto: string; nomeProduto: string; unidade: string; qtdPlanejada: number; pesoUnitario: number; }> } }) {
-  const [checksExpedicao, setChecksExpedicao] = useState<Record<number, boolean>>({});
-  const [quantidades, setQuantidades] = useState<Record<number, number>>({});
-
-  // Buscar produtos para expedição
-  const { data: produtosExpedicao, isLoading, refetch } = trpc.expedicao.listarProdutos.useQuery();
-
-  // Mutação para confirmar separação
-  const confirmarMutation = trpc.expedicao.confirmarSeparacao.useMutation({
-    onSuccess: (data) => {
-      alert(data.message);
-      setChecksExpedicao({});
-      setQuantidades({});
-      refetch();
-    },
-    onError: (error) => {
-      alert("Erro ao confirmar separação: " + error.message);
-    },
-  });
-
-  // Toggle check
-  const toggleCheck = (produtoId: number, saldoAtual: number) => {
-    setChecksExpedicao(prev => {
-      const newChecks = { ...prev, [produtoId]: !prev[produtoId] };
-      // Se marcou, define quantidade padrão como saldo atual
-      if (newChecks[produtoId] && !quantidades[produtoId]) {
-        setQuantidades(q => ({ ...q, [produtoId]: Math.floor(saldoAtual) }));
-      }
-      return newChecks;
-    });
-  };
-
-  // Confirmar separação
-  const handleConfirmar = () => {
-    const itens = Object.entries(checksExpedicao)
-      .filter(([_, checked]) => checked)
-      .map(([produtoId, _]) => ({
-        produtoId: parseInt(produtoId),
-        quantidade: quantidades[parseInt(produtoId)] || 0,
-      }))
-      .filter(item => item.quantidade > 0);
-
-    if (itens.length === 0) {
-      alert("Selecione pelo menos um produto e defina a quantidade.");
-      return;
-    }
-
-    if (confirm(`Confirmar separação de ${itens.length} item(s)?`)) {
-      confirmarMutation.mutate({ itens });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="border-orange-200">
-        <CardContent className="p-8 text-center">
-          <div className="animate-pulse">Carregando produtos para expedição...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!produtosExpedicao || produtosExpedicao.length === 0) {
-    return (
-      <Card className="border-orange-200">
-        <CardContent className="p-8 text-center">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum Produto para Expedição</h3>
-          <p className="text-gray-500">
-            Não há produtos com destino "Congelado" cadastrados.
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            Cadastre destinos em Destinos e associe aos produtos.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const itensSelecionados = Object.values(checksExpedicao).filter(Boolean).length;
-
-  return (
-    <Card className="border-orange-200">
-      <CardHeader className="bg-blue-50 border-b border-blue-200">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-blue-600" />
-            Checklist de Expedição - {DIAS_SEMANA[diaSelecionado]}
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const produtos = produtosExpedicao?.map(p => ({
-                codigoProduto: p.codigoProduto,
-                nome: p.nome,
-                saldoEstoque: p.saldoEstoque || '0',
-                unidade: 'un'
-              })) || [];
-              exportarListaExpedicaoPDF(diaSelecionado, produtos);
-            }}
-            className="border-blue-300 text-blue-700 hover:bg-blue-100"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar PDF
-          </Button>
-        </div>
-        <p className="text-sm text-gray-600">
-          Marque os produtos conforme retira do estoque de congelados
-        </p>
-      </CardHeader>
-      <CardContent className="p-0">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="p-3 text-left w-12">Check</th>
-              <th className="p-3 text-left">Código</th>
-              <th className="p-3 text-left">Produto</th>
-              <th className="p-3 text-right">Saldo Estoque</th>
-              <th className="p-3 text-right w-32">Qtd. Separar</th>
-              <th className="p-3 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {produtosExpedicao.map((produto) => {
-              const saldo = parseFloat(produto.saldoEstoque || '0');
-              const estoqueMinimo = produto.estoqueMinimoDias * 10; // Simplificado: 10 un/dia
-              const emRuptura = saldo < estoqueMinimo;
-              const isChecked = checksExpedicao[produto.id] || false;
-              
-              // Buscar quantidade do mapa de produção para este produto
-              const itemMapa = processamentoData?.resultados?.find(
-                r => r.codigoProduto === produto.codigoProduto
-              );
-              // Converter para unidades: qtdPlanejada / pesoUnitario (se unidade for kg)
-              let qtdSepararUnidades = 0;
-              if (itemMapa) {
-                if (itemMapa.unidade === 'kg' && itemMapa.pesoUnitario > 0) {
-                  qtdSepararUnidades = Math.round(itemMapa.qtdPlanejada / itemMapa.pesoUnitario);
-                } else {
-                  // Já está em unidades
-                  qtdSepararUnidades = Math.round(itemMapa.qtdPlanejada);
-                }
-              }
-
-              return (
-                <tr 
-                  key={produto.id} 
-                  className={`border-b hover:bg-gray-50 ${emRuptura ? 'bg-red-50' : ''}`}
-                >
-                  <td className="p-3">
-                    <Checkbox
-                      checked={isChecked}
-                      onCheckedChange={() => toggleCheck(produto.id, saldo)}
-                    />
-                  </td>
-                  <td className="p-3 font-mono text-sm">{produto.codigoProduto}</td>
-                  <td className="p-3 font-medium">{produto.nome}</td>
-                  <td className={`p-3 text-right font-mono ${emRuptura ? 'text-red-600 font-bold' : ''}`}>
-                    {Math.floor(saldo)} un
-                  </td>
-                  <td className="p-3 text-right">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={quantidades[produto.id] ?? qtdSepararUnidades}
-                      onChange={(e) => setQuantidades(q => ({ ...q, [produto.id]: parseInt(e.target.value) || 0 }))}
-                      className="w-24 text-right font-mono font-semibold text-blue-700 ml-auto"
-                    />
-                  </td>
-                  <td className="p-3 text-center">
-                    {emRuptura ? (
-                      <Badge variant="destructive" className="text-xs">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Ruptura
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-green-600 text-xs">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        OK
-                      </Badge>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {/* Botão Confirmar */}
-        <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
-          <span className="text-sm text-gray-600">
-            {itensSelecionados} item(s) selecionado(s)
-          </span>
-          <Button
-            onClick={handleConfirmar}
-            disabled={itensSelecionados === 0 || confirmarMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            {confirmarMutation.isPending ? 'Processando...' : 'Confirmar Separação'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-// Componente da aba Molhados Consolidados
-function MolhadosConsolidadosTab({ mapaData }: { mapaData?: { mapa?: Array<{ codigo: string; nome: string; unidade: string; qtdPlanejada: number; diaProduzir: number }> } }) {
-  // Preparar input para processamento de toda a semana
-  const inputSemana = useMemo(() => {
-    if (!mapaData?.mapa) return [];
-    return mapaData.mapa.map(item => ({
-      codigoProduto: item.codigo,
-      nomeProduto: item.nome,
-      unidade: item.unidade as 'kg' | 'un',
-      qtdPlanejada: item.qtdPlanejada,
-      diaProduzir: item.diaProduzir,
-    }));
-  }, [mapaData?.mapa]);
-
-  // Processar todos os itens da semana
-  const { data: processamentoSemana, isLoading } = trpc.pcp.processarMapa.useQuery(
-    inputSemana,
-    { enabled: inputSemana.length > 0 }
-  );
-
-  // Buscar insumos para saber quais são molhados
-  const { data: insumosDb } = trpc.insumos.list.useQuery({ ativo: true });
-
-  // Consolidar insumos molhados de toda a semana
-  const molhadosConsolidados = useMemo(() => {
-    if (!processamentoSemana?.resultados || !insumosDb) return [];
-
-    // Criar mapa de insumos molhados
-    const insumosMolhados = new Set(
-      insumosDb.filter(i => i.tipo === 'molhado').map(i => i.id)
-    );
-
-    // Agregar todos os insumos de todos os produtos de todos os dias
-    const agregado = new Map<number, {
-      componenteId: number;
-      nomeComponente: string;
-      quantidadeTotal: number;
-      unidade: string;
-    }>();
-
-    for (const resultado of processamentoSemana.resultados) {
-      for (const insumo of resultado.insumos) {
-        // Verificar se é molhado
-        if (!insumosMolhados.has(insumo.componenteId)) continue;
-
-        const existente = agregado.get(insumo.componenteId);
-        if (existente) {
-          existente.quantidadeTotal += insumo.quantidadeAjustada;
-        } else {
-          agregado.set(insumo.componenteId, {
-            componenteId: insumo.componenteId,
-            nomeComponente: insumo.nomeComponente,
-            quantidadeTotal: insumo.quantidadeAjustada,
-            unidade: insumo.unidade,
-          });
-        }
-      }
-    }
-
-    // Converter para array e ordenar por nome
-    return Array.from(agregado.values())
-      .sort((a, b) => a.nomeComponente.localeCompare(b.nomeComponente));
-  }, [processamentoSemana?.resultados, insumosDb]);
-
-  if (isLoading) {
-    return (
-      <Card className="border-blue-200">
-        <CardContent className="p-8 text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-600">Processando insumos da semana...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (molhadosConsolidados.length === 0) {
-    return (
-      <Card className="border-blue-200">
-        <CardContent className="p-8 text-center">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Nenhum insumo molhado encontrado na semana</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Calcular total geral
-  const totalGeral = molhadosConsolidados.reduce((acc, item) => acc + item.quantidadeTotal, 0);
-
-  return (
-    <div className="space-y-4">
-      {/* Botão Exportar PDF */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          onClick={() => {
-            exportarMolhadosConsolidadosPDF(molhadosConsolidados);
-          }}
-          className="border-blue-300 text-blue-700 hover:bg-blue-100"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar Molhados PDF
-        </Button>
-      </div>
-      <Card className="border-blue-200">
-        <CardHeader className="bg-blue-50 border-b border-blue-200">
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            Insumos Molhados - Consolidado da Semana
-          </CardTitle>
-          <p className="text-sm text-gray-600">
-            Lista de insumos do tipo "molhado" com quantidade total de todos os dias da semana
-          </p>
-        </CardHeader>
-      <CardContent className="p-0">
-        <table className="w-full">
-          <thead className="bg-blue-100">
-            <tr>
-              <th className="p-3 text-left">Insumo</th>
-              <th className="p-3 text-right">Quantidade Total</th>
-              <th className="p-3 text-center">Unidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {molhadosConsolidados.map((insumo, idx) => (
-              <tr 
-                key={insumo.componenteId} 
-                className={`border-b hover:bg-blue-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-              >
-                <td className="p-3 font-medium">{insumo.nomeComponente}</td>
-                <td className="p-3 text-right font-bold text-blue-700">
-                  {insumo.quantidadeTotal.toFixed(3)}
-                </td>
-                <td className="p-3 text-center text-gray-600">{insumo.unidade}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-blue-100 font-bold">
-            <tr>
-              <td className="p-3">Total ({molhadosConsolidados.length} insumos)</td>
-              <td className="p-3 text-right text-blue-800">{totalGeral.toFixed(3)}</td>
-              <td className="p-3 text-center">kg</td>
-            </tr>
-          </tfoot>
-        </table>
-      </CardContent>
-      </Card>
     </div>
   );
 }
