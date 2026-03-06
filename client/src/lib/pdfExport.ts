@@ -521,7 +521,7 @@ export async function exportarFichaProducaoPDF(
       yPosition += 10;
     } else {
       // Espaço entre massas base quando não é a primeira
-      yPosition += 5;
+      yPosition += 15;
     }
 
     // ===== 2. TABELA DE INSTRUÇÕES DE PRODUÇÃO =====
