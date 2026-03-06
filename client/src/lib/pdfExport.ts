@@ -461,15 +461,10 @@ export async function exportarFichaProducaoPDF(
   const doc = new jsPDF();
   
   // Cabeçalho com logo
-  let yPosition = await adicionarCabecalho(doc, 'Ficha de Produção', diaSelecionado);
+  let yPosition = await adicionarCabecalho(doc, 'Mapa de Produção', diaSelecionado);
 
-  // Título da seção
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74); // Cor verde
-  doc.text('Instruções de Produção - Divisora (Motor v3.0)', 14, yPosition);
-  doc.setTextColor(0);
-  yPosition += 10;
+  // Título da seção - REMOVIDO
+  // O título "Instruções de Produção - Divisora (Motor v3.0)" foi removido conforme solicitado
 
   // Tabela principal de produção
   const dadosTabela = produtos
