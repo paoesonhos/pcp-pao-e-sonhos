@@ -513,12 +513,15 @@ export async function exportarFichaProducaoPDF(
     if (grupo.inter) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.setFillColor(230, 126, 34); // Laranja
+      doc.setFillColor(230, 126, 34); // Laranja forte
       doc.rect(14, yPosition - 4, 182, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.text(`${grupo.inter.nomeProduto}`, 16, yPosition + 1);
       doc.setTextColor(0);
       yPosition += 10;
+    } else {
+      // Espaço entre massas base quando não é a primeira
+      yPosition += 5;
     }
 
     // ===== 2. TABELA DE INSTRUÇÕES DE PRODUÇÃO =====
@@ -537,10 +540,10 @@ export async function exportarFichaProducaoPDF(
     if (dadosTabela.length > 0) {
       autoTable(doc, {
         startY: yPosition,
-        head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Pedaços', 'Peso Pedaço']],
+        head: [['Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
         body: dadosTabela,
         theme: 'grid',
-        headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
           0: { cellWidth: 18 },
@@ -576,7 +579,7 @@ export async function exportarFichaProducaoPDF(
           ['Total:', totalIngredientes.toFixed(3), 'kg']
         ],
         theme: 'grid',
-        headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
         styles: { fontSize: 9, cellPadding: 2 },
         columnStyles: {
           0: { cellWidth: 100 },
@@ -635,7 +638,7 @@ export async function exportarFichaProducaoPDF(
             ing.unidade
           ]),
           theme: 'grid',
-          headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: {
             0: { cellWidth: 100 },
@@ -663,7 +666,7 @@ export async function exportarFichaProducaoPDF(
             ['', 'TEMPO TOTAL', tempoTotal.toString()]
           ],
           theme: 'grid',
-          headStyles: { fillColor: [230, 126, 34], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: {
             0: { cellWidth: 10, halign: 'center' },
