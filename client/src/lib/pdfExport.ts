@@ -463,13 +463,7 @@ export async function exportarFichaProducaoPDF(
   // Cabeçalho com logo
   let yPosition = await adicionarCabecalho(doc, 'Ficha de Produção', diaSelecionado);
 
-  // Título da seção
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74); // Cor verde
-  doc.text('Instruções de Produção - Divisora (Motor v3.0)', 14, yPosition);
-  doc.setTextColor(0);
-  yPosition += 10;
+  // Título removido - tabelas segmentadas por massa base já têm seus próprios cabeçalhos
 
   // Agrupar produtos por intermediário para tabela segmentada
   const produtosComPasso3Tabela = produtos.filter(p => p.passo3);
