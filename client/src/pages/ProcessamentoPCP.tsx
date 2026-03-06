@@ -524,36 +524,91 @@ export default function ProcessamentoPCP() {
 
             {/* Pré-Pesagem */}
             <TabsContent value="pesagem">
-              <div className="space-y-4">
-                <Card className="border-orange-200">
-                  <CardHeader className="bg-amber-50 border-b border-orange-200">
-                    <CardTitle>Insumos Agregados - Pré-Pesagem</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <table className="w-full">
-                      <thead className="bg-amber-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ingrediente</th>
-                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Qtd Total</th>
-                          <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Unid.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {insumosAgregados.map((item, idx) => (
-                          <tr key={idx} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                            <td className="px-4 py-3">{item.nomeComponente}</td>
-                            <td className="px-4 py-3 text-right font-mono">
-                              {item.unidade === 'kg' ? item.quantidadeTotal.toFixed(3) : Math.floor(item.quantidadeTotal)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Badge variant="secondary">{item.unidade}</Badge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </CardContent>
-                </Card>
+              <div className="space-y-6">
+                {(() => {
+                  if (!processamentoData?.intermediarios) {
+                    return <div className="text-center text-gray-500">Nenhum dado disponível</div>;
+                  }
+
+                  // Agrupar por dia
+                  const porDia: Record<number, typeof processamentoData.intermediarios> = {};
+                  if (processamentoData?.intermediarios) {
+                    for (const inter of processamentoData.intermediarios) {
+                      const dia = itensDoDia.find(item => 
+                        inter.produtosFilhos.some(filho => 
+                          filho.toLowerCase().trim() === item.nome.toLowerCase().trim()
+                        )
+                      )?.diaProduzir || diaSelecionado;
+                      
+                      if (!porDia[dia]) porDia[dia] = [];
+                      porDia[dia].push(inter);
+                    }
+                  }
+
+                  const diasOrdenados = Object.keys(porDia).map(Number).sort();
+
+                  return diasOrdenados.map(dia => (
+                    <div key={`dia-${dia}`}>
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-orange-400">
+                        {DIAS_SEMANA[dia]}
+                      </h3>
+
+                      {porDia[dia].map((inter, interIdx) => {
+                        // Ingredientes base da massa (apenas massa_base)
+                        const ingredientesBase = inter.ingredientes?.filter((ing: any) => ing.tipoComponente === 'massa_base') || [];
+                        
+                        // Produtos com ingredientes adicionais
+                        const produtosComAdicionais = processamentoData?.resultados?.filter(r => 
+                          inter.produtosFilhos.some(filho => 
+                            filho.toLowerCase().trim() === r.nomeProduto.toLowerCase().trim()
+                          ) && r.insumos && r.insumos.some((ing: any) => ing.tipoComponente === 'ingrediente')
+                        ) || [];
+
+                        return (
+                          <div key={`inter-${interIdx}`} className="mb-6 ml-4">
+                            {/* Cabeçalho Massa Base */}
+                            <div className="bg-purple-100 border border-purple-300 rounded-lg px-4 py-3 mb-4">
+                              <div className="font-semibold text-purple-900 mb-2">{inter.nomeProduto}</div>
+                              <div className="space-y-1 text-sm text-purple-800">
+                                {ingredientesBase.map((ing, idx) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>{ing.nomeComponente}:</span>
+                                    <span className="font-mono">
+                                      {ing.unidade === 'kg' ? ing.quantidadeArredondada.toFixed(3) : Math.floor(ing.quantidadeArredondada)} {ing.unidade}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Produtos com ingredientes adicionais */}
+                            {produtosComAdicionais.length > 0 && (
+                              <div className="space-y-3">
+                                {produtosComAdicionais.map((produto, prodIdx) => (
+                                  <div key={`prod-${prodIdx}`} className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="font-semibold text-gray-800 mb-2">
+                                      {produto.nomeProduto} ({formatarNumero(produto.qtdPlanejada, produto.unidade)} {produto.unidade})
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-700 ml-4">
+                                      {produto.insumos?.filter((ing: any) => ing.tipoComponente === 'ingrediente').map((ing, idx) => (
+                                        <div key={idx} className="flex justify-between">
+                                          <span>- {ing.nomeComponente}:</span>
+                                          <span className="font-mono">
+                                            {ing.unidade === 'kg' ? ing.quantidadeAjustada.toFixed(3) : Math.floor(ing.quantidadeAjustada)} {ing.unidade}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ));
+                })()}
               </div>
             </TabsContent>
 
