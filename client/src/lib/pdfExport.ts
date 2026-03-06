@@ -14,12 +14,8 @@ const DIAS_SEMANA: Record<number, string> = {
 // Logo em base64 será carregado dinamicamente
 let logoBase64: string | null = null;
 
-// Função para desenhar checkbox vazio
-function desenharCheckbox(doc: jsPDF, x: number, y: number, size: number = 3) {
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.3);
-  doc.rect(x, y - size + 0.5, size, size); // Desenha um quadrado vazio
-}
+// Símbolo Unicode para checkbox vazio
+const CHECKBOX = '☐'; // ☐
 
 // Função para carregar o logo
 async function carregarLogo(): Promise<string | null> {
@@ -549,8 +545,8 @@ export async function exportarFichaProducaoPDF(
     if (dadosTabela.length > 0) {
       autoTable(doc, {
         startY: yPosition,
-        head: [['', 'Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
-        body: dadosTabela.map(row => ['', ...row]),
+        head: [[CHECKBOX, 'Código', 'Produto', 'Blocos', 'Peso Bloco', 'Ped aços', 'Peso Ped aço']],
+        body: dadosTabela.map(row => [CHECKBOX, ...row]),
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
         styles: { fontSize: 8, cellPadding: 2 },
@@ -563,17 +559,10 @@ export async function exportarFichaProducaoPDF(
           5: { cellWidth: 12, halign: 'center' },
           6: { cellWidth: 20, halign: 'right' }
         },
-        margin: { left: 14, right: 14 },
-        didParseCell: function(data) {
-          if (data.column.index === 0) {
-            // Desenhar checkbox na primeira coluna
-            const cell = data.cell;
-            const checkboxX = cell.x + 3;
-            const checkboxY = cell.y + cell.height / 2;
-            desenharCheckbox(doc, checkboxX, checkboxY, 2.5);
-          }
-        }
+        margin: { left: 14, right: 14 }
       });
+      
+
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
@@ -588,15 +577,15 @@ export async function exportarFichaProducaoPDF(
       
       autoTable(doc, {
         startY: yPosition,
-        head: [['', 'Ingrediente', 'Quantidade', 'Unid.']],
+        head: [[CHECKBOX, 'Ingrediente', 'Quantidade', 'Unid.']],
         body: [
           ...grupo.inter.ingredientes.map(ing => [
-            '',
+            CHECKBOX,
             ing.nomeComponente,
             ing.quantidadeArredondada.toFixed(3),
             ing.unidade
           ]),
-          ['', 'Total:', totalIngredientes.toFixed(3), 'kg']
+          [CHECKBOX, 'Total:', totalIngredientes.toFixed(3), 'kg']
         ],
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
@@ -609,19 +598,14 @@ export async function exportarFichaProducaoPDF(
         },
         margin: { left: 14, right: 14 },
         didParseCell: function(data) {
-          if (data.column.index === 0) {
-            // Desenhar checkbox na primeira coluna
-            const cell = data.cell;
-            const checkboxX = cell.x + 3;
-            const checkboxY = cell.y + cell.height / 2;
-            desenharCheckbox(doc, checkboxX, checkboxY, 2.5);
-          }
           if (data.row.index === grupo.inter!.ingredientes.length) {
             data.cell.styles.fontStyle = 'bold';
             data.cell.styles.fillColor = [255, 243, 224];
           }
         }
       });
+      
+
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
@@ -659,9 +643,9 @@ export async function exportarFichaProducaoPDF(
         // Tabela de ingredientes adicionais com dados reais
         autoTable(doc, {
           startY: yPosition,
-          head: [['', 'Ingrediente', 'Quantidade', 'Unid.']],
+          head: [[CHECKBOX, 'Ingrediente', 'Quantidade', 'Unid.']],
           body: ingredientesAdicionais.map(ing => [
-            '',
+            CHECKBOX,
             ing.nomeComponente,
             ing.quantidadeAjustada.toFixed(3),
             ing.unidade
@@ -675,17 +659,10 @@ export async function exportarFichaProducaoPDF(
             2: { cellWidth: 35, halign: 'right' },
             3: { cellWidth: 25, halign: 'center' }
           },
-          margin: { left: 14, right: 14 },
-          didParseCell: function(data) {
-            if (data.column.index === 0) {
-              // Desenhar checkbox na primeira coluna
-              const cell = data.cell;
-              const checkboxX = cell.x + 3;
-              const checkboxY = cell.y + cell.height / 2;
-              desenharCheckbox(doc, checkboxX, checkboxY, 2.5);
-            }
-          }
+          margin: { left: 14, right: 14 }
         });
+        
+
         yPosition = (doc as any).lastAutoTable.finalY + 5;
       }
 
