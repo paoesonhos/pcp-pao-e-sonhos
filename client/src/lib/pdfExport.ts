@@ -461,58 +461,58 @@ export async function exportarFichaProducaoPDF(
   const doc = new jsPDF();
   
   // Cabeçalho com logo
-  let yPosition = await adicionarCabecalho(doc, 'Ficha de Produção', diaSelecionado);
+  let yPosition = await adicionarCabecalho(doc, 'Mapa de Produção', diaSelecionado);
 
-  // Título removido - tabelas segmentadas por massa base já têm seus próprios cabeçalhos
-
-  // Agrupar produtos por intermediário para tabela segmentada
-  const produtosComPasso3Tabela = produtos.filter(p => p.passo3);
-  const produtosAgrupadosTabelaSegmentada: { inter: IntermediarioProducao | null; produtos: ProdutoProducao[] }[] = [];
-  const produtosJaAgrupadosTabelaSegmentada = new Set<string>();
+  // Agrupar produtos por intermediário
+  const produtosAgrupadosPorInter: { inter: IntermediarioProducao | null; produtos: ProdutoProducao[] }[] = [];
+  const produtosJaAgrupados = new Set<string>();
 
   // Para cada intermediário, encontrar os produtos que o usam
   if (intermediarios && intermediarios.length > 0) {
     intermediarios.forEach((inter) => {
-      const produtosDoInter = produtosComPasso3Tabela.filter(p => 
+      // Filtrar apenas produtos que têm ingredientes adicionais (não apenas massa base)
+      const produtosDoInter = produtos.filter(p => 
         inter.produtosFilhos.some(filho => 
           p.nomeProduto.toLowerCase().trim() === filho.toLowerCase().trim()
-        ) && !produtosJaAgrupadosTabelaSegmentada.has(p.codigoProduto)
+        ) && !produtosJaAgrupados.has(p.codigoProduto) &&
+        p.passo3 // Apenas produtos com passo3 (instruções de produção)
       );
       
-      produtosDoInter.forEach(p => produtosJaAgrupadosTabelaSegmentada.add(p.codigoProduto));
+      produtosDoInter.forEach(p => produtosJaAgrupados.add(p.codigoProduto));
       
       if (produtosDoInter.length > 0) {
-        produtosAgrupadosTabelaSegmentada.push({ inter, produtos: produtosDoInter });
+        produtosAgrupadosPorInter.push({ inter, produtos: produtosDoInter });
       }
     });
   }
 
   // Produtos sem intermediário
-  const produtosSemInterTabelaSegmentada = produtosComPasso3Tabela.filter(p => !produtosJaAgrupadosTabelaSegmentada.has(p.codigoProduto));
-  if (produtosSemInterTabelaSegmentada.length > 0) {
-    produtosAgrupadosTabelaSegmentada.push({ inter: null, produtos: produtosSemInterTabelaSegmentada });
+  const produtosSemInter = produtos.filter(p => !produtosJaAgrupados.has(p.codigoProduto) && p.passo3);
+  if (produtosSemInter.length > 0) {
+    produtosAgrupadosPorInter.push({ inter: null, produtos: produtosSemInter });
   }
 
-  // Renderizar tabelas segmentadas por massa base
-  produtosAgrupadosTabelaSegmentada.forEach((grupo) => {
+  // Renderizar cada seção por massa base
+  produtosAgrupadosPorInter.forEach((grupo) => {
     // Verificar se precisa de nova página
-    if (yPosition > 200) {
+    if (yPosition > 220) {
       doc.addPage();
       yPosition = 20;
     }
 
-    // Cabeçalho da massa base
+    // ===== 1. CABEÇALHO DA MASSA BASE =====
     if (grupo.inter) {
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.setFillColor(255, 247, 237); // Laranja claro
+      doc.setFillColor(147, 51, 234); // Roxo
       doc.rect(14, yPosition - 4, 182, 8, 'F');
-      doc.text(`${grupo.inter.nomeProduto} - ${grupo.inter.quantidadeArredondada.toFixed(3)} ${grupo.inter.unidade}`, 16, yPosition);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`${grupo.inter.nomeProduto}`, 16, yPosition + 1);
       doc.setTextColor(0);
-      yPosition += 8;
+      yPosition += 10;
     }
 
-    // Tabela de produtos da massa base
+    // ===== 2. TABELA DE INSTRUÇÕES DE PRODUÇÃO =====
     const dadosTabela = grupo.produtos.map(produto => {
       const p3 = produto.passo3!;
       return [
@@ -546,11 +546,11 @@ export async function exportarFichaProducaoPDF(
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
-    // Tabela de Ingredientes da massa base
+    // ===== 3. INGREDIENTES DA MASSA BASE =====
     if (grupo.inter && grupo.inter.ingredientes && grupo.inter.ingredientes.length > 0) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('Ingredientes:', 16, yPosition);
+      doc.text('Ingredientes da Massa Base:', 16, yPosition);
       yPosition += 5;
 
       const totalIngredientes = grupo.inter.ingredientes.reduce((acc, ing) => acc + ing.quantidadeArredondada, 0);
@@ -564,7 +564,7 @@ export async function exportarFichaProducaoPDF(
             ing.quantidadeArredondada.toFixed(3),
             ing.unidade
           ]),
-          ['Total de Ingredientes:', totalIngredientes.toFixed(3), 'kg']
+          ['Total:', totalIngredientes.toFixed(3), 'kg']
         ],
         theme: 'grid',
         headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
@@ -578,55 +578,91 @@ export async function exportarFichaProducaoPDF(
         didParseCell: function(data) {
           if (data.row.index === grupo.inter!.ingredientes.length) {
             data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [255, 247, 237];
+            data.cell.styles.fillColor = [245, 245, 220];
           }
         }
       });
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
-    // Modo de Preparo da massa base
-    if (grupo.inter && grupo.inter.modoPreparo && grupo.inter.modoPreparo.length > 0) {
-      const tempoTotal = grupo.inter.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
-      
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['#', 'Descrição', 'Tempo (min)']],
-        body: [
-          ...grupo.inter.modoPreparo.map(p => [
-            p.ordem.toString(),
-            p.descricao,
-            p.tempoMinutos.toString()
-          ]),
-          ['', 'TEMPO TOTAL', tempoTotal.toString()]
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 130 },
-          2: { cellWidth: 25, halign: 'center' }
-        },
-        margin: { left: 14, right: 14 },
-        didParseCell: function(data) {
-          if (data.row.index === grupo.inter!.modoPreparo!.length) {
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [255, 247, 237];
+    // ===== 4. PARA CADA PRODUTO: INGREDIENTES ADICIONAIS + MODO DE PREPARO =====
+    grupo.produtos.forEach((produto) => {
+      // Verificar se precisa de nova página
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Título do produto
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(240, 240, 240); // Cinza claro
+      doc.rect(14, yPosition - 3, 182, 7, 'F');
+      doc.text(`${produto.nomeProduto} (${produto.passo3?.qtdInteira.toFixed(3)} ${produto.unidade})`, 16, yPosition + 1);
+      yPosition += 8;
+
+      // Ingredientes adicionais do produto (se houver)
+      if (produto.modoPreparo && produto.modoPreparo.length > 0) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ingredientes Adicionais:', 16, yPosition);
+        yPosition += 4;
+
+        // Tabela de ingredientes adicionais (placeholder - será preenchido com dados reais)
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Ingrediente', 'Quantidade', 'Unid.']],
+          body: [
+            ['(Ingredientes adicionais do produto)', '', '']
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 5;
+      }
+
+      // Modo de Preparo do produto
+      if (produto.modoPreparo && produto.modoPreparo.length > 0) {
+        const tempoTotal = produto.modoPreparo.reduce((acc, p) => acc + p.tempoMinutos, 0);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['#', 'Descrição', 'Tempo (min)']],
+          body: [
+            ...produto.modoPreparo.map(p => [
+              p.ordem.toString(),
+              p.descricao,
+              p.tempoMinutos.toString()
+            ]),
+            ['', 'TEMPO TOTAL', tempoTotal.toString()]
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: [180, 83, 9], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 130 },
+            2: { cellWidth: 25, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: function(data) {
+            if (data.row.index === produto.modoPreparo!.length) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [245, 245, 220];
+            }
           }
-        }
-      });
-      yPosition = (doc as any).lastAutoTable.finalY + 15;
-    }
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      }
+    });
   });
-
-  // Seção de "Detalhes por Produto" removida - já está integrada nas tabelas segmentadas acima
-
-  // Seção de Massas Base com Modo de Preparo - REMOVIDA
-  // Lógica já integrada nas tabelas segmentadas acima
-
-  // Área de assinatura - REMOVIDA
-  // A seção de assinatura foi removida conforme solicitado
 
   // Rodapé
   adicionarRodape(doc);
