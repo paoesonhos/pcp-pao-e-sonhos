@@ -97,7 +97,7 @@ export async function exportarFichaProducaoPDF(
           `${produto.passo3.pesoBloco.toFixed(3)} kg`,
           produto.passo3.pedacos.toString(),
           `${produto.passo3.pesoPedaco.toFixed(3)} kg`,
-          '☐' // Checkbox vazio para marcar com caneta
+          '' // Célula vazia para marcar com caneta
         ]),
         theme: 'grid',
         headStyles: { fillColor: [245, 158, 11], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -132,7 +132,7 @@ export async function exportarFichaProducaoPDF(
           body: massaBase.ingredientes.map((ing: any) => [
             ing.nomeComponente,
             ing.quantidadeArredondada.toFixed(3),
-            '☐' // Checkbox vazio para marcar com caneta
+            '' // Célula vazia para marcar com caneta
           ]),
           theme: 'grid',
           headStyles: { fillColor: [245, 158, 11], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -177,17 +177,19 @@ export async function exportarFichaProducaoPDF(
       if (ingredientesAdicionais.length > 0) {
         autoTable(doc, {
           startY: yPosition,
-          head: [['Ingrediente', 'Quantidade (kg)']],
+          head: [['Ingrediente', 'Quantidade (kg)', 'Feito']],
           body: ingredientesAdicionais.map((ing: any) => [
             ing.nomeComponente,
-            ing.quantidadeAjustada.toFixed(3)
+            ing.quantidadeAjustada.toFixed(3),
+            '' // Célula vazia para marcar com caneta
           ]),
           theme: 'grid',
           headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
           styles: { fontSize: 9, cellPadding: 2 },
           columnStyles: {
-            0: { cellWidth: 100 },
-            1: { cellWidth: 30, halign: 'right' }
+            0: { cellWidth: 80 },
+            1: { cellWidth: 30, halign: 'right' },
+            2: { cellWidth: 20, halign: 'center' }
           },
           margin: { left: 14, right: 14 },
           didParseCell: () => {}
