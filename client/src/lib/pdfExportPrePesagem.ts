@@ -126,12 +126,12 @@ export async function exportarPrePesagemPDF(
 
             autoTable(doc, {
               startY: yPosition,
-              head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+              head: [['☐', 'Ingrediente', 'Quantidade', 'Feito']],
               body: ingredientesSecos.map((ing: any) => [
                 '☐',
                 ing.nomeComponente,
                 ing.quantidadeArredondada.toFixed(3),
-                ing.unidade
+                '' // Célula vazia para marcar com caneta
               ]),
               theme: 'grid',
               headStyles: { fillColor: [245, 158, 11], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -178,12 +178,12 @@ export async function exportarPrePesagemPDF(
         if (insumosSecos.length > 0) {
           autoTable(doc, {
             startY: yPosition,
-            head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+            head: [['☐', 'Ingrediente', 'Quantidade', 'Feito']],
             body: insumosSecos.map((insumo: any) => [
               '☐',
               insumo.nomeComponente,
               insumo.quantidadeAjustada.toFixed(3),
-              insumo.unidade
+              '' // Célula vazia para marcar com caneta
             ]),
             theme: 'grid',
             headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
