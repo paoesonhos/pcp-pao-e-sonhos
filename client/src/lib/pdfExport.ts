@@ -197,8 +197,15 @@ export async function exportarPrePesagemPDF(
   // Cabeçalho com logo
   let yPosition = await adicionarCabecalho(doc, 'Ficha de Pré-Pesagem (Insumos Secos)', diaSelecionado);
 
-  // Agrupar dados por dia
-  const porDia = processamentoData.resultados.reduce((acc: any, r: any) => {
+  // Agrupar dados por dia - FILTRANDO APENAS produtos com ingredientes ADICIONAIS secos
+  const produtosComIngredientesSecos = processamentoData.resultados.filter((r: any) => {
+    const insumosAdicionaisSecos = r.insumos?.filter((ing: any) => 
+      ing.tipoComponente === 'ingrediente' && ing.tipo === 'seco' && ing.incluirPrePesagem !== false
+    ) || [];
+    return insumosAdicionaisSecos.length > 0;
+  });
+
+  const porDia = produtosComIngredientesSecos.reduce((acc: any, r: any) => {
     if (!acc[r.diaProduzir]) acc[r.diaProduzir] = [];
     acc[r.diaProduzir].push(r);
     return acc;
@@ -291,8 +298,15 @@ export async function exportarPrePesagemPDF(
         }
       }
 
-      // Renderizar produtos da massa base
-      (produtosDaMassa as any[]).forEach((produto: any) => {
+      // Renderizar produtos da massa base - APENAS produtos com ingredientes adicionais secos
+      const produtosComIngredientesSecos = (produtosDaMassa as any[]).filter((produto: any) => {
+        const insumosSecos = produto.insumos?.filter((ing: any) => 
+          ing.tipo === 'seco' && ing.incluirPrePesagem !== false
+        ) || [];
+        return insumosSecos.length > 0;
+      });
+
+      produtosComIngredientesSecos.forEach((produto: any) => {
         if (yPosition > 250) {
           doc.addPage();
           yPosition = 20;
@@ -309,30 +323,28 @@ export async function exportarPrePesagemPDF(
           ing.tipo === 'seco' && ing.incluirPrePesagem !== false
         ) || [];
 
-        if (insumosSecos.length > 0) {
-          autoTable(doc, {
-            startY: yPosition,
-            head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
-            body: insumosSecos.map((insumo: any) => [
-              '☐',
-              insumo.nomeComponente,
-              insumo.quantidadeAjustada.toFixed(3),
-              insumo.unidade
-            ]),
-            theme: 'grid',
-            headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
-            styles: { fontSize: 9, cellPadding: 2 },
-            columnStyles: {
-              0: { cellWidth: 10 },
-              1: { cellWidth: 80 },
-              2: { cellWidth: 30, halign: 'right' },
-              3: { cellWidth: 20, halign: 'center' }
-            },
-            margin: { left: 14, right: 14 },
-            didParseCell: () => {}
-          });
-          yPosition = (doc as any).lastAutoTable.finalY + 6;
-        }
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['☐', 'Ingrediente', 'Quantidade', 'Unid.']],
+          body: insumosSecos.map((insumo: any) => [
+            '☐',
+            insumo.nomeComponente,
+            insumo.quantidadeAjustada.toFixed(3),
+            insumo.unidade
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 20, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: () => {}
+        });
+        yPosition = (doc as any).lastAutoTable.finalY + 6;
       });
 
       yPosition += 4;
