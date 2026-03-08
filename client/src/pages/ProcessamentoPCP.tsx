@@ -22,7 +22,7 @@ import {
   Download,
   Clock
 } from "lucide-react";
-import { exportarFichaProducaoPDF, exportarDetalhesProdutoPDF } from "@/lib/pdfExport";
+import { exportarFichaProducaoPDF, exportarDetalhesProdutoPDF, exportarPrePesagemPDF } from "@/lib/pdfExport";
 
 // Tipos - Motor de Cálculo v3.0
 interface InsumoConsolidado {
@@ -526,6 +526,19 @@ export default function ProcessamentoPCP() {
             {/* Pré-Pesagem */}
             <TabsContent value="pesagem">
               <div className="space-y-6">
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => {
+                      if (processamentoData) {
+                        exportarPrePesagemPDF(diaSelecionado, processamentoData);
+                      }
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar Pré-Pesagem PDF
+                  </Button>
+                </div>
                 {(() => {
                   if (!processamentoData?.intermediarios) {
                     return <div className="text-center text-gray-500">Nenhum dado disponível</div>;

@@ -1422,6 +1422,7 @@ export const appRouter = router({
                 unidade: ing.unidade,
                 editavel: ing.editavel,
                 incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+                tipo: insumo?.tipo || 'seco',
               };
             }),
             modoPreparo: modoPreparoMap.get(produto.id)?.map(mp => ({
@@ -1463,12 +1464,13 @@ export const appRouter = router({
               tipoComponente: 'massa_base',
               componenteId: ing.componenteId,
               nomeComponente: ing.nomeComponente,
-              quantidadeBase: 0, // não usado no frontend
+              quantidadeBase: 0,
               quantidadeCalculada: ing.quantidadeCalculada,
               quantidadeArredondada: ing.quantidadeAjustada,
               unidade: ing.unidade,
               editavel: ing.editavel,
               incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+              tipo: insumo?.tipo || 'seco',
             };
           }),
           modoPreparo: modoPreparoMap.get(mb.produtoId)?.map(mp => ({
@@ -1489,6 +1491,7 @@ export const appRouter = router({
             editavel: ins.editavel,
             origens: ins.origens,
             incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+            tipo: insumo?.tipo || 'seco',
           };
         });
 
