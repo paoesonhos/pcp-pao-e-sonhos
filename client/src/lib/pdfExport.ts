@@ -318,9 +318,9 @@ export async function exportarPrePesagemPDF(
         doc.text(`${produto.codigoProduto} - ${produto.nomeProduto} (${produto.qtdPlanejada} ${produto.unidade})`, 14, yPosition);
         yPosition += 5;
 
-        // Filtrar insumos: apenas secos e com incluirPrePesagem = true
+        // Filtrar insumos: apenas ingredientes adicionais secos (excluir massa base)
         const insumosSecos = produto.insumos?.filter((ing: any) => 
-          ing.tipo === 'seco' && ing.incluirPrePesagem !== false
+          ing.tipoComponente === 'ingrediente' && ing.tipo === 'seco' && ing.incluirPrePesagem !== false
         ) || [];
 
         autoTable(doc, {
