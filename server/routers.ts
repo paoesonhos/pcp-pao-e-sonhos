@@ -211,6 +211,17 @@ export const appRouter = router({
         await db.toggleInsumo(input);
         return { success: true };
       }),
+
+    togglePrePesagem: protectedProcedure
+      .input(z.number().int())
+      .mutation(async ({ input }) => {
+        const insumo = await db.getInsumoById(input);
+        if (!insumo) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Insumo nao encontrado" });
+        }
+        await db.updateInsumo(input, { incluirPrePesagem: !insumo.incluirPrePesagem });
+        return { success: true, incluirPrePesagem: !insumo.incluirPrePesagem };
+      }),
   }),
 
   // ==================== PRODUTOS ====================

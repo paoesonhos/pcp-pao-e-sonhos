@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Power, Search, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -85,6 +86,16 @@ export default function Insumos() {
     },
   });
 
+  const togglePrePesagemMutation = trpc.insumos.togglePrePesagem.useMutation({
+    onSuccess: () => {
+      toast.success("Configuracao de pre-pesagem alterada com sucesso");
+      utils.insumos.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao alterar configuracao de pre-pesagem");
+    },
+  });
+
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -113,6 +124,10 @@ export default function Insumos() {
 
   const handleToggle = (id: number) => {
     toggleMutation.mutate(id);
+  };
+
+  const handleTogglePrePesagem = (id: number) => {
+    togglePrePesagemMutation.mutate(id);
   };
 
   const openEditDialog = (insumo: any) => {
@@ -268,6 +283,7 @@ export default function Insumos() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Unidade</TableHead>
+                  <TableHead>Pré-Pesagem</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -283,6 +299,13 @@ export default function Insumos() {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{insumo.unidadeMedida}</TableCell>
+                    <TableCell>
+                      <Checkbox
+                        checked={insumo.incluirPrePesagem || false}
+                        onCheckedChange={() => handleTogglePrePesagem(insumo.id)}
+                        disabled={togglePrePesagemMutation.isPending}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Badge variant={insumo.ativo ? "default" : "secondary"}>
                         {insumo.ativo ? "Ativo" : "Inativo"}

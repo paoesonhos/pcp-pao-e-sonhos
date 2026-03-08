@@ -237,7 +237,8 @@ export async function exportarFichaPrePesagemPDF(
             2: { cellWidth: 30, halign: 'right' },
             3: { cellWidth: 20, halign: 'center' }
           },
-          margin: { left: 14, right: 14 }
+          margin: { left: 14, right: 14 },
+          didParseCell: () => {}
         });
         yPosition = (doc as any).lastAutoTable.finalY + 8;
       }
@@ -402,7 +403,8 @@ export async function exportarFichaPrePesagemPDF(
             2: { cellWidth: 30, halign: 'right' },
             3: { cellWidth: 20, halign: 'center' }
           },
-          margin: { left: 14, right: 14 }
+          margin: { left: 14, right: 14 },
+          didParseCell: () => {}
         });
         yPosition = (doc as any).lastAutoTable.finalY + 10;
       }
@@ -677,7 +679,8 @@ export async function exportarFichaProducaoPDF(
             2: { cellWidth: 15, halign: 'center' },
             3: { cellWidth: 8, halign: 'center' }
           },
-          margin: { left: 14, right: 14 }
+          margin: { left: 14, right: 14 },
+          didParseCell: () => {}
         });
         // Checkboxes adicionados no cabeçalho
 

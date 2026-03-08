@@ -1,0 +1,1 @@
+ALTER TABLE `insumos` ADD `incluirPrePesagem` boolean DEFAULT false NOT NULL;

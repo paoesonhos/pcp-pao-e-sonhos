@@ -640,3 +640,31 @@ Checkpoint de referência com todas as funcionalidades core implementadas e test
 - [x] Ordenação por intermediários na Ficha de Pré-Pesagem (tela)
 - [x] Ordenação por intermediários no PDF da Ficha de Pré-Pesagem
 - [x] Ordenação por intermediários no PDF da Ficha de Produção
+
+
+## Módulo: Campo "Incluir em Pré-Pesagem" na Página Insumos
+
+### Backend - Schema e Migrations
+- [ ] Adicionar campo `incluirPrePesagem` (boolean, default: false) na tabela `insumos`
+- [ ] Executar migração no banco de dados
+
+### Backend - APIs tRPC
+- [ ] Criar procedure tRPC para atualizar campo `incluirPrePesagem` de um insumo
+- [ ] Validar que o insumo existe antes de atualizar
+
+### Frontend - Interface de Insumos
+- [ ] Adicionar coluna "Incluir em Pré-Pesagem" na tabela de insumos
+- [ ] Implementar checkbox para marcar/desmarcar
+- [ ] Integrar com procedure tRPC para salvar no banco de dados
+- [ ] Adicionar feedback visual de sucesso/erro ao salvar
+
+### Frontend - Integração com Processamento PCP
+- [ ] Usar campo `incluirPrePesagem` na página Processamento PCP
+- [ ] Filtrar insumos na ficha de pré-pesagem para mostrar apenas os marcados
+- [ ] Validar que a ficha de pré-pesagem exibe apenas insumos selecionados
+
+### Testes e Validações
+- [ ] Teste de adição do campo ao schema
+- [ ] Teste de atualização do campo via tRPC
+- [ ] Teste de filtragem de insumos na ficha de pré-pesagem
+- [ ] Teste de integração completa (marcar insumo → aparecer na ficha)

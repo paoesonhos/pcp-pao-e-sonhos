@@ -44,6 +44,7 @@ export const insumos = mysqlTable("insumos", {
   nome: varchar("nome", { length: 200 }).notNull(),
   tipo: mysqlEnum("tipo", ["seco", "molhado"]).notNull(),
   unidadeMedida: mysqlEnum("unidadeMedida", ["kg", "un"]).default("kg").notNull(),
+  incluirPrePesagem: boolean("incluirPrePesagem").default(false).notNull(),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
