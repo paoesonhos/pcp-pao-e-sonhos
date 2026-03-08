@@ -1314,6 +1314,7 @@ export const appRouter = router({
             quantidadeAjustada: number;
             unidade: string;
             editavel: boolean;
+            incluirPrePesagem?: boolean;
           }>;
           // Modo de Preparo
           modoPreparo: Array<{
@@ -1410,15 +1411,19 @@ export const appRouter = router({
             quantidadePorEmbalagem: produto.quantidadePorEmbalagem || 0,
             passo1,
             passo3,
-            insumos: passo2.ingredientes.map(ing => ({
-              componenteId: ing.componenteId,
-              nomeComponente: ing.nomeComponente,
-              tipoComponente: ing.tipoComponente,
-              quantidadeCalculada: ing.quantidadeCalculada,
-              quantidadeAjustada: ing.quantidadeAjustada,
-              unidade: ing.unidade,
-              editavel: ing.editavel,
-            })),
+            insumos: passo2.ingredientes.map(ing => {
+              const insumo = insumosMap.get(ing.componenteId);
+              return {
+                componenteId: ing.componenteId,
+                nomeComponente: ing.nomeComponente,
+                tipoComponente: ing.tipoComponente,
+                quantidadeCalculada: ing.quantidadeCalculada,
+                quantidadeAjustada: ing.quantidadeAjustada,
+                unidade: ing.unidade,
+                editavel: ing.editavel,
+                incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+              };
+            }),
             modoPreparo: modoPreparoMap.get(produto.id)?.map(mp => ({
               ordem: mp.ordem,
               descricao: mp.descricao,
@@ -1452,16 +1457,20 @@ export const appRouter = router({
           unidade: 'kg' as const,
           nivel: 1,
           produtosFilhos: mb.produtosFilhos,
-          ingredientes: mb.ingredientes.map(ing => ({
-            tipoComponente: 'massa_base',
-            componenteId: ing.componenteId,
-            nomeComponente: ing.nomeComponente,
-            quantidadeBase: 0, // não usado no frontend
-            quantidadeCalculada: ing.quantidadeCalculada,
-            quantidadeArredondada: ing.quantidadeAjustada,
-            unidade: ing.unidade,
-            editavel: ing.editavel,
-          })),
+          ingredientes: mb.ingredientes.map(ing => {
+            const insumo = insumosMap.get(ing.componenteId);
+            return {
+              tipoComponente: 'massa_base',
+              componenteId: ing.componenteId,
+              nomeComponente: ing.nomeComponente,
+              quantidadeBase: 0, // não usado no frontend
+              quantidadeCalculada: ing.quantidadeCalculada,
+              quantidadeArredondada: ing.quantidadeAjustada,
+              unidade: ing.unidade,
+              editavel: ing.editavel,
+              incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+            };
+          }),
           modoPreparo: modoPreparoMap.get(mb.produtoId)?.map(mp => ({
             ordem: mp.ordem,
             descricao: mp.descricao,
@@ -1469,15 +1478,19 @@ export const appRouter = router({
           })) || [],
         }));
 
-        const insumosGlobais = insumosConsolidados.map(ins => ({
-          componenteId: ins.componenteId,
-          nomeComponente: ins.nomeComponente,
-          quantidadeTotal: ins.quantidadeTotal,
-          quantidadeArredondada: ins.quantidadeArredondada,
-          unidade: ins.unidade,
-          editavel: ins.editavel,
-          origens: ins.origens,
-        }));
+        const insumosGlobais = insumosConsolidados.map(ins => {
+          const insumo = insumosMap.get(ins.componenteId);
+          return {
+            componenteId: ins.componenteId,
+            nomeComponente: ins.nomeComponente,
+            quantidadeTotal: ins.quantidadeTotal,
+            quantidadeArredondada: ins.quantidadeArredondada,
+            unidade: ins.unidade,
+            editavel: ins.editavel,
+            origens: ins.origens,
+            incluirPrePesagem: insumo?.incluirPrePesagem ?? true,
+          };
+        });
 
         return {
           success: true,

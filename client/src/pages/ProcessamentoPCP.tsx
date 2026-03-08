@@ -555,8 +555,8 @@ export default function ProcessamentoPCP() {
                       </h3>
 
                       {porDia[dia].map((inter, interIdx) => {
-                        // Ingredientes base da massa (apenas massa_base)
-                        const ingredientesBase = inter.ingredientes?.filter((ing: any) => ing.tipoComponente === 'massa_base') || [];
+                        // Ingredientes base da massa (apenas massa_base e incluirPrePesagem = true)
+                        const ingredientesBase = inter.ingredientes?.filter((ing: any) => ing.tipoComponente === 'massa_base' && ing.incluirPrePesagem !== false) || [];
                         
                         // Produtos com ingredientes adicionais
                         const produtosComAdicionais = processamentoData?.resultados?.filter(r => 
@@ -591,7 +591,7 @@ export default function ProcessamentoPCP() {
                                       {produto.nomeProduto} ({formatarNumero(produto.qtdPlanejada, produto.unidade)} {produto.unidade})
                                     </div>
                                     <div className="space-y-1 text-sm text-gray-700 ml-4">
-                                      {produto.insumos?.filter((ing: any) => ing.tipoComponente === 'ingrediente').map((ing, idx) => (
+                                      {produto.insumos?.filter((ing: any) => ing.tipoComponente === 'ingrediente' && ing.incluirPrePesagem !== false).map((ing, idx) => (
                                         <div key={idx} className="flex justify-between">
                                           <span>- {ing.nomeComponente}:</span>
                                           <span className="font-mono">
