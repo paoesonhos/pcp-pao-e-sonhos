@@ -907,53 +907,38 @@ export const appRouter = router({
       return await db.hasMapaBase();
     }),
 
-    // Validar cadastro de produtos do mapa (verificar se estão cadastrados)
+    // Validar cadastro de produtos do mapa (verificar se estão cadastrados pelo codigoProduto)
     validarCadastroProdutos: protectedProcedure
       .input(z.object({
-        nomesProdutos: z.array(z.string()),
+        produtosMapa: z.array(z.object({
+          codigo: z.string(),
+          nome: z.string(),
+        })),
       }))
       .mutation(async ({ input }) => {
         const database = await db.getDb();
         if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
         const { produtos } = await import("../drizzle/schema");
-        const { sql } = await import("drizzle-orm");
         
         // Buscar todos os produtos cadastrados
         const produtosCadastrados = await database.select().from(produtos);
-        const nomesCadastrados = new Set(produtosCadastrados.map(p => p.nome.toUpperCase().trim()));
+        const codigosCadastrados = new Set(produtosCadastrados.map(p => p.codigoProduto.toUpperCase().trim()));
         
-        // Verificar quais produtos do mapa não estão cadastrados
-        const produtosNaoCadastrados: string[] = [];
-        for (const nome of input.nomesProdutos) {
-          const nomeNormalizado = nome.toUpperCase().trim();
-          if (!nomesCadastrados.has(nomeNormalizado)) {
-            // Evitar duplicatas na lista
-            if (!produtosNaoCadastrados.includes(nome)) {
-              produtosNaoCadastrados.push(nome);
-            }
+        // Verificar quais produtos do mapa não estão cadastrados (por codigoProduto)
+        const produtosNaoCadastrados: Array<{ codigo: string; nome: string }> = [];
+        const codigosVistos = new Set<string>();
+        for (const item of input.produtosMapa) {
+          const codigoNormalizado = item.codigo.toUpperCase().trim();
+          if (!codigosCadastrados.has(codigoNormalizado) && !codigosVistos.has(codigoNormalizado)) {
+            codigosVistos.add(codigoNormalizado);
+            produtosNaoCadastrados.push({ codigo: item.codigo, nome: item.nome });
           }
         }
-        
-        // Buscar próximo código sequencial
-        // Usar COALESCE para tratar valores não-numéricos e converter apenas os numéricos
-        const todosCodigosProdutos = await database
-          .select({ codigo: produtos.codigoProduto })
-          .from(produtos);
-        
-        let maxCodigo = 0;
-        for (const p of todosCodigosProdutos) {
-          const num = parseInt(p.codigo, 10);
-          if (!isNaN(num) && num > maxCodigo) {
-            maxCodigo = num;
-          }
-        }
-        const proximoCodigo = maxCodigo + 1;
         
         return {
           success: true,
           produtosNaoCadastrados,
-          proximoCodigo,
           totalNaoCadastrados: produtosNaoCadastrados.length,
         };
       }),

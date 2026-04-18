@@ -69,8 +69,7 @@ export default function MapaProducao() {
   
   // Estado para modal de produtos não cadastrados
   const [showModalCadastro, setShowModalCadastro] = useState(false);
-  const [produtosNaoCadastrados, setProdutosNaoCadastrados] = useState<string[]>([]);
-  const [proximoCodigo, setProximoCodigo] = useState<number>(1);
+  const [produtosNaoCadastrados, setProdutosNaoCadastrados] = useState<Array<{ codigo: string; nome: string }>>([]);
   
   // Estado para cadastro em lote
   interface ProdutoParaCadastrar {
@@ -296,27 +295,26 @@ export default function MapaProducao() {
 
 
   // Excluir produto do mapa
-  const handleExcluirDoMapa = (nomeProduto: string) => {
-    setMapa(prev => prev.filter(item => item.nome !== nomeProduto));
-    setProdutosNaoCadastrados(prev => prev.filter(nome => nome !== nomeProduto));
+  const handleExcluirDoMapa = (codigoProduto: string) => {
+    setMapa(prev => prev.filter(item => item.codigo !== codigoProduto));
+    setProdutosNaoCadastrados(prev => prev.filter(p => p.codigo !== codigoProduto));
     setAlterado(true);
   };
 
   // Expandir formulário inline para cadastro rápido
-  const handleExpandirCadastro = (nomeProduto: string) => {
+  const handleExpandirCadastro = (produto: { codigo: string; nome: string }) => {
     // Verificar se já existe na lista de cadastro
-    const jaExiste = produtosParaCadastrar.find(p => p.nome === nomeProduto);
+    const jaExiste = produtosParaCadastrar.find(p => p.codigo === produto.codigo);
     if (jaExiste) {
       // Toggle expandido
       setProdutosParaCadastrar(prev => prev.map(p => 
-        p.nome === nomeProduto ? { ...p, expandido: !p.expandido } : p
+        p.codigo === produto.codigo ? { ...p, expandido: !p.expandido } : p
       ));
     } else {
-      // Adicionar novo produto para cadastrar
-      const codigoSugerido = proximoCodigo + produtosParaCadastrar.length;
+      // Adicionar novo produto para cadastrar usando o código vindo da importação
       setProdutosParaCadastrar(prev => [...prev, {
-        nome: nomeProduto,
-        codigo: codigoSugerido.toString(),
+        nome: produto.nome,
+        codigo: produto.codigo,
         unidade: 'kg',
         pesoUnitario: '0.05',
         tipoEmbalagem: 'Saco plástico',
@@ -327,9 +325,9 @@ export default function MapaProducao() {
   };
   
   // Atualizar campo de produto para cadastrar
-  const handleUpdateProdutoCadastro = (nome: string, campo: string, valor: any) => {
+  const handleUpdateProdutoCadastro = (codigo: string, campo: string, valor: any) => {
     setProdutosParaCadastrar(prev => prev.map(p => 
-      p.nome === nome ? { ...p, [campo]: valor } : p
+      p.codigo === codigo ? { ...p, [campo]: valor } : p
     ));
   };
   
@@ -351,8 +349,8 @@ export default function MapaProducao() {
       });
       
       // Remover da lista de não cadastrados e da lista de cadastro
-      setProdutosNaoCadastrados(prev => prev.filter(n => n !== produto.nome));
-      setProdutosParaCadastrar(prev => prev.filter(p => p.nome !== produto.nome));
+      setProdutosNaoCadastrados(prev => prev.filter(p => p.codigo !== produto.codigo));
+      setProdutosParaCadastrar(prev => prev.filter(p => p.codigo !== produto.codigo));
       utils.produtos.list.invalidate();
       
       // Se não há mais produtos para cadastrar, fechar modal
@@ -406,13 +404,20 @@ export default function MapaProducao() {
 
     setSalvando(true);
     try {
-      // Validar cadastro dos produtos
-      const nomesProdutos = Array.from(new Set(mapa.map(item => item.nome)));
-      const validacao = await validarCadastroMutation.mutateAsync({ nomesProdutos });
+      // Validar cadastro dos produtos pelo codigoProduto
+      const codigosVistos = new Set<string>();
+      const produtosMapa = mapa
+        .filter(item => {
+          const key = item.codigo.toUpperCase().trim();
+          if (codigosVistos.has(key)) return false;
+          codigosVistos.add(key);
+          return true;
+        })
+        .map(item => ({ codigo: item.codigo, nome: item.nome }));
+      const validacao = await validarCadastroMutation.mutateAsync({ produtosMapa });
       
       if (validacao.totalNaoCadastrados > 0) {
         setProdutosNaoCadastrados(validacao.produtosNaoCadastrados);
-        setProximoCodigo(validacao.proximoCodigo);
         setShowModalCadastro(true);
         setSalvando(false);
         return;
@@ -1084,10 +1089,10 @@ export default function MapaProducao() {
             </p>
             
             <div style={{ marginBottom: 16 }}>
-              {produtosNaoCadastrados.map((nome, idx) => {
-                const produtoCadastro = produtosParaCadastrar.find(p => p.nome === nome);
+              {produtosNaoCadastrados.map((produto, idx) => {
+                const produtoCadastro = produtosParaCadastrar.find(p => p.codigo === produto.codigo);
                 return (
-                  <div key={idx} style={{
+                  <div key={produto.codigo} style={{
                     backgroundColor: idx % 2 === 0 ? '#fff3cd' : '#ffeeba',
                     borderRadius: 8,
                     marginBottom: 8,
@@ -1100,10 +1105,12 @@ export default function MapaProducao() {
                       justifyContent: 'space-between',
                       padding: '12px 16px',
                     }}>
-                      <span style={{ fontWeight: 500, color: '#856404' }}>{nome}</span>
+                      <span style={{ fontWeight: 500, color: '#856404' }}>
+                        {produto.codigo} – {produto.nome}
+                      </span>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
-                          onClick={() => handleExpandirCadastro(nome)}
+                          onClick={() => handleExpandirCadastro(produto)}
                           style={{
                             padding: '6px 12px',
                             backgroundColor: produtoCadastro?.expandido ? '#2980b9' : '#27ae60',
@@ -1117,7 +1124,7 @@ export default function MapaProducao() {
                           {produtoCadastro?.expandido ? '▲ Recolher' : '▼ Cadastrar'}
                         </button>
                         <button
-                          onClick={() => handleExcluirDoMapa(nome)}
+                          onClick={() => handleExcluirDoMapa(produto.codigo)}
                           style={{
                             padding: '6px 12px',
                             backgroundColor: '#e74c3c',
@@ -1142,19 +1149,19 @@ export default function MapaProducao() {
                       }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                           <div>
-                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Código *</label>
+                            <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Código ERP *</label>
                             <input
                               type="text"
                               value={produtoCadastro.codigo}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'codigo', e.target.value)}
-                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+                              readOnly
+                              style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4, backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                             />
                           </div>
                           <div>
                             <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Unidade *</label>
                             <select
                               value={produtoCadastro.unidade}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'unidade', e.target.value)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'unidade', e.target.value)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             >
                               <option value="kg">kg</option>
@@ -1167,7 +1174,7 @@ export default function MapaProducao() {
                               type="number"
                               step="0.00001"
                               value={produtoCadastro.pesoUnitario}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'pesoUnitario', e.target.value)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'pesoUnitario', e.target.value)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             />
                           </div>
@@ -1176,7 +1183,7 @@ export default function MapaProducao() {
                             <input
                               type="text"
                               value={produtoCadastro.tipoEmbalagem}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'tipoEmbalagem', e.target.value)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'tipoEmbalagem', e.target.value)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             />
                           </div>
@@ -1186,7 +1193,7 @@ export default function MapaProducao() {
                               type="number"
                               min="1"
                               value={produtoCadastro.quantidadePorEmbalagem}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'quantidadePorEmbalagem', parseInt(e.target.value) || 1)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'quantidadePorEmbalagem', parseInt(e.target.value) || 1)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             />
                           </div>
@@ -1194,7 +1201,7 @@ export default function MapaProducao() {
                             <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Categoria</label>
                             <select
                               value={produtoCadastro.categoriaId || ''}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'categoriaId', e.target.value ? parseInt(e.target.value) : undefined)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'categoriaId', e.target.value ? parseInt(e.target.value) : undefined)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             >
                               <option value="">Selecione</option>
@@ -1207,7 +1214,7 @@ export default function MapaProducao() {
                             <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Destino</label>
                             <select
                               value={produtoCadastro.destinoId || ''}
-                              onChange={(e) => handleUpdateProdutoCadastro(nome, 'destinoId', e.target.value ? parseInt(e.target.value) : undefined)}
+                              onChange={(e) => handleUpdateProdutoCadastro(produto.codigo, 'destinoId', e.target.value ? parseInt(e.target.value) : undefined)}
                               style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
                             >
                               <option value="">Selecione</option>
